@@ -208,24 +208,19 @@ export class VehicleManager {
             let modelData;
             let typeName = conf.type;
             let shouts = CAR_SHOUTS;
-            let icon = '🚗';
 
             if (conf.type === 'danfo') {
                 modelData = createDanfo(this.app, seedRand);
                 shouts = DANFO_SHOUTS;
-                icon = '🚐';
             } else if (conf.type === 'keke') {
                 modelData = createKeke(this.app, seedRand);
                 shouts = KEKE_SHOUTS;
-                icon = '🛺';
             } else if (conf.type === 'okada') {
                 modelData = createOkada(this.app, seedRand);
                 shouts = OKADA_SHOUTS;
-                icon = '🏍️';
             } else {
                 modelData = createCar(this.app, seedRand);
                 shouts = CAR_SHOUTS;
-                icon = '🚗';
             }
 
             this.app.root.addChild(modelData.root);
@@ -236,7 +231,6 @@ export class VehicleManager {
             const vehicle = {
                 id: i,
                 type: typeName,
-                icon,
                 shouts,
                 track,
                 model: modelData.root,
@@ -301,7 +295,7 @@ export class VehicleManager {
         return false;
     }
 
-    update(dt, player, active, npcManager) {
+    update(dt, player, active, npcManager, checkPlayerCollision = false) {
         let collisionToast = null;
 
         for (let i = 0; i < this.vehicles.length; i++) {
@@ -351,8 +345,8 @@ export class VehicleManager {
                         targetSpeed = 0;
                         v.yieldTimer = 1.0;
 
-                        // Tap vehicle horn if approaching fast
-                        if (v.speed > 2.5 && v.honkTimer <= 0) {
+                        // Tap vehicle horn if approaching fast (only during active race)
+                        if (checkPlayerCollision && v.speed > 2.5 && v.honkTimer <= 0) {
                             v.honkTimer = 3.5;
                             this.audio.vehicleHorn();
                         }
@@ -381,8 +375,8 @@ export class VehicleManager {
             v.model.setPosition(v.x, 0, v.z);
             v.model.setEulerAngles(0, v.yawDeg, 0);
 
-            // 3. Collision check with the Player's bicycle
-            if (active && v.cooldown <= 0 && (!player.invulnerable || player.invulnerable <= 0)) {
+            // 3. Collision check with the Player's bicycle (only when actively riding)
+            if (checkPlayerCollision && active && v.cooldown <= 0 && (!player.invulnerable || player.invulnerable <= 0)) {
                 const dx = player.x - v.x;
                 const dz = player.z - v.z;
                 const dist = Math.hypot(dx, dz);
@@ -414,7 +408,7 @@ export class VehicleManager {
                     player.spray = 1.2;
 
                     const shout = pick(this.rand, v.shouts);
-                    collisionToast = `${v.icon} ${shout}`;
+                    collisionToast = shout;
                 }
             }
         }

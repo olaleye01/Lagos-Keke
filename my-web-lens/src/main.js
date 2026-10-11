@@ -293,6 +293,7 @@ function respawnPlayerAtLastCheckpoint(reason = 'crash') {
 }
 
 function startCountdown() {
+    const isRestart = gameState === STATE.GAMEOVER || gameState === STATE.VICTORY;
     gameState = STATE.COUNTDOWN;
     countdownTimer = 3;
     timeLeft = GAME.TIME_LIMIT;
@@ -301,8 +302,10 @@ function startCountdown() {
     lastTickSecond = -1;
 
     player.reset();
-    npcs.reset();
-    vehicles.reset();
+    if (isRestart) {
+        npcs.reset();
+        vehicles.reset();
+    }
     updateBeaconPosition();
 
     titleScreen.classList.add('hidden');
@@ -316,11 +319,17 @@ function startCountdown() {
     countdownVal.classList.add('tick');
     audio.countdown(false);
 
-    // Initial high overhead / top-down camera framing
-    const topDist = 1.5;
-    const topHeight = 16.0;
-    currentCamPos.set(player.x - player.forwardX * topDist, topHeight, player.z - player.forwardZ * topDist);
-    currentCamLook.set(player.x, 0.9, player.z);
+    // Smooth camera pan begins from TOP_CAM down into NORMAL_CAM
+    currentCamPos.set(
+        player.x - player.forwardX * TOP_CAM.dist,
+        TOP_CAM.height,
+        player.z - player.forwardZ * TOP_CAM.dist
+    );
+    currentCamLook.set(
+        player.x + player.forwardX * TOP_CAM.lookAhead,
+        TOP_CAM.lookY,
+        player.z + player.forwardZ * TOP_CAM.lookAhead
+    );
 
     if (new URLSearchParams(window.location.search).get('gutter') === '1') {
         player.x = 0;
@@ -352,15 +361,15 @@ function endGame(won) {
         endTitle.classList.remove('lose');
         const mudRatio = player.stats.mudTime / (player.stats.mudTime + player.stats.roadTime || 1);
         if (mudRatio > 0.40) {
-            endRank.textContent = 'Mud Alley Legend ⚡';
+            endRank.textContent = 'Mud Alley Legend';
         } else if (player.stats.potholes === 0) {
-            endRank.textContent = 'Smooth Sailor 👑';
+            endRank.textContent = 'Smooth Sailor';
         } else {
-            endRank.textContent = 'Master Dispatch Rider 🚲';
+            endRank.textContent = 'Master Dispatch Rider';
         }
     } else {
         audio.lose();
-        endTitle.textContent = "E DON CAST! 🛑";
+        endTitle.textContent = "E DON CAST!";
         endTitle.classList.add('lose');
         endRank.textContent = `Reached ${currentCPIndex}/${CHECKPOINTS.length} Stops – Don't Give Up!`;
     }
@@ -390,9 +399,55 @@ const camTarget = new Vec3();
 let currentCamPos = new Vec3();
 let currentCamLook = new Vec3();
 
-// Camera initial position at player start
-currentCamPos.set(player.x, 2.8, player.z + 5.5);
-currentCamLook.set(player.x, 1.2, player.z);
+// Sound toggle button on welcome screen
+const btnSoundToggle = document.getElementById('btn-sound-toggle');
+const soundIconOn = document.getElementById('sound-icon-on');
+const soundIconOff = document.getElementById('sound-icon-off');
+if (btnSoundToggle) {
+    btnSoundToggle.addEventListener('click', () => {
+        audio.unlock();
+        audio.muted = !audio.muted;
+        if (audio.master) {
+            audio.master.gain.value = audio.muted ? 0 : 0.7;
+        }
+        if (soundIconOn && soundIconOff) {
+            soundIconOn.classList.toggle('hidden', audio.muted);
+            soundIconOff.classList.toggle('hidden', !audio.muted);
+        }
+    });
+}
+
+// Dynamic Camera Presets:
+// TOP_CAM: Elevated view showing the bicycle in the center of the screen, the wide main road, and bustling traffic
+const TOP_CAM = {
+    dist: 6.2,
+    height: 3.8,
+    lookAhead: -0.4,
+    lookY: 0.6
+};
+// NORMAL_CAM: Close third-person chase camera for racing
+const NORMAL_CAM = {
+    dist: 2.85,
+    height: 1.95,
+    lookAhead: 1.8,
+    lookY: 1.15
+};
+
+let titleSwayTime = 0;
+
+// Camera initial position at player start (high overhead view showing bustling street traffic)
+currentCamPos.set(
+    player.x - player.forwardX * TOP_CAM.dist,
+    TOP_CAM.height,
+    player.z - player.forwardZ * TOP_CAM.dist
+);
+currentCamLook.set(
+    player.x + player.forwardX * TOP_CAM.lookAhead,
+    TOP_CAM.lookY,
+    player.z + player.forwardZ * TOP_CAM.lookAhead
+);
+cameraEntity.setPosition(currentCamPos);
+cameraEntity.lookAt(currentCamLook);
 
 // --- Main Engine Update Loop ---
 app.on('update', dt => {
@@ -427,22 +482,18 @@ app.on('update', dt => {
         // Camera Pan: smoothly swoops from high overhead top angle down to the normal behind-the-rider angle
         // t goes from 0.0 (at countdown 3s) to 1.0 (at countdown 0s / start)
         const t = math.clamp(1.0 - (countdownTimer / 3.0), 0.0, 1.0);
-        const easeT = t * t * (3.0 - 2.0 * t); // smooth cubic ease
+        // Smooth cubic ease-in-out curve for natural, cinematic swoop
+        const easeT = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
-        const topDist = 1.5;
-        const topHeight = 16.5;
-        const normalDist = 2.85;
-        const normalHeight = 1.95;
-
-        const curDist = math.lerp(topDist, normalDist, easeT);
-        const curHeight = math.lerp(topHeight, normalHeight, easeT);
+        const curDist = math.lerp(TOP_CAM.dist, NORMAL_CAM.dist, easeT);
+        const curHeight = math.lerp(TOP_CAM.height, NORMAL_CAM.height, easeT);
 
         const targetCamX = player.x - player.forwardX * curDist;
         const targetCamY = curHeight;
         const targetCamZ = player.z - player.forwardZ * curDist;
 
-        const curLookDist = math.lerp(0.2, 1.8, easeT);
-        const curLookY = math.lerp(0.9, 1.15, easeT);
+        const curLookDist = math.lerp(TOP_CAM.lookAhead, NORMAL_CAM.lookAhead, easeT);
+        const curLookY = math.lerp(TOP_CAM.lookY, NORMAL_CAM.lookY, easeT);
         const targetLookX = player.x + player.forwardX * curLookDist;
         const targetLookY = curLookY;
         const targetLookZ = player.z + player.forwardZ * curLookDist;
@@ -452,6 +503,24 @@ app.on('update', dt => {
 
         cameraEntity.setPosition(currentCamPos);
         cameraEntity.lookAt(currentCamLook);
+    } else if (gameState === STATE.TITLE) {
+        // Elevated camera showing moving vehicles and crossing pedestrians
+        titleSwayTime += dt;
+        const swayX = Math.sin(titleSwayTime * 0.3) * 0.35;
+
+        const curCamX = player.x - player.forwardX * TOP_CAM.dist + swayX;
+        const curCamY = TOP_CAM.height;
+        const curCamZ = player.z - player.forwardZ * TOP_CAM.dist;
+
+        const curLookX = player.x + player.forwardX * TOP_CAM.lookAhead;
+        const curLookY = TOP_CAM.lookY;
+        const curLookZ = player.z + player.forwardZ * TOP_CAM.lookAhead;
+
+        currentCamPos.set(curCamX, curCamY, curCamZ);
+        currentCamLook.set(curLookX, curLookY, curLookZ);
+        cameraEntity.setPosition(currentCamPos);
+        cameraEntity.lookAt(currentCamLook);
+        player._sync(dt);
     } else if (gameState === STATE.PLAYING) {
         sessionElapsed += dt;
         timeLeft -= dt;
@@ -469,9 +538,7 @@ app.on('update', dt => {
             void timerContainer.offsetWidth;
             timerContainer.classList.add('bonus');
 
-            const isMud = activeCP.type === 'mud';
-            const icon = isMud ? '🟫' : '⭐';
-            showToast(`${icon} ${activeCP.name}! +${GAME.CHECKPOINT_BONUS}s`, 'good', 1600);
+            showToast(`${activeCP.name}! +${GAME.CHECKPOINT_BONUS}s`, 'good', 1600);
             currentCPIndex++;
 
             if (currentCPIndex >= CHECKPOINTS.length) {
@@ -481,7 +548,7 @@ app.on('update', dt => {
             }
         }
 
-        // Timer expiration or Snapchat 2-minute hard limit reached
+        // Timer expiration or session limit reached
         if (timeLeft <= 0 || sessionElapsed >= GAME.MAX_SESSION_TIME) {
             timeLeft = 0;
             endGame(false);
@@ -497,26 +564,27 @@ app.on('update', dt => {
         }
     }
 
-    // 2. Player and NPCs Simulation
+    // 2. Player, Vehicles, and NPCs Simulation
+    const isWorldActive = gameState === STATE.TITLE || gameState === STATE.COUNTDOWN || gameState === STATE.PLAYING;
     const isRiding = gameState === STATE.PLAYING;
     const playerEvents = player.update(dt, input, isRiding);
-    if (playerEvents.pothole) {
-        showToast('⚠️ Wahala! Pothole!', 'bad', 1400);
+    if (isRiding && playerEvents.pothole) {
+        showToast('Wahala! Pothole!', 'bad', 1400);
     }
-    if (playerEvents.gutter) {
-        showToast('⚠️ Wahala! you don enter gutter!', 'bad', 1600);
+    if (isRiding && playerEvents.gutter) {
+        showToast('Wahala! you don enter gutter!', 'bad', 1600);
     }
 
-    const npcToast = npcs.update(dt, player, isRiding, vehicles);
-    if (npcToast) {
+    const npcToast = npcs.update(dt, player, isWorldActive, vehicles, isRiding);
+    if (isRiding && npcToast) {
         timeLeft = Math.max(0, timeLeft - GAME.NPC_HIT_PENALTY);
-        showToast(`💥 ${npcToast} -${GAME.NPC_HIT_PENALTY}s`, 'bad', 1600);
+        showToast(`${npcToast} -${GAME.NPC_HIT_PENALTY}s`, 'bad', 1600);
     }
 
-    const vehicleToast = vehicles.update(dt, player, isRiding, npcs);
-    if (vehicleToast) {
+    const vehicleToast = vehicles.update(dt, player, isWorldActive, npcs, isRiding);
+    if (isRiding && vehicleToast) {
         timeLeft = Math.max(0, timeLeft - GAME.VEHICLE_HIT_PENALTY);
-        showToast(`💥 ${vehicleToast} -${GAME.VEHICLE_HIT_PENALTY}s`, 'bad', 2000);
+        showToast(`${vehicleToast} -${GAME.VEHICLE_HIT_PENALTY}s`, 'bad', 2000);
         respawnPlayerAtLastCheckpoint('vehicle');
     }
 

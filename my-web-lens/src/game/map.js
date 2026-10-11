@@ -576,6 +576,8 @@ export class LagosMap {
             for (let i = 0; i < list.length - 1; i++) {
                 const [ax, az] = list[i];
                 const [bx] = list[i + 1];
+                // Keep the player starting view clear of crossing utility wires
+                if (az > 0 && Math.abs((ax + bx) / 2) < 22) continue;
                 for (const o of [-0.7, 0.7]) {
                     b.boxAt((ax + bx) / 2, H - 0.5, az + o, bx - ax, 0.03, 0.03, [20, 20, 20], 0, 0);
                 }

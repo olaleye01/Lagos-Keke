@@ -301,19 +301,107 @@
       </div>
     </section>
 
-    <!-- Title screen -->
-    <section id="title-screen" class="overlay">
-      <div class="title-wrap sticker-card">
-        <p class="kicker">STREET RACE</p>
-        <h1 class="logo"><span>BICYCLE</span><span class="accent">STREET RUSH</span></h1>
-        <p class="tagline">9 checkpoints · Main Road &amp; Mud Alleys</p>
-        <ul class="howto">
-          <li><span class="ico">👆</span>Drag screen to steer / use A &amp; D keys</li>
-          <li><span class="ico">⚡</span>Hold <b>SPRINT</b> (or Space / W / Shift) for boost tuck</li>
-          <li><span class="ico">🟫</span>Mud alleys: shorter route, stand up &amp; pedal hard!</li>
-        </ul>
-        <button id="btn-start" class="cta">TAP TO RIDE</button>
-        <p class="keys">Controls: Drag / A-D steer · ⚡ Sprint · ↓ Brake</p>
+    <!-- Title screen: Arcade Welcome View with Unobscured 3D Road View & Bottom Sheet -->
+    <section id="title-screen" class="welcome-screen">
+      <!-- Top Arcade Title Bar -->
+      <header class="welcome-top-bar">
+        <button id="btn-sound-toggle" class="welcome-sound-btn" aria-label="Toggle sound">
+          <svg id="sound-icon-on" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+          </svg>
+          <svg id="sound-icon-off" class="hidden" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+          </svg>
+        </button>
+
+        <div class="welcome-title-group">
+          <div class="welcome-kicker-wrap">
+            <span class="welcome-kicker-line"></span>
+            <span class="welcome-kicker">STREET ARCADE</span>
+            <span class="welcome-kicker-line"></span>
+          </div>
+          <h1 class="welcome-title">
+            <span class="welcome-title-main">BICYCLE</span>
+            <span class="welcome-title-sub">STREET RUSH</span>
+          </h1>
+          <div class="welcome-tagline-wrap">
+            <span class="welcome-tagline">Big pedals. Pure street rush.</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Center Unobscured 3D Road View + Floating Route Pill -->
+      <div class="welcome-mid-spacer">
+        <div class="welcome-route-pill">
+          <span class="pill-dot"></span>
+          <span>9 CHECKPOINTS</span>
+          <span class="pill-star">✦</span>
+          <span>STREET SPRINT</span>
+        </div>
+      </div>
+
+      <!-- Bottom Sheet Card (Mobile-Focused Controls Guide) -->
+      <div class="welcome-bottom-sheet">
+        <div class="welcome-sheet-header">
+          <h2 class="welcome-sheet-title">Your ride. The ultimate street sprint.</h2>
+          <p class="welcome-sheet-sub">Weave through traffic. Sprint for boost.</p>
+        </div>
+
+        <div class="welcome-controls-grid">
+          <div class="welcome-ctrl-item">
+            <div class="welcome-ctrl-icon">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="8 17 3 12 8 7"></polyline>
+                <polyline points="16 7 21 12 16 17"></polyline>
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+              </svg>
+            </div>
+            <div class="welcome-ctrl-text">
+              <span class="welcome-ctrl-title">DRAG</span>
+              <span class="welcome-ctrl-desc">steer</span>
+            </div>
+          </div>
+
+          <div class="welcome-ctrl-sep"></div>
+
+          <div class="welcome-ctrl-item">
+            <div class="welcome-ctrl-icon">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+            </div>
+            <div class="welcome-ctrl-text">
+              <span class="welcome-ctrl-title">HOLD</span>
+              <span class="welcome-ctrl-desc">sprint</span>
+            </div>
+          </div>
+
+          <div class="welcome-ctrl-sep"></div>
+
+          <div class="welcome-ctrl-item">
+            <div class="welcome-ctrl-icon">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="4" x2="12" y2="16"></line>
+                <polyline points="17 11 12 16 7 11"></polyline>
+                <line x1="6" y1="20" x2="18" y2="20"></line>
+              </svg>
+            </div>
+            <div class="welcome-ctrl-text">
+              <span class="welcome-ctrl-title">BRAKE</span>
+              <span class="welcome-ctrl-desc">slow down</span>
+            </div>
+          </div>
+        </div>
+
+        <button id="btn-start" class="welcome-cta-btn">
+          <span class="welcome-cta-label">TAP TO RIDE</span>
+        </button>
+
+        <p class="welcome-footer-note">MAIN ROAD &amp; ALLEY SHORTCUTS · AVOID POTHOLES</p>
       </div>
     </section>
 
@@ -341,7 +429,7 @@
           <path d="M 33 24 C 33 44, 40 52, 45 54 C 39 50, 35 42, 35 24 Z" fill="#ffffff" opacity="0.65" />
         </svg>
         <h2 id="end-title">DELIVERED!</h2>
-        <p id="end-rank" class="rank">Oga Rider 👑</p>
+        <p id="end-rank" class="rank">Oga Rider</p>
         <dl class="stats">
           <div class="stat-pill"><dt>Stops</dt><dd id="stat-cps">9/9</dd></div>
           <div class="stat-pill"><dt>Potholes hit</dt><dd id="stat-potholes">0</dd></div>

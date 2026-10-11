@@ -84,16 +84,6 @@ export class AudioFX {
         src.stop(start + dur + 0.05);
     }
 
-    bell() {
-        if (!this.ctx) return;
-        const t = this.ctx.currentTime;
-        for (const off of [0, 0.16]) {
-            this._tone(2350, t + off, 0.5, 'sine', 0.22);
-            this._tone(3170, t + off, 0.35, 'sine', 0.1);
-            this._tone(4700, t + off, 0.15, 'triangle', 0.04);
-        }
-    }
-
     pothole() {
         if (!this.ctx) return;
         const t = this.ctx.currentTime;
