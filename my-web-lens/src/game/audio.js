@@ -117,6 +117,24 @@ export class AudioFX {
         this._noise(t, 0.2, 600, 0.3);
     }
 
+    vehicleHorn() {
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        this._tone(420, t, 0.22, 'square', 0.18);
+        this._tone(510, t, 0.22, 'square', 0.16);
+    }
+
+    vehicleCrash() {
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        // Heavy metallic crunch + tyre screech + cut-off horn
+        this._tone(130, t, 0.45, 'sawtooth', 0.55, 45);
+        this._tone(680, t, 0.2, 'square', 0.28, 220);
+        this._noise(t, 0.38, 1400, 0.5, 'bandpass');
+        this._noise(t + 0.04, 0.35, 450, 0.45);
+        this._tone(440, t + 0.08, 0.35, 'square', 0.22);
+    }
+
     checkpoint() {
         if (!this.ctx) return;
         const t = this.ctx.currentTime;

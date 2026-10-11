@@ -14,6 +14,7 @@
 <body>
   <main id="app">
     <canvas id="game-canvas" aria-label="Lagos Bike Rush game view"></canvas>
+    <canvas id="speed-lines" class="speed-lines" aria-hidden="true"></canvas>
 
     <!-- In-game HUD -->
     <section id="hud" class="hidden" aria-live="polite">
@@ -28,10 +29,22 @@
         <canvas id="minimap" class="glass" width="240" height="240" aria-label="Minimap"></canvas>
       </div>
 
-      <div id="nav" class="glass nav">
-        <svg id="nav-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 L20 20 L12 15 L4 20 Z" /></svg>
-        <span id="nav-dist">120m</span>
-        <span id="surface-chip" class="chip road">TARMAC</span>
+      <div class="hud-mid">
+        <div id="nav" class="glass nav">
+          <svg id="nav-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 L20 20 L12 15 L4 20 Z" /></svg>
+          <span id="nav-dist">120m</span>
+          <span id="surface-chip" class="chip road">TARMAC</span>
+        </div>
+        <div id="speedometer" class="glass speed-badge">
+          <span id="speed-num">0</span>
+          <span class="speed-unit">KM/H</span>
+        </div>
+      </div>
+
+      <!-- Stamina Meter -->
+      <div id="stamina-container" class="stamina-wrap glass">
+        <div class="stamina-label"><span>BOOST</span><span id="stamina-val">100%</span></div>
+        <div class="stamina-track"><div id="stamina-bar" class="stamina-fill"></div></div>
       </div>
 
       <div id="toast" class="toast"></div>
@@ -39,7 +52,23 @@
       <div id="steer-meter" class="steer-meter" aria-hidden="true"><div id="steer-knob"></div></div>
 
       <button id="btn-brake" class="ctrl-btn brake" aria-label="Brake">BRAKE</button>
-      <button id="btn-bell" class="ctrl-btn bell" aria-label="Ring bell">🔔</button>
+      <div id="btn-sprint" class="pedal-control" role="button" tabindex="0" aria-label="Sprint">
+        <div class="pedal-surface">
+          <svg class="pedal-art" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Angled pedal base plate -->
+            <rect x="20" y="70" width="58" height="9" rx="4.5" transform="rotate(-32 49 74)" fill="#ffffff" opacity="0.95" />
+            <!-- Sneaker / shoe stepping down on pedal -->
+            <path d="M 32 26 C 38 22 47 25 53 32 C 58 37 64 43 71 47 C 77 50 82 56 82 61 C 82 64 79 66 74 66 L 49 51 C 44 48 38 49 34 54 L 25 50 C 22 44 24 33 32 26 Z" fill="#ffffff" />
+            <!-- Sole edge -->
+            <path d="M 23 50 L 33 56 L 75 68 C 79 68 81 66 81 63" stroke="#22262e" stroke-width="2.8" stroke-linecap="round" />
+            <!-- 3 laces -->
+            <line x1="52" y1="36" x2="59" y2="40" stroke="#22262e" stroke-width="2.8" stroke-linecap="round" />
+            <line x1="57" y1="42" x2="64" y2="46" stroke="#22262e" stroke-width="2.8" stroke-linecap="round" />
+            <line x1="62" y1="48" x2="69" y2="52" stroke="#22262e" stroke-width="2.8" stroke-linecap="round" />
+          </svg>
+        </div>
+        <span class="pedal-label">SPRINT</span>
+      </div>
     </section>
 
     <!-- Title screen -->
@@ -49,13 +78,12 @@
         <h1 class="logo"><span>LAGOS</span><span class="accent">BIKE RUSH</span></h1>
         <p class="tagline">90 seconds. 4 stops. Tarmac or mud – your choice.</p>
         <ul class="howto">
-          <li><span class="ico">👆</span>Drag left / right to steer</li>
-          <li><span class="ico">🛣️</span>Main road: smooth, long, potholes &amp; jaywalkers</li>
-          <li><span class="ico">🟫</span>Mud alleys between houses: shorter route</li>
-          <li><span class="ico">🔔</span>Ring your bell to warn people</li>
+          <li><span class="ico">👆</span>Drag screen to steer / use A &amp; D keys</li>
+          <li><span class="ico">⚡</span>Hold <b>SPRINT</b> (or Space / W / Shift) for high-speed tuck</li>
+          <li><span class="ico">🟫</span>Mud alleys: shorter route, stand up &amp; pedal!</li>
         </ul>
         <button id="btn-start" class="cta">TAP TO RIDE</button>
-        <p class="keys">Keyboard: ← → steer · ↓ brake · Space bell</p>
+        <p class="keys">Controls: Drag / A-D steer · ⚡ Sprint · ↓ Brake</p>
       </div>
     </section>
 
@@ -72,7 +100,8 @@
           <div><dt>Stops</dt><dd id="stat-cps">4/4</dd></div>
           <div><dt>Mud shortcuts</dt><dd id="stat-mud">0%</dd></div>
           <div><dt>Potholes hit</dt><dd id="stat-potholes">0</dd></div>
-          <div><dt>Near accidents</dt><dd id="stat-npcs">0</dd></div>
+          <div><dt>Pedestrian bumps</dt><dd id="stat-npcs">0</dd></div>
+          <div><dt>Traffic crashes</dt><dd id="stat-vehicles">0</dd></div>
         </dl>
         <button id="btn-retry" class="cta">RIDE AGAIN</button>
       </div>

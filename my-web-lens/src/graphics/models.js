@@ -20,18 +20,17 @@ const FRAME = [228, 40, 44];
 const METAL = [170, 172, 178];
 
 /**
- * Kid on a bicycle. Facing -Z, origin on the ground between the wheels.
- * Hierarchy: root (yaw/position) -> lean (roll/wobble) -> body, wheels, legs.
+ * Low-poly bicycle with steering front fork, rotating wheels, pedals, and kickstand.
  */
-export function createBicycleKid(app) {
-    const root = new Entity('Player');
-    const lean = new Entity('Lean');
+export function createBicycle(app) {
+    const root = new Entity('BicycleRoot');
+    const lean = new Entity('BikeLean');
     root.addChild(lean);
 
     const R = 0.34; // wheel radius
     const WB = 0.56; // half wheelbase
 
-    // ---- frame + rider
+    // Bike Frame (Metal tubing, saddle, rack, parcel, mudguards)
     const b = new GeoBuilder();
     const bar = (x0, y0, z0, x1, y1, z1, t, col) => {
         const dx = x1 - x0;
@@ -40,21 +39,17 @@ export function createBicycleKid(app) {
         const len = Math.hypot(dx, dy, dz);
         const pitch = (Math.atan2(dy, Math.hypot(dx, dz)) * 180) / Math.PI;
         const yaw = (Math.atan2(dx, dz) * 180) / Math.PI;
-        // box long axis is local z; pitch up around x (negative tips +z end up)
         b.box(GeoBuilder.trs((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2, -pitch, yaw, 0, t, t, len), col, 0);
     };
-    const hub = R;
-    // diamond frame
+
+    // Diamond frame
     bar(0, 0.42, 0.02, 0, 0.78, 0.22, 0.06, FRAME); // seat tube
     bar(0, 0.78, 0.22, 0, 0.82, -0.42, 0.06, FRAME); // top tube
     bar(0, 0.42, 0.02, 0, 0.8, -0.42, 0.065, FRAME); // down tube
-    bar(0, 0.42, 0.02, 0, hub, WB, 0.04, FRAME); // chain stay
-    bar(0, 0.78, 0.22, 0, hub, WB, 0.04, FRAME); // seat stay
-    bar(0, 0.95, -0.46, 0, hub, -WB, 0.05, METAL); // fork
-    bar(0, 0.95, -0.46, 0, 1.08, -0.4, 0.05, METAL); // stem
-    bar(-0.3, 1.08, -0.38, 0.3, 1.08, -0.38, 0.04, METAL); // handlebar
-    b.boxAt(-0.33, 1.08, -0.38, 0.1, 0.07, 0.07, TYRE, 0, 0);
-    b.boxAt(0.33, 1.08, -0.38, 0.1, 0.07, 0.07, TYRE, 0, 0);
+    bar(0, 0.42, 0.02, 0, R, WB, 0.04, FRAME); // chain stay
+    bar(0, 0.78, 0.22, 0, R, WB, 0.04, FRAME); // seat stay
+
+    // Saddle, rack, parcel, headlamp, mudguards
     b.boxAt(0, 0.86, 0.26, 0.16, 0.06, 0.28, TYRE, 0, 0); // saddle
     b.boxAt(0, 0.62, WB, 0.24, 0.04, 0.4, METAL, 0, 0); // rear carrier
     b.boxAt(0, 0.66, WB + 0.02, 0.32, 0.2, 0.28, [222, 160, 40], 0, 0.1); // delivery parcel
@@ -62,72 +57,183 @@ export function createBicycleKid(app) {
     b.boxAt(0, R + 0.38, -WB, 0.1, 0.03, 0.5, METAL, 0, 0); // front mudguard
     b.boxAt(0, R + 0.38, WB - 0.1, 0.1, 0.03, 0.4, METAL, 0, 0); // rear mudguard
 
-    // rider (sitting on the saddle, leaning forward)
-    const skin = PALETTE.skin[0];
-    b.box(GeoBuilder.trs(0, 1.05, 0.2, 0, 0, 0, 0.3, 0.2, 0.22), [30, 40, 80], 0); // shorts / hips
-    b.box(GeoBuilder.trs(0, 1.3, 0.06, -28, 0, 0, 0.36, 0.48, 0.22), SUPER_EAGLES_GREEN, 0); // jersey
-    b.boxAt(0, 1.34, 0.08, 0.37, 0.08, 0.23, WHITE, 0, 0); // jersey stripe
-    b.boxAt(0, 1.6, -0.12, 0.1, 0.1, 0.1, skin, 0, 0); // neck
-    b.boxAt(0, 1.76, -0.16, 0.26, 0.28, 0.26, skin, 0, 0.04); // head
-    b.boxAt(0, 1.92, -0.16, 0.28, 0.08, 0.28, [222, 50, 44], 0, 0); // cap
-    b.boxAt(0, 1.9, -0.36, 0.24, 0.03, 0.16, [222, 50, 44], 0, 0); // cap peak
-    b.boxAt(-0.07, 1.78, -0.29, 0.04, 0.04, 0.02, [20, 20, 20], 0, 0); // eyes
-    b.boxAt(0.07, 1.78, -0.29, 0.04, 0.04, 0.02, [20, 20, 20], 0, 0);
-    // arms reaching to the handlebar
-    for (const sx of [-1, 1]) {
-        bar(sx * 0.2, 1.48, -0.02, sx * 0.3, 1.1, -0.36, 0.08, skin);
-        b.boxAt(sx * 0.21, 1.46, -0.02, 0.12, 0.12, 0.14, SUPER_EAGLES_GREEN, 0, 0);
-    }
-    const body = b.toEntity(app, 'BikeBody');
-    lean.addChild(body);
+    const frame = b.toEntity(app, 'Frame');
+    lean.addChild(frame);
 
-    // ---- wheels (spin around local X)
+    // Fork & Handlebars (steering assembly rotates with handlebars)
+    const forkRoot = new Entity('FrontFork');
+    forkRoot.setLocalPosition(0, 0.95, -0.46);
+    lean.addChild(forkRoot);
+
+    const fb = new GeoBuilder();
+    fb.box(GeoBuilder.trs(0, 0.06, 0.03, 0, 0, 0, 0.05, 0.14, 0.05), METAL, 0); // stem
+    fb.box(GeoBuilder.trs(0, 0.13, 0.05, 0, 0, 0, 0.62, 0.04, 0.04), METAL, 0); // handlebar
+    fb.boxAt(-0.33, 0.13, 0.05, 0.1, 0.07, 0.07, TYRE, 0, 0); // left grip
+    fb.boxAt(0.33, 0.13, 0.05, 0.1, 0.07, 0.07, TYRE, 0, 0); // right grip
+    fb.box(GeoBuilder.trs(-0.04, -(0.95 - R) / 2, -(0.46 - WB) / 2, 0, 0, 0, 0.035, 0.95 - R, 0.05), METAL, 0);
+    fb.box(GeoBuilder.trs(0.04, -(0.95 - R) / 2, -(0.46 - WB) / 2, 0, 0, 0, 0.035, 0.95 - R, 0.05), METAL, 0);
+    forkRoot.addChild(fb.toEntity(app, 'HandlebarsAndFork'));
+
+    // Wheels
     const makeWheel = name => {
         const w = new GeoBuilder();
-        // cylinder spans local y 0..1 -> after the Z-rotation it spans -x; offset to centre it
         w.cylinder(GeoBuilder.trs(0.03, 0, 0, 0, 0, 90, R, 0.06, R), 12, TYRE, 1, 0.05, [60, 60, 64]);
         for (let i = 0; i < 4; i++) {
             w.box(GeoBuilder.trs(0, 0, 0, i * 45, 0, 0, 0.075, R * 1.9, 0.025), METAL, 0);
         }
         w.boxAt(0, 0, 0, 0.1, 0.08, 0.08, METAL, 0, 0);
-        const e = w.toEntity(app, name);
-        return e;
+        return w.toEntity(app, name);
     };
+
     const frontWheel = makeWheel('FrontWheel');
     frontWheel.setLocalPosition(0, R, -WB);
+    lean.addChild(frontWheel);
+
     const rearWheel = makeWheel('RearWheel');
     rearWheel.setLocalPosition(0, R, WB);
-    lean.addChild(frontWheel);
     lean.addChild(rearWheel);
 
-    // ---- crank + legs (legs are stretched toward the pedals each frame)
+    // Crank & Pedals
     const crank = new Entity('Crank');
     crank.setLocalPosition(0, 0.42, 0.02);
     lean.addChild(crank);
+
     const pedals = [];
-    const legs = [];
     for (const side of [-1, 1]) {
         const pedal = new Entity(side < 0 ? 'PedalL' : 'PedalR');
         crank.addChild(pedal);
         pedals.push(pedal);
 
+        const pb = new GeoBuilder();
+        pb.boxAt(0, 0, 0, 0.12, 0.04, 0.1, [50, 50, 50], 0, 0);
+        pedal.addChild(pb.toEntity(app, 'PedalBody'));
+    }
+
+    // Kickstand (folds up when mounted)
+    const kickstand = new Entity('Kickstand');
+    kickstand.setLocalPosition(-0.06, 0.38, 0.15);
+    const kb = new GeoBuilder();
+    kb.box(GeoBuilder.trs(0, -0.19, 0, 0, 0, 24, 0.03, 0.38, 0.03), METAL, 0);
+    kickstand.addChild(kb.toEntity(app, 'KickstandLeg'));
+    lean.addChild(kickstand);
+
+    return { root, lean, forkRoot, frontWheel, rearWheel, crank, pedals, kickstand };
+}
+
+/**
+ * Modular Bitmoji-Ready Rider Avatar.
+ * Structured with explicit nodes for easy replacement with user's Bitmoji:
+ * - headMount (attach Bitmoji head / face)
+ * - torso (forward lean, aero sprint, side pump)
+ * - leftArm, rightArm (reach handlebars or perform gestures)
+ * - pelvis, leftLeg, rightLeg (mount hop, pedalling)
+ */
+export function createRiderAvatar(app) {
+    const avatarRoot = new Entity('RiderAvatar');
+    const skin = PALETTE.skin[0];
+
+    // Pelvis / Hips
+    const pelvis = new Entity('Pelvis');
+    pelvis.setLocalPosition(0, 1.05, 0.2);
+    avatarRoot.addChild(pelvis);
+
+    const hb = new GeoBuilder();
+    hb.boxAt(0, 0, 0, 0.3, 0.18, 0.22, [30, 40, 80], 0, 0); // shorts
+    pelvis.addChild(hb.toEntity(app, 'Hips'));
+
+    // Torso / Chest (can lean forward, pump, aero tuck)
+    const torso = new Entity('Torso');
+    torso.setLocalPosition(0, 0.14, -0.04);
+    pelvis.addChild(torso);
+
+    const tb = new GeoBuilder();
+    tb.box(GeoBuilder.trs(0, 0.16, 0, 0, 0, 0, 0.36, 0.44, 0.22), SUPER_EAGLES_GREEN, 0); // jersey
+    tb.boxAt(0, 0.2, 0.01, 0.37, 0.08, 0.23, WHITE, 0, 0); // white stripe
+    tb.boxAt(0, 0.39, -0.01, 0.11, 0.08, 0.11, skin, 0, 0); // neck
+    torso.addChild(tb.toEntity(app, 'Jersey'));
+
+    // HEAD MOUNT (Dedicated slot for Snapchat Bitmoji 3D Head / Avatar)
+    const headMount = new Entity('BitmojiHeadMount');
+    headMount.setLocalPosition(0, 0.44, -0.01);
+    torso.addChild(headMount);
+
+    // Default Stylized Placeholder Head & Cap (can be swapped in 1 line with Bitmoji)
+    const headPlaceholder = new Entity('DefaultHeadPlaceholder');
+    const headB = new GeoBuilder();
+    headB.boxAt(0, 0.12, 0, 0.26, 0.28, 0.26, skin, 0, 0.04); // head
+    headB.boxAt(0, 0.27, 0, 0.28, 0.08, 0.28, [222, 50, 44], 0, 0); // red cap
+    headB.boxAt(0, 0.25, -0.19, 0.24, 0.03, 0.15, [222, 50, 44], 0, 0); // cap peak
+    headB.boxAt(-0.07, 0.13, -0.135, 0.04, 0.04, 0.02, [20, 20, 20], 0, 0); // eye L
+    headB.boxAt(0.07, 0.13, -0.135, 0.04, 0.04, 0.02, [20, 20, 20], 0, 0); // eye R
+    headPlaceholder.addChild(headB.toEntity(app, 'HeadMesh'));
+    headMount.addChild(headPlaceholder);
+
+    // Arms
+    const arms = [];
+    for (const sx of [-1, 1]) {
+        const armRoot = new Entity(sx < 0 ? 'LeftArm' : 'RightArm');
+        armRoot.setLocalPosition(sx * 0.2, 0.34, -0.02);
+        torso.addChild(armRoot);
+
+        const ab = new GeoBuilder();
+        ab.box(GeoBuilder.trs(0, -0.16, -0.14, 40, 0, 0, 0.1, 0.1, 0.42), skin, 0);
+        ab.boxAt(0, 0, 0, 0.13, 0.13, 0.14, SUPER_EAGLES_GREEN, 0, 0); // sleeve
+        ab.boxAt(0, -0.3, -0.28, 0.09, 0.08, 0.09, skin, 0, 0); // hand
+        armRoot.addChild(ab.toEntity(app, 'ArmMesh'));
+        arms.push(armRoot);
+    }
+
+    // Legs
+    const legs = [];
+    for (const side of [-1, 1]) {
+        const legRoot = new Entity(side < 0 ? 'LegL' : 'LegR');
+        legRoot.setLocalPosition(side * 0.11, -0.06, 0);
+        pelvis.addChild(legRoot);
+
         const lb = new GeoBuilder();
-        // leg spans local z 0..-1 (unit length) so lookAt (-Z) aims it and scale.z stretches it to the pedal
+        // Unit length along local -Z (0 to -1) so lookAt and scale.z stretch it perfectly to pedals
         lb.box(GeoBuilder.trs(0, 0, -0.5, 0, 0, 0, 0.12, 0.12, 1), skin, 0);
         lb.box(GeoBuilder.trs(0, 0, -0.12, 0, 0, 0, 0.15, 0.15, 0.24), [30, 40, 80], 0);
         lb.box(GeoBuilder.trs(0, 0, -0.93, 0, 0, 0, 0.13, 0.13, 0.1), [245, 245, 245], 0); // sock
-        const leg = lb.toEntity(app, side < 0 ? 'LegL' : 'LegR');
-        leg.setLocalPosition(side * 0.11, 1.0, 0.18);
-        lean.addChild(leg);
-        legs.push({ entity: leg, side });
+        lb.box(GeoBuilder.trs(0, -0.04, -0.96, 0, 0, 0, 0.13, 0.08, 0.22), [240, 240, 240], 0); // shoe
+        legRoot.addChild(lb.toEntity(app, 'LegMesh'));
 
-        const sh = new GeoBuilder();
-        sh.boxAt(0, 0, -0.04, 0.12, 0.08, 0.24, [240, 240, 240], 0, 0); // canvas shoe
-        const shoe = sh.toEntity(app, 'Shoe');
-        pedal.addChild(shoe);
+        legs.push({ entity: legRoot, side });
     }
 
-    return { root, lean, body, frontWheel, rearWheel, crank, pedals, legs };
+    return {
+        avatarRoot,
+        pelvis,
+        torso,
+        headMount,
+        headPlaceholder,
+        armL: arms[0],
+        armR: arms[1],
+        legs
+    };
+}
+
+/**
+ * Composite helper combining the Bicycle and Rider Avatar.
+ */
+export function createBicycleKid(app) {
+    const bike = createBicycle(app);
+    const avatar = createRiderAvatar(app);
+    bike.lean.addChild(avatar.avatarRoot);
+
+    return {
+        root: bike.root,
+        lean: bike.lean,
+        bike,
+        avatar,
+        frontFork: bike.forkRoot,
+        frontWheel: bike.frontWheel,
+        rearWheel: bike.rearWheel,
+        crank: bike.crank,
+        pedals: bike.pedals,
+        kickstand: bike.kickstand,
+        legs: avatar.legs
+    };
 }
 
 /**
@@ -259,4 +365,219 @@ export function createParticlePool(app, count) {
         pool.push({ entity: e, life: 0, vx: 0, vy: 0, vz: 0, size: 0.1 });
     }
     return pool;
+}
+
+/**
+ * Iconic Lagos Danfo (Yellow commercial minibus with twin black horizontal stripes).
+ * Facing -Z, origin on ground.
+ */
+export function createDanfo(app, rand) {
+    const root = new Entity('Danfo');
+    const b = new GeoBuilder(rand);
+
+    const bodyCol = PALETTE.danfoYellow;
+    const stripeCol = PALETTE.danfoStripe;
+    const glassCol = PALETTE.vehicleGlass;
+    const bumperCol = [32, 32, 35];
+    const tyreCol = [25, 25, 28];
+    const rimCol = [170, 172, 178];
+
+    // Main yellow bus body tub
+    b.boxAt(0, 0.72, 0, 1.82, 0.78, 4.0, bodyCol, 0, 0.02);
+
+    // Twin black Lagos stripes on both sides
+    for (const side of [-0.92, 0.92]) {
+        b.boxAt(side, 0.74, 0, 0.02, 0.1, 3.8, stripeCol, 0, 0);
+        b.boxAt(side, 0.54, 0, 0.02, 0.1, 3.8, stripeCol, 0, 0);
+    }
+
+    // Greenhouse cabin / windows
+    b.boxAt(0, 1.42, 0.08, 1.76, 0.65, 3.65, glassCol, 0, 0.02);
+    // Slanted front windshield
+    b.box(GeoBuilder.trs(0, 1.42, -1.82, -16, 0, 0, 1.68, 0.62, 0.08), glassCol, 0);
+    // Pillars
+    b.boxAt(-0.86, 1.42, -0.6, 0.06, 0.65, 0.12, bodyCol, 0, 0);
+    b.boxAt(0.86, 1.42, -0.6, 0.06, 0.65, 0.12, bodyCol, 0, 0);
+    b.boxAt(-0.86, 1.42, 0.7, 0.06, 0.65, 0.12, bodyCol, 0, 0);
+    b.boxAt(0.86, 1.42, 0.7, 0.06, 0.65, 0.12, bodyCol, 0, 0);
+
+    // White roof
+    b.boxAt(0, 1.78, 0.05, 1.82, 0.12, 3.95, [245, 245, 240], 0, 0.02);
+
+    // Roof luggage rack with tied luggage
+    b.boxAt(0, 1.88, 0.1, 1.4, 0.08, 2.2, [140, 140, 145], 0, 0);
+    b.boxAt(-0.25, 2.05, 0.0, 0.65, 0.28, 0.8, [180, 120, 60], rand() * 10, 0.05); // carton / bundle
+    b.boxAt(0.25, 2.02, 0.3, 0.55, 0.24, 0.7, [220, 50, 45], rand() * 10, 0.05); // red bag
+
+    // Bumpers
+    b.boxAt(0, 0.32, -2.05, 1.86, 0.22, 0.18, bumperCol, 0, 0);
+    b.boxAt(0, 0.32, 2.05, 1.86, 0.22, 0.18, bumperCol, 0, 0);
+
+    // Lights
+    b.boxAt(-0.62, 0.56, -2.02, 0.28, 0.18, 0.06, PALETTE.headlight, 0, 0);
+    b.boxAt(0.62, 0.56, -2.02, 0.28, 0.18, 0.06, PALETTE.headlight, 0, 0);
+    b.boxAt(-0.65, 0.62, 2.02, 0.26, 0.16, 0.06, PALETTE.taillight, 0, 0);
+    b.boxAt(0.65, 0.62, 2.02, 0.26, 0.16, 0.06, PALETTE.taillight, 0, 0);
+
+    // 4 Wheels with silver rims
+    for (const wx of [-0.9, 0.9]) {
+        for (const wz of [-1.25, 1.25]) {
+            b.boxAt(wx, 0.32, wz, 0.24, 0.64, 0.64, tyreCol, 0, 0);
+            b.boxAt(wx + (wx > 0 ? 0.03 : -0.03), 0.32, wz, 0.04, 0.28, 0.28, rimCol, 0, 0);
+        }
+    }
+
+    root.addChild(b.toEntity(app, 'DanfoBody'));
+    return { root, length: 4.1, width: 1.85, hitRadius: 1.35 };
+}
+
+/**
+ * Lagos Keke Marwa / NAPEP (Yellow commercial passenger tricycle).
+ * Facing -Z, origin on ground.
+ */
+export function createKeke(app, rand) {
+    const root = new Entity('Keke');
+    const b = new GeoBuilder(rand);
+
+    const yellow = PALETTE.kekeYellow;
+    const roofCol = PALETTE.kekeRoof;
+    const glassCol = PALETTE.vehicleGlass;
+    const tyreCol = [25, 25, 28];
+    const metalCol = [150, 150, 155];
+
+    // Main yellow tub chassis
+    b.boxAt(0, 0.44, 0.18, 1.3, 0.46, 2.1, yellow, 0, 0.02);
+    // Tapered front nose
+    b.box(GeoBuilder.trs(0, 0.46, -0.96, 14, 0, 0, 0.92, 0.44, 0.48), yellow, 0);
+
+    // Canvas roof canopy
+    b.boxAt(0, 1.62, 0.08, 1.3, 0.08, 2.2, roofCol, 0, 0.02);
+
+    // Front windshield
+    b.boxAt(0, 1.16, -0.76, 1.18, 0.56, 0.05, glassCol, 0, 0);
+    // Canopy roll bar struts
+    for (const sx of [-0.62, 0.62]) {
+        b.boxAt(sx, 1.05, -0.76, 0.05, 0.95, 0.05, roofCol, 0, 0);
+        b.boxAt(sx, 1.05, 0.95, 0.05, 0.95, 0.05, roofCol, 0, 0);
+    }
+
+    // Driver inside keke
+    const skin = pick(rand, PALETTE.skin);
+    b.boxAt(0, 0.8, -0.25, 0.34, 0.38, 0.24, pick(rand, PALETTE.cloth), 0, 0); // shirt
+    b.boxAt(0, 1.1, -0.25, 0.18, 0.18, 0.18, skin, 0, 0); // head
+    b.boxAt(0, 1.2, -0.27, 0.22, 0.06, 0.24, pick(rand, PALETTE.cloth), 0, 0); // cap
+    b.boxAt(0, 0.72, -0.58, 0.52, 0.04, 0.04, metalCol, 0, 0); // handlebars
+
+    // Front single headlight
+    b.boxAt(0, 0.54, -1.2, 0.22, 0.16, 0.06, PALETTE.headlight, 0, 0);
+    // Rear dual red taillights
+    b.boxAt(-0.52, 0.52, 1.24, 0.18, 0.12, 0.05, PALETTE.taillight, 0, 0);
+    b.boxAt(0.52, 0.52, 1.24, 0.18, 0.12, 0.05, PALETTE.taillight, 0, 0);
+
+    // 3 Wheels
+    // Front single wheel
+    b.boxAt(0, 0.24, -1.14, 0.15, 0.48, 0.48, tyreCol, 0, 0);
+    // Rear 2 wheels
+    b.boxAt(-0.64, 0.24, 0.72, 0.18, 0.48, 0.48, tyreCol, 0, 0);
+    b.boxAt(0.64, 0.24, 0.72, 0.18, 0.48, 0.48, tyreCol, 0, 0);
+
+    root.addChild(b.toEntity(app, 'KekeBody'));
+    return { root, length: 2.5, width: 1.35, hitRadius: 1.05 };
+}
+
+/**
+ * Lagos Okada (Commercial motorcycle with seated driver).
+ * Facing -Z, origin on ground.
+ */
+export function createOkada(app, rand) {
+    const root = new Entity('Okada');
+    const b = new GeoBuilder(rand);
+
+    const tankCol = pick(rand, PALETTE.okadaColors);
+    const metalCol = [160, 160, 165];
+    const tyreCol = [25, 25, 28];
+    const skin = pick(rand, PALETTE.skin);
+    const shirtCol = pick(rand, PALETTE.cloth);
+
+    // Frame & fuel tank
+    b.boxAt(0, 0.68, -0.16, 0.28, 0.22, 0.44, tankCol, 0, 0.02);
+    // Engine block
+    b.boxAt(0, 0.4, -0.1, 0.26, 0.3, 0.32, [85, 85, 90], 0, 0);
+    // Chrome exhaust pipe on right side
+    b.boxAt(0.18, 0.26, 0.34, 0.07, 0.07, 0.72, metalCol, 0, 0);
+    // Black seat
+    b.boxAt(0, 0.72, 0.28, 0.24, 0.1, 0.56, [24, 24, 26], 0, 0);
+    // Handlebars & front fork
+    b.boxAt(0, 0.94, -0.5, 0.62, 0.04, 0.04, metalCol, 0, 0);
+    b.boxAt(0, 0.75, -0.55, 0.18, 0.16, 0.06, PALETTE.headlight, 0, 0);
+    b.boxAt(0, 0.68, 0.6, 0.14, 0.1, 0.05, PALETTE.taillight, 0, 0);
+
+    // Rider seated
+    b.boxAt(0, 0.98, 0.16, 0.32, 0.44, 0.26, shirtCol, 0, 0.04); // torso
+    b.boxAt(0, 1.28, 0.06, 0.22, 0.22, 0.22, skin, 0, 0); // head
+    b.boxAt(0, 1.34, 0.06, 0.26, 0.18, 0.26, [245, 195, 35], 0, 0); // yellow helmet
+    // Arms holding handlebars
+    for (const sx of [-0.17, 0.17]) {
+        b.boxAt(sx, 0.96, -0.18, 0.08, 0.08, 0.4, skin, 0, 0);
+    }
+
+    // 2 Wheels
+    b.boxAt(0, 0.28, -0.78, 0.1, 0.56, 0.56, tyreCol, 0, 0); // front
+    b.boxAt(0, 0.28, 0.78, 0.12, 0.56, 0.56, tyreCol, 0, 0); // rear
+
+    root.addChild(b.toEntity(app, 'OkadaBody'));
+    return { root, length: 1.9, width: 0.7, hitRadius: 0.75 };
+}
+
+/**
+ * Lagos Sedan / Private Car (e.g. Toyota Corolla).
+ * Facing -Z, origin on ground.
+ */
+export function createCar(app, rand) {
+    const root = new Entity('Car');
+    const b = new GeoBuilder(rand);
+
+    const carCol = pick(rand, PALETTE.carColors);
+    const glassCol = PALETTE.vehicleGlass;
+    const bumperCol = [35, 35, 38];
+    const tyreCol = [25, 25, 28];
+    const rimCol = [170, 172, 178];
+
+    // Main lower chassis
+    b.boxAt(0, 0.42, 0, 1.66, 0.38, 3.7, carCol, 0, 0.02);
+    // Hood
+    b.boxAt(0, 0.54, -1.18, 1.6, 0.2, 1.24, carCol, 0, 0.02);
+    // Trunk
+    b.boxAt(0, 0.55, 1.22, 1.6, 0.2, 1.15, carCol, 0, 0.02);
+
+    // Greenhouse cabin & glass
+    b.boxAt(0, 0.96, 0.05, 1.42, 0.48, 1.7, carCol, 0, 0.02);
+    // Front slanted windshield
+    b.box(GeoBuilder.trs(0, 0.88, -0.68, -28, 0, 0, 1.38, 0.46, 0.08), glassCol, 0);
+    // Rear slanted window
+    b.box(GeoBuilder.trs(0, 0.88, 0.78, 28, 0, 0, 1.38, 0.46, 0.08), glassCol, 0);
+    // Side windows
+    b.boxAt(-0.72, 0.96, 0.05, 0.02, 0.38, 1.55, glassCol, 0, 0);
+    b.boxAt(0.72, 0.96, 0.05, 0.02, 0.38, 1.55, glassCol, 0, 0);
+
+    // Bumpers
+    b.boxAt(0, 0.28, -1.88, 1.68, 0.18, 0.15, bumperCol, 0, 0);
+    b.boxAt(0, 0.28, 1.88, 1.68, 0.18, 0.15, bumperCol, 0, 0);
+
+    // Lights
+    b.boxAt(-0.58, 0.48, -1.86, 0.26, 0.14, 0.05, PALETTE.headlight, 0, 0);
+    b.boxAt(0.58, 0.48, -1.86, 0.26, 0.14, 0.05, PALETTE.headlight, 0, 0);
+    b.boxAt(-0.6, 0.54, 1.86, 0.24, 0.14, 0.05, PALETTE.taillight, 0, 0);
+    b.boxAt(0.6, 0.54, 1.86, 0.24, 0.14, 0.05, PALETTE.taillight, 0, 0);
+
+    // 4 Wheels
+    for (const wx of [-0.82, 0.82]) {
+        for (const wz of [-1.15, 1.15]) {
+            b.boxAt(wx, 0.28, wz, 0.22, 0.56, 0.56, tyreCol, 0, 0);
+            b.boxAt(wx + (wx > 0 ? 0.02 : -0.02), 0.28, wz, 0.04, 0.26, 0.26, rimCol, 0, 0);
+        }
+    }
+
+    root.addChild(b.toEntity(app, 'CarBody'));
+    return { root, length: 3.8, width: 1.7, hitRadius: 1.25 };
 }

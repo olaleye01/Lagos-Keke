@@ -112,15 +112,38 @@ html, body {
   padding: 0;
 }
 
-.nav {
+.speed-lines {
   position: absolute;
-  top: calc(84px + var(--safe-top));
-  left: 50%;
-  transform: translateX(-50%);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease-out;
+  mix-blend-mode: screen;
+  z-index: 2;
+}
+.speed-lines.active {
+  opacity: 0.9;
+}
+
+.hud-mid {
+  position: absolute;
+  top: calc(82px + var(--safe-top));
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.nav {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 10px 6px 8px;
+  padding: 6px 14px 6px 10px;
   border-radius: 999px;
   font-weight: 800;
   font-size: 15px;
@@ -136,6 +159,71 @@ html, body {
 }
 .chip.road { background: hsl(220, 8%, 30%); color: var(--cream); }
 .chip.mud { background: var(--laterite); color: var(--cream); }
+
+.speed-badge {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: var(--cream);
+}
+#speed-num {
+  font-size: 18px;
+  color: var(--lagos-yellow);
+  font-variant-numeric: tabular-nums;
+}
+.speed-unit {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  opacity: 0.75;
+}
+
+/* Stamina bar */
+.stamina-wrap {
+  position: absolute;
+  top: calc(128px + var(--safe-top));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(75vw, 240px);
+  padding: 5px 10px 7px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.stamina-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  opacity: 0.85;
+}
+.stamina-label span:last-child {
+  color: var(--lagos-yellow);
+}
+.stamina-track {
+  width: 100%;
+  height: 6px;
+  background: hsla(0, 0%, 100%, 0.12);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.stamina-fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, hsl(38, 100%, 50%), hsl(52, 100%, 55%));
+  border-radius: 999px;
+  box-shadow: 0 0 8px hsla(46, 100%, 50%, 0.7);
+  transition: width 0.08s linear;
+}
+.stamina-fill.exhausted {
+  background: hsl(0, 75%, 55%);
+  box-shadow: 0 0 8px hsl(0, 80%, 50%);
+}
 
 .toast {
   position: absolute;
@@ -160,9 +248,9 @@ html, body {
   position: absolute;
   bottom: calc(34px + var(--safe-bottom));
   left: 50%;
-  width: 34vw;
-  max-width: 180px;
-  height: 8px;
+  width: 30vw;
+  max-width: 150px;
+  height: 7px;
   transform: translateX(-50%);
   border-radius: 999px;
   background: hsla(0, 0%, 100%, 0.18);
@@ -171,8 +259,8 @@ html, body {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: var(--lagos-yellow);
   box-shadow: 0 0 12px var(--lagos-yellow);
@@ -182,22 +270,86 @@ html, body {
 .ctrl-btn {
   position: absolute;
   bottom: calc(18px + var(--safe-bottom));
-  width: 74px;
-  height: 74px;
-  border-radius: 50%;
-  border: 2px solid hsla(0, 0%, 100%, 0.35);
   font-family: var(--font-display);
   font-weight: 800;
   color: var(--cream);
   pointer-events: auto;
   touch-action: none;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   transition: transform 0.1s, filter 0.1s;
-  box-shadow: 0 6px 18px hsla(0, 0%, 0%, 0.35);
+  box-shadow: 0 8px 24px hsla(0, 0%, 0%, 0.4);
 }
-.ctrl-btn:active, .ctrl-btn.pressed { transform: scale(0.9); filter: brightness(1.25); }
-.ctrl-btn.brake { left: 16px; background: linear-gradient(160deg, hsl(4, 80%, 58%), hsl(350, 75%, 40%)); font-size: 14px; letter-spacing: 0.05em; }
-.ctrl-btn.bell { right: 16px; background: linear-gradient(160deg, var(--lagos-yellow), var(--lagos-yellow-deep)); font-size: 32px; }
+.ctrl-btn:active, .ctrl-btn.pressed { transform: scale(0.92); filter: brightness(1.2); }
+.ctrl-btn.brake {
+  left: 18px;
+  width: 70px;
+  height: 70px;
+  border-radius: 18px;
+  border: 2px solid hsla(0, 0%, 100%, 0.4);
+  background: linear-gradient(160deg, hsl(4, 85%, 58%), hsl(350, 75%, 38%));
+  box-shadow: 0 8px 20px hsla(4, 85%, 45%, 0.35), 0 4px 12px hsla(0, 0%, 0%, 0.3);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+
+/* Modern Pedal / Sprint Button */
+.pedal-control {
+  position: absolute;
+  right: 18px;
+  bottom: calc(16px + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  pointer-events: auto;
+  touch-action: none;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.pedal-surface {
+  position: relative;
+  width: 76px;
+  height: 94px;
+  border-radius: 20px 12px 14px 14px;
+  border: 2px solid hsla(0, 0%, 100%, 0.45);
+  background: linear-gradient(155deg, hsla(0, 0%, 100%, 0.18) 0%, hsla(220, 16%, 12%, 0.72) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px hsla(0, 0%, 0%, 0.45), inset 0 1px 1px hsla(0, 0%, 100%, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: skewX(-3deg);
+  transition: transform 0.1s ease, background 0.12s, border-color 0.12s, box-shadow 0.12s;
+}
+.pedal-art {
+  width: 62px;
+  height: 62px;
+  transform: skewX(3deg);
+  filter: drop-shadow(0 2px 4px hsla(0, 0%, 0%, 0.5));
+}
+.pedal-label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #ffffff;
+  text-shadow: 0 1px 3px hsla(0, 0%, 0%, 0.9);
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.pedal-control:active .pedal-surface,
+.pedal-control.pressed .pedal-surface {
+  transform: skewX(-3deg) scale(0.93) translateY(4px);
+  border-color: var(--lagos-yellow);
+  background: linear-gradient(155deg, hsla(43, 92%, 58%, 0.38) 0%, hsla(24, 95%, 48%, 0.8) 100%);
+  box-shadow: 0 0 24px hsla(43, 92%, 58%, 0.55), inset 0 1px 2px hsla(0, 0%, 100%, 0.5);
+}
 
 /* ---------- Overlays ---------- */
 .overlay {

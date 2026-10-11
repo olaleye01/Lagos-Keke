@@ -14,6 +14,13 @@ const SIDES = {
 const isWalkable = ch => ch === 'R' || ch === 'M' || ch === '.' || ch === 'T';
 const shade = (col, k) => [col[0] * k, col[1] * k, col[2] * k];
 
+export const ZEBRA_CROSSINGS = new Set([
+    '1,5', '1,10', '1,15',
+    '19,5', '19,15',
+    '6,1', '14,1',
+    '6,19', '14,19'
+]);
+
 /**
  * Owns the static neighbourhood: render geometry, collision, surface lookup, hazards and the minimap.
  */
@@ -42,6 +49,7 @@ export class LagosMap {
         this._placePotholes();
         this._placeCrossings();
         this._buildPoles();
+        this._buildGuardrails();
 
         this.chunks.forEach((b, i) => {
             if (b.vertexCount) this.root.addChild(b.toEntity(app, `Chunk${i}`));
@@ -89,9 +97,7 @@ export class LagosMap {
                 break;
             case '#':
             default:
-                b.flat(x0, z0, x1, z1, 0, PALETTE.grassDark, 0.12);
-                this._buildBoundary(b, r, c, x, z);
-                this.solids[r][c] = { type: 'box', minX: x0, maxX: x1, minZ: z0, maxZ: z1, h: 2 };
+                this._buildPerimeterMarket(b, r, c, x, z);
                 break;
         }
     }
@@ -114,14 +120,46 @@ export class LagosMap {
             }
         }
         const axis = this._roadAxis(r, c);
-        if (axis === 'x') {
+        if (ZEBRA_CROSSINGS.has(`${r},${c}`)) {
+            // White pedestrian zebra crossing stripes
+            const white = [240, 240, 240];
+            if (axis === 'x') {
+                for (let k = -2; k <= 2; k++) {
+                    b.flat(x + k * 0.9 - 0.28, z - 2.4, x + k * 0.9 + 0.28, z + 2.4, 0.022, white);
+                }
+            } else if (axis === 'z') {
+                for (let k = -2; k <= 2; k++) {
+                    b.flat(x - 2.4, z + k * 0.9 - 0.28, x + 2.4, z + k * 0.9 + 0.28, 0.022, white);
+                }
+            }
+        } else if (axis === 'x') {
             b.flat(x - 1.6, z - 0.08, x - 0.2, z + 0.08, 0.02, PALETTE.roadLine);
             b.flat(x + 1.4, z - 0.08, x + 2.8, z + 0.08, 0.02, PALETTE.roadLine);
         } else if (axis === 'z') {
             b.flat(x - 0.08, z - 1.6, x + 0.08, z - 0.2, 0.02, PALETTE.roadLine);
             b.flat(x - 0.08, z + 1.4, x + 0.08, z + 2.8, 0.02, PALETTE.roadLine);
+        } else if (axis === 'corner') {
+            // Corner road turn markings linking perpendicular roads
+            const hasNorth = cellAt(r - 1, c) === 'R';
+            const hasSouth = cellAt(r + 1, c) === 'R';
+            const hasWest = cellAt(r, c - 1) === 'R';
+            const hasEast = cellAt(r, c + 1) === 'R';
+
+            if (hasNorth && hasEast) {
+                b.flat(x - 0.08, z - 2.0, x + 0.08, z - 0.8, 0.02, PALETTE.roadLine);
+                b.flat(x + 0.8, z - 0.08, x + 2.0, z + 0.08, 0.02, PALETTE.roadLine);
+            } else if (hasNorth && hasWest) {
+                b.flat(x - 0.08, z - 2.0, x + 0.08, z - 0.8, 0.02, PALETTE.roadLine);
+                b.flat(x - 2.0, z - 0.08, x - 0.8, z + 0.08, 0.02, PALETTE.roadLine);
+            } else if (hasSouth && hasEast) {
+                b.flat(x - 0.08, z + 0.8, x + 0.08, z + 2.0, 0.02, PALETTE.roadLine);
+                b.flat(x + 0.8, z - 0.08, x + 2.0, z + 0.08, 0.02, PALETTE.roadLine);
+            } else if (hasSouth && hasWest) {
+                b.flat(x - 0.08, z + 0.8, x + 0.08, z + 2.0, 0.02, PALETTE.roadLine);
+                b.flat(x - 2.0, z - 0.08, x - 0.8, z + 0.08, 0.02, PALETTE.roadLine);
+            }
         }
-        // black-and-yellow Lagos kerbs wherever the road meets a house or fence
+        // black-and-yellow Lagos kerbs wherever the road meets a house or fence (never across roads or mud alleys)
         for (const key of Object.keys(SIDES)) {
             const s = SIDES[key];
             const n = cellAt(r + s.dr, c + s.dc);
@@ -212,14 +250,15 @@ export class LagosMap {
             if (isDoor) {
                 facade(s, 0, 1.0, 1.0, 2.0, PALETTE.door, 0.16);
                 if (roadSide && key === roadSide[0] && !twoStorey && rand() < 0.75) {
-                    // shop sign + zinc awning
+                    // shop sign + compact zinc awning strictly within lot boundary
                     facade(s, 0, h - 0.45, sx * 0.7, 0.6, pick(rand, PALETTE.signs), 0.2);
                     const half = s.nx ? sx / 2 : sz / 2;
-                    const ax = x + s.nx * (half + 0.5);
-                    const az = z + s.nz * (half + 0.5);
-                    const tilt = s.nz ? s.nz * 14 : 0;
-                    const roll = s.nx ? -s.nx * 14 : 0;
-                    b.box(GeoBuilder.trs(ax, 2.35, az, tilt, 0, roll, s.nz ? 2.6 : 1.1, 0.06, s.nz ? 1.1 : 2.6), PALETTE.roofZinc);
+                    const maxReach = Math.max(0.1, HALF_CELL - half - 0.15);
+                    const ax = x + s.nx * (half + maxReach * 0.5);
+                    const az = z + s.nz * (half + maxReach * 0.5);
+                    const tilt = s.nz ? s.nz * 12 : 0;
+                    const roll = s.nx ? -s.nx * 12 : 0;
+                    b.box(GeoBuilder.trs(ax, 2.35, az, tilt, 0, roll, s.nz ? 2.2 : maxReach, 0.05, s.nz ? maxReach : 2.2), PALETTE.roofZinc);
                 }
             }
             const winOffsets = isDoor ? [-1.6, 1.6] : [-1.2, 1.2];
@@ -231,36 +270,172 @@ export class LagosMap {
         }
     }
 
-    _buildBoundary(b, r, c, x, z) {
+    _buildPerimeterMarket(b, r, c, x, z) {
         const rand = this.rand;
-        let edged = false;
-        for (const s of Object.values(SIDES)) {
-            const n = cellAt(r + s.dr, c + s.dc);
-            const inside = r + s.dr >= 0 && r + s.dr < GRID && c + s.dc >= 0 && c + s.dc < GRID;
-            if (!inside || n === '#') continue;
-            edged = true;
-            const wx = x + s.nx * (HALF_CELL - 0.15);
-            const wz = z + s.nz * (HALF_CELL - 0.15);
-            const len = CELL + 0.3;
-            if (s.nz) {
-                b.boxAt(wx, 0.9, wz, len, 1.8, 0.3, PALETTE.fence, 0, 0.04);
-                b.boxAt(wx, 1.85, wz, len, 0.12, 0.4, PALETTE.fenceTop, 0, 0);
-                b.boxAt(wx - HALF_CELL, 1.0, wz, 0.45, 2.0, 0.45, PALETTE.fenceTop, 0, 0);
-            } else {
-                b.boxAt(wx, 0.9, wz, 0.3, 1.8, len, PALETTE.fence, 0, 0.04);
-                b.boxAt(wx, 1.85, wz, 0.4, 0.12, len, PALETTE.fenceTop, 0, 0);
-                b.boxAt(wx, 1.0, wz - HALF_CELL, 0.45, 2.0, 0.45, PALETTE.fenceTop, 0, 0);
+        const x0 = x - HALF_CELL;
+        const x1 = x + HALF_CELL;
+        const z0 = z - HALF_CELL;
+        const z1 = z + HALF_CELL;
+
+        // Paved concrete sidewalk with dusty edge
+        b.flat(x0, z0, x1, z1, 0.012, PALETTE.sidewalk, 0.04);
+
+        const openSides = Object.entries(SIDES).filter(([, s]) => cellAt(r + s.dr, c + s.dc) === 'R');
+
+        if (openSides.length > 0) {
+            const [, s] = openSides[0];
+            const nx = s.nx;
+            const nz = s.nz;
+
+            // 1. Street-facing Lagos building at the rear of the cell (away from road)
+            const bDepth = 3.6;
+            const bWidth = 5.8;
+            const bx = x - nx * 1.2;
+            const bz = z - nz * 1.2;
+            const sx = nx !== 0 ? bDepth : bWidth;
+            const sz = nz !== 0 ? bDepth : bWidth;
+            const twoStorey = rand() < 0.5;
+            const bh = twoStorey ? 5.6 + rand() * 0.8 : 3.2 + rand() * 0.6;
+            const wallCol = pick(rand, PALETTE.walls);
+
+            // Building base & walls
+            b.boxAt(bx, bh / 2, bz, sx, bh, sz, wallCol, 0, 0.04);
+
+            // Roof (rusty corrugated zinc)
+            const roofCol = pick(rand, [PALETTE.roofRust, PALETTE.roofRust2, PALETTE.roofZinc]);
+            b.gable(GeoBuilder.trs(bx, bh, bz, 0, nx !== 0 ? 90 : 0, 0, sx + 0.4, 1.1, sz + 0.4), roofCol);
+
+            // Upper floor windows with shutters
+            const winCol = pick(rand, [PALETTE.windowBlue, PALETTE.windowGreen, PALETTE.windowDark]);
+            if (twoStorey) {
+                const off1 = -1.4;
+                const off2 = 1.4;
+                const wx = bx + nx * (sx / 2 + 0.05);
+                const wz = bz + nz * (sz / 2 + 0.05);
+                if (nz !== 0) {
+                    b.boxAt(bx + off1, bh - 1.2, wz, 0.9, 0.9, 0.1, winCol, 0, 0);
+                    b.boxAt(bx + off2, bh - 1.2, wz, 0.9, 0.9, 0.1, winCol, 0, 0);
+                } else {
+                    b.boxAt(wx, bh - 1.2, bz + off1, 0.1, 0.9, 0.9, winCol, 0, 0);
+                    b.boxAt(wx, bh - 1.2, bz + off2, 0.1, 0.9, 0.9, winCol, 0, 0);
+                }
             }
+
+            // Shop sign banner across the facade
+            const signCol = pick(rand, PALETTE.signs);
+            const frontWallX = bx + nx * (sx / 2 + 0.06);
+            const frontWallZ = bz + nz * (sz / 2 + 0.06);
+            if (nz !== 0) {
+                b.boxAt(bx, 2.5, frontWallZ, 3.8, 0.65, 0.12, signCol, 0, 0);
+            } else {
+                b.boxAt(frontWallX, 2.5, bz, 0.12, 0.65, 3.8, signCol, 0, 0);
+            }
+
+            // GeePee black water tank on the roof
+            if (rand() < 0.6) {
+                const tx = bx + (rand() - 0.5) * 1.5;
+                const tz = bz + (rand() - 0.5) * 1.5;
+                b.cylinder(GeoBuilder.trs(tx, bh + 0.4, tz, 0, 0, 0, 0.55, 1.1, 0.55), 8, PALETTE.tank, 0.9, 0.08);
+            }
+
+            // Solid collision covering the building, stalls, and sidewalk up to the road kerb
+            let minX = x - HALF_CELL;
+            let maxX = x + HALF_CELL;
+            let minZ = z - HALF_CELL;
+            let maxZ = z + HALF_CELL;
+            if (nx === 1) maxX = x + HALF_CELL - 0.15;
+            else if (nx === -1) minX = x - HALF_CELL + 0.15;
+            if (nz === 1) maxZ = z + HALF_CELL - 0.15;
+            else if (nz === -1) minZ = z - HALF_CELL + 0.15;
+
+            this.solids[r][c] = {
+                type: 'box',
+                minX,
+                maxX,
+                minZ,
+                maxZ,
+                h: bh + 2
+            };
+
+            // 2. Roadside Market Stalls on the sidewalk in front of the building
+            const stallX = x + nx * 1.5;
+            const stallZ = z + nz * 1.5;
+            const stallChoice = Math.floor(rand() * 4);
+
+            if (stallChoice === 0) {
+                // Large colorful market umbrella + fruit/food table
+                const umbCol = pick(rand, PALETTE.marketUmbrellas);
+                b.cylinder(GeoBuilder.trs(stallX, 0, stallZ, 0, 0, 0, 0.04, 2.3, 0.04), 6, [60, 60, 60], 1, 0);
+                b.pyramid(GeoBuilder.trs(stallX, 2.3, stallZ, 0, rand() * 45, 0, 2.5, 0.55, 2.5), umbCol, 0.12);
+                const tw = nz !== 0 ? 1.6 : 0.85;
+                const td = nz !== 0 ? 0.85 : 1.6;
+                b.boxAt(stallX, 0.4, stallZ, tw, 0.8, td, PALETTE.woodTable, 0, 0.04);
+                b.boxAt(stallX - 0.3, 0.86, stallZ, 0.4, 0.14, 0.4, PALETTE.fruitOrange, 0, 0);
+                b.boxAt(stallX + 0.3, 0.86, stallZ, 0.4, 0.14, 0.4, PALETTE.fruitGreen, 0, 0);
+                const crateCol = pick(rand, PALETTE.crates);
+                const cx = stallX + (nz !== 0 ? (rand() < 0.5 ? 1.2 : -1.2) : 0);
+                const cz = stallZ + (nx !== 0 ? (rand() < 0.5 ? 1.2 : -1.2) : 0);
+                b.boxAt(cx, 0.2, cz, 0.55, 0.38, 0.45, crateCol, rand() * 20, 0);
+                b.boxAt(cx, 0.55, cz, 0.52, 0.35, 0.42, crateCol, rand() * 20, 0);
+            } else if (stallChoice === 1) {
+                // Painted metal container kiosk / provision store
+                const kioskCol = pick(rand, PALETTE.kioskMetal);
+                const kw = nz !== 0 ? 2.3 : 1.5;
+                const kd = nz !== 0 ? 1.5 : 2.3;
+                b.boxAt(stallX, 1.1, stallZ, kw, 2.2, kd, kioskCol, 0, 0.04);
+                b.boxAt(stallX, 2.24, stallZ, kw + 0.3, 0.08, kd + 0.3, PALETTE.roofZinc, 0, 0);
+                const flapX = stallX + nx * (kd / 2 + 0.3);
+                const flapZ = stallZ + nz * (kw / 2 + 0.3);
+                const tilt = nz ? nz * 25 : 0;
+                const roll = nx ? -nx * 25 : 0;
+                b.box(GeoBuilder.trs(flapX, 1.85, flapZ, tilt, 0, roll, nz ? kw : 0.8, 0.05, nz ? 0.8 : kd), kioskCol, 0);
+                const gx = stallX + (nz !== 0 ? 1.4 : 0);
+                const gz = stallZ + (nx !== 0 ? 1.4 : 0);
+                b.boxAt(gx, 0.28, gz, 0.65, 0.55, 0.55, [45, 45, 45], 0, 0.05);
+                b.boxAt(gx + 0.4, 0.22, gz, 0.25, 0.4, 0.25, [246, 206, 52], 0, 0);
+            } else if (stallChoice === 2) {
+                // Roadside Bukka / Mama Put canteen with zinc shed
+                const bw = nz !== 0 ? 2.5 : 1.2;
+                const bd = nz !== 0 ? 1.2 : 2.5;
+                for (const px of [-1, 1]) {
+                    const postX = stallX + (nz !== 0 ? px * 1.1 : 0);
+                    const postZ = stallZ + (nx !== 0 ? px * 1.1 : 0);
+                    b.cylinder(GeoBuilder.trs(postX, 0, postZ, 0, 0, 0, 0.05, 2.2, 0.05), 6, PALETTE.trunk, 1, 0);
+                }
+                b.boxAt(stallX, 2.25, stallZ, bw + 0.4, 0.06, bd + 0.4, PALETTE.roofZinc, 0, 0.05);
+                b.boxAt(stallX, 0.4, stallZ, bw * 0.8, 0.75, bd * 0.7, PALETTE.woodTable, 0, 0);
+                b.cylinder(GeoBuilder.trs(stallX + (nz !== 0 ? 1.2 : 0), 0.2, stallZ + (nx !== 0 ? 1.2 : 0), 0, 0, 0, 0.35, 0.5, 0.35), 8, [28, 28, 30], 0.9, 0);
+            } else {
+                // Roadside Tyre Vulcanizer & Hawker stand
+                for (let k = 0; k < 3; k++) {
+                    b.cylinder(GeoBuilder.trs(stallX - (nz !== 0 ? 0.9 : 0), k * 0.22, stallZ - (nx !== 0 ? 0.9 : 0), 0, 0, 0, 0.4, 0.2, 0.4), 8, [30, 30, 32], 1, 0);
+                }
+                const umbCol = pick(rand, PALETTE.marketUmbrellas);
+                b.pyramid(GeoBuilder.trs(stallX + (nz !== 0 ? 0.6 : 0), 2.2, stallZ + (nx !== 0 ? 0.6 : 0), 0, 0, 0, 1.8, 0.45, 1.8), umbCol, 0.1);
+                b.cylinder(GeoBuilder.trs(stallX + (nz !== 0 ? 0.6 : 0), 0, stallZ + (nx !== 0 ? 0.6 : 0), 0, 0, 0, 0.04, 2.2, 0.04), 6, [60, 60, 60], 1, 0);
+                b.boxAt(stallX + (nz !== 0 ? 0.6 : 0), 0.45, stallZ + (nx !== 0 ? 0.6 : 0), 0.9, 0.7, 0.7, PALETTE.woodTable, 0, 0);
+            }
+        } else {
+            // Corner commercial plaza (at diagonal corners)
+            const h = 7.2 + rand() * 1.5;
+            const wCol = pick(rand, PALETTE.walls);
+            b.boxAt(x, h / 2, z, 5.8, h, 5.8, wCol, 0, 0.04);
+            b.pyramid(GeoBuilder.trs(x, h, z, 0, 0, 0, 6.2, 1.4, 6.2), PALETTE.roofRust);
+            const billCol = pick(rand, PALETTE.signs);
+            b.boxAt(x, h + 2.2, z, 3.8, 1.6, 0.15, billCol, 25, 0);
+            b.boxAt(x - 1.2, h + 0.8, z, 0.1, 1.6, 0.1, [50, 50, 55], 0, 0);
+            b.boxAt(x + 1.2, h + 0.8, z, 0.1, 1.6, 0.1, [50, 50, 55], 0, 0);
+            this._addPalm(b, x + (rand() - 0.5) * 2, z + (rand() - 0.5) * 2, 1.1);
+
+            this.solids[r][c] = {
+                type: 'box',
+                minX: x - 2.9,
+                maxX: x + 2.9,
+                minZ: z - 2.9,
+                maxZ: z + 2.9,
+                h: h + 2
+            };
         }
-        // bushes behind the fence
-        const count = edged ? 2 : 3;
-        for (let i = 0; i < count; i++) {
-            const bx = x + (rand() - 0.5) * 4;
-            const bz = z + (rand() - 0.5) * 4;
-            const s = 0.8 + rand() * 0.9;
-            b.pyramid(GeoBuilder.trs(bx, 0, bz, 0, rand() * 90, 0, s * 1.6, s * 1.4, s * 1.6), PALETTE.bush, 0.2);
-        }
-        if (rand() < 0.22) this._addPalm(b, x + (rand() - 0.5) * 2, z + (rand() - 0.5) * 2, 0.9 + rand() * 0.3);
     }
 
     _addPalm(b, x, z, scale) {
@@ -328,19 +503,29 @@ export class LagosMap {
     }
 
     _placeCrossings() {
-        for (let r = 0; r < GRID; r++) {
-            for (let c = 0; c < GRID; c++) {
-                if (MAP[r][c] !== 'R') continue;
-                const axis = this._roadAxis(r, c);
-                if (axis === 'corner') continue;
-                if (r === START.r && Math.abs(c - START.c) <= 1) continue;
-                const { x, z } = cellCenter(r, c);
-                const off = HALF_CELL - 0.45;
-                // a crossing runs perpendicular to the road direction
-                const a = axis === 'x' ? { x, z: z - off } : { x: x - off, z };
-                const b = axis === 'x' ? { x, z: z + off } : { x: x + off, z };
-                this.crossings.push({ r, c, a, b });
-            }
+        // 1. Dedicated Zebra Crossings on the Main Ring Road
+        for (const coord of ZEBRA_CROSSINGS) {
+            const [r, c] = coord.split(',').map(Number);
+            const axis = this._roadAxis(r, c);
+            const { x, z } = cellCenter(r, c);
+            const off = HALF_CELL - 0.45;
+            const a = axis === 'x' ? { x, z: z - off } : { x: x - off, z };
+            const b = axis === 'x' ? { x, z: z + off } : { x: x + off, z };
+            this.crossings.push({ r, c, a, b, isMainRoad: true, axis });
+        }
+
+        // 2. Interior Mud Alley Crossings (shortcuts where no cars drive)
+        const interiorCoords = [
+            [6, 5], [6, 10], [6, 15],
+            [14, 5], [14, 10], [14, 15]
+        ];
+        for (const [r, c] of interiorCoords) {
+            if (MAP[r][c] !== 'M') continue;
+            const { x, z } = cellCenter(r, c);
+            const off = HALF_CELL - 0.5;
+            const a = { x, z: z - off };
+            const b = { x, z: z + off };
+            this.crossings.push({ r, c, a, b, isMainRoad: false, axis: 'x' });
         }
     }
 
@@ -373,34 +558,134 @@ export class LagosMap {
         this.root.addChild(b.toEntity(this.app, 'Poles'));
     }
 
+    _buildGuardrails() {
+        // Metallic crash barriers along the outer perimeter of the main road
+        const b = new GeoBuilder(this.rand);
+        const outer = ((GRID - 3) / 2) * CELL + HALF_CELL - 0.2; // approx 56.8m
+        const span = ((GRID - 3) / 2) * CELL + HALF_CELL; // approx 57m
+        const railColor = [185, 185, 192];
+        const stripeYellow = [246, 206, 52];
+        const stripeBlack = [28, 28, 30];
+        const postColor = [85, 85, 90];
+
+        const step = 3.0; // support post every 3m
+        for (let t = -span; t <= span + 0.01; t += step) {
+            const isAlt = Math.floor(Math.abs(t) / step) % 2 === 0;
+            const stripe = isAlt ? stripeYellow : stripeBlack;
+
+            // North side (z = -outer)
+            b.boxAt(t, 0.45, -outer, 0.14, 0.9, 0.14, postColor, 0, 0);
+            b.boxAt(t, 0.55, -outer, step, 0.32, 0.08, railColor, 0, 0);
+            b.boxAt(t, 0.55, -outer + 0.045, step * 0.48, 0.12, 0.02, stripe, 0, 0);
+
+            // South side (z = +outer)
+            b.boxAt(t, 0.45, outer, 0.14, 0.9, 0.14, postColor, 0, 0);
+            b.boxAt(t, 0.55, outer, step, 0.32, 0.08, railColor, 0, 0);
+            b.boxAt(t, 0.55, outer - 0.045, step * 0.48, 0.12, 0.02, stripe, 0, 0);
+
+            // West side (x = -outer)
+            b.boxAt(-outer, 0.45, t, 0.14, 0.9, 0.14, postColor, 0, 0);
+            b.boxAt(-outer, 0.55, t, 0.08, 0.32, step, railColor, 0, 0);
+            b.boxAt(-outer + 0.045, 0.55, t, 0.02, 0.12, step * 0.48, stripe, 0, 0);
+
+            // East side (x = +outer)
+            b.boxAt(outer, 0.45, t, 0.14, 0.9, 0.14, postColor, 0, 0);
+            b.boxAt(outer, 0.55, t, 0.08, 0.32, step, railColor, 0, 0);
+            b.boxAt(outer - 0.045, 0.55, t, 0.02, 0.12, step * 0.48, stripe, 0, 0);
+        }
+
+        this.root.addChild(b.toEntity(this.app, 'Guardrails'));
+    }
+
     // ----------------------------------------------------------- surroundings
 
     _buildSurroundings() {
-        const rand = mulberry32(99);
+        const rand = mulberry32(101);
         const b = new GeoBuilder(rand);
-        const E = 260;
-        b.flat(-E, -E, E, E, -0.03, PALETTE.grassDark, 0);
-        const inner = (GRID / 2) * CELL + 4;
-        // a distant ring of houses and palms gives the feeling of a dense city
-        for (let i = 0; i < 140; i++) {
-            const a = rand() * Math.PI * 2;
-            const d = inner + 8 + rand() * 90;
-            const x = Math.cos(a) * d;
-            const z = Math.sin(a) * d;
-            if (rand() < 0.62) {
-                const sx = 5 + rand() * 4;
-                const sz = 5 + rand() * 4;
-                const h = rand() < 0.3 ? 6 + rand() * 4 : 3 + rand();
+        const E = 320;
+        // Warm urban laterite ground stretching to the horizon
+        b.flat(-E, -E, E, E, -0.04, PALETTE.lot, 0.08);
+
+        // Safe clearance distance around the square map:
+        // The outer perimeter of the playable neighbourhood is at ±63m (GRID 21 * CELL 6 / 2 = 63m).
+        // Roads are at ±54m. Perimeter shops are at 57m..63m.
+        // We enforce that any surrounding building must have its center at least 76m away from the center along the square axis,
+        // so with building half-width (up to 5.5m), every building stays strictly > 70m away, leaving a > 13m wide buffer from the road.
+        const minCenterDist = (GRID / 2) * CELL + 13.0; // 76.0m
+
+        const ensureClearance = (x, z, minDist) => {
+            const curMax = Math.max(Math.abs(x), Math.abs(z));
+            if (curMax < minDist) {
+                const scale = (minDist + 1.0) / Math.max(0.01, curMax);
+                return { x: x * scale, z: z * scale };
+            }
+            return { x, z };
+        };
+
+        // 1. Dense middle-ground neighborhood (76m to 150m)
+        for (let i = 0; i < 180; i++) {
+            const a = (i / 180) * Math.PI * 2 + (rand() - 0.5) * 0.15;
+            const d = minCenterDist + 4 + rand() * 75;
+            const { x, z } = ensureClearance(Math.cos(a) * d, Math.sin(a) * d, minCenterDist);
+
+            if (rand() < 0.72) {
+                // Multi-storey residential tenement buildings
+                const sx = 5.5 + rand() * 5.0;
+                const sz = 5.5 + rand() * 5.0;
+                const storeys = rand() < 0.4 ? 3 : rand() < 0.7 ? 2 : 1;
+                const h = storeys * 3.0 + rand() * 1.0;
                 const yaw = rand() * 90;
-                b.boxAt(x, h / 2, z, sx, h, sz, pick(rand, PALETTE.walls), yaw, 0.05);
-                b.pyramid(GeoBuilder.trs(x, h, z, 0, yaw, 0, sx + 0.6, 1.2, sz + 0.6), pick(rand, [PALETTE.roofRust, PALETTE.roofRust2, PALETTE.roofZinc]));
+                const wallCol = pick(rand, PALETTE.walls);
+                b.boxAt(x, h / 2, z, sx, h, sz, wallCol, yaw, 0.05);
+
+                // Zinc roof
+                b.pyramid(GeoBuilder.trs(x, h, z, 0, yaw, 0, sx + 0.6, 1.4, sz + 0.6), pick(rand, [PALETTE.roofRust, PALETTE.roofRust2, PALETTE.roofZinc]));
+
+                // GeePee water tanks
+                if (rand() < 0.55) {
+                    b.cylinder(GeoBuilder.trs(x + (rand() - 0.5) * 2, h + 0.5, z + (rand() - 0.5) * 2, 0, 0, 0, 0.6, 1.2, 0.6), 8, PALETTE.tank, 0.9, 0.05);
+                }
             } else {
-                const saved = this.rand;
-                this.rand = rand;
-                this._addPalm(b, x, z, 1 + rand() * 0.4);
-                this.rand = saved;
+                // Palm tree / tropical cluster
+                this._addPalm(b, x, z, 1.1 + rand() * 0.5);
             }
         }
+
+        // 2. High telecom masts & large roadside billboards in the neighborhood
+        for (let j = 0; j < 8; j++) {
+            const a = (j / 8) * Math.PI * 2 + rand() * 0.3;
+            const d = minCenterDist + 18 + rand() * 55;
+            const { x, z } = ensureClearance(Math.cos(a) * d, Math.sin(a) * d, minCenterDist + 15);
+
+            if (j % 2 === 0) {
+                // Telecom lattice mast (32m tall with red warning beacon)
+                const mastH = 32 + rand() * 8;
+                b.cylinder(GeoBuilder.trs(x, 0, z, 0, 0, 0, 0.45, mastH, 0.15), 4, [160, 160, 165], 0.3, 0);
+                b.boxAt(x, mastH, z, 0.6, 0.6, 0.6, [240, 40, 40], 0, 0); // red light
+            } else {
+                // Giant roadside billboard
+                const billW = 9.0;
+                const billH = 4.5;
+                const postH = 10.0;
+                const billCol = pick(rand, [[246, 206, 52], [220, 50, 45], [40, 145, 75]]); // MTN yellow, Airtel red, Glo green
+                b.cylinder(GeoBuilder.trs(x - 2.5, 0, z, 0, 0, 0, 0.25, postH, 0.25), 6, [70, 70, 75], 1, 0);
+                b.cylinder(GeoBuilder.trs(x + 2.5, 0, z, 0, 0, 0, 0.25, postH, 0.25), 6, [70, 70, 75], 1, 0);
+                b.boxAt(x, postH + billH / 2, z, billW, billH, 0.3, billCol, (a * 180) / Math.PI, 0);
+            }
+        }
+
+        // 3. Distant skyline background (150m to 260m)
+        for (let k = 0; k < 120; k++) {
+            const a = rand() * Math.PI * 2;
+            const d = 150 + rand() * 110;
+            const { x, z } = ensureClearance(Math.cos(a) * d, Math.sin(a) * d, minCenterDist + 45);
+            const sx = 8 + rand() * 6;
+            const sz = 8 + rand() * 6;
+            const h = 8 + rand() * 8;
+            b.boxAt(x, h / 2, z, sx, h, sz, pick(rand, PALETTE.walls), rand() * 90, 0.05);
+            b.pyramid(GeoBuilder.trs(x, h, z, 0, 0, 0, sx + 0.8, 1.8, sz + 0.8), PALETTE.roofRust);
+        }
+
         return b.toEntity(this.app, 'Surroundings', { castShadows: false });
     }
 
@@ -417,7 +702,17 @@ export class LagosMap {
      * @returns {{hit: boolean, nx: number, nz: number}}
      */
     resolveCircle(pos, radius) {
-        const result = { hit: false, nx: 0, nz: 0 };
+        // Rigid perimeter guardrail clamping: never allow bicycle to leave the map bounds
+        const GUARD_LIMIT = 56.4;
+        let clamped = false;
+        let cnx = 0;
+        let cnz = 0;
+        if (pos.x < -GUARD_LIMIT) { pos.x = -GUARD_LIMIT; clamped = true; cnx = 1; }
+        else if (pos.x > GUARD_LIMIT) { pos.x = GUARD_LIMIT; clamped = true; cnx = -1; }
+        if (pos.z < -GUARD_LIMIT) { pos.z = -GUARD_LIMIT; clamped = true; cnz = 1; }
+        else if (pos.z > GUARD_LIMIT) { pos.z = GUARD_LIMIT; clamped = true; cnz = -1; }
+
+        const result = { hit: clamped, nx: cnx, nz: cnz };
         for (let iter = 0; iter < 2; iter++) {
             const { r, c } = worldToCell(pos.x, pos.z);
             for (let dr = -1; dr <= 1; dr++) {
@@ -503,7 +798,7 @@ export class LagosMap {
         canvas.height = size;
         const ctx = canvas.getContext('2d');
         const px = size / GRID;
-        const colors = { R: '#5a5c63', M: '#b0623a', '.': '#c07a4a', T: '#c07a4a', B: '#2a1d14', '#': '#335a2a' };
+        const colors = { R: '#5a5c63', M: '#b0623a', '.': '#c07a4a', T: '#c07a4a', B: '#2a1d14', '#': '#38281d' };
         for (let r = 0; r < GRID; r++) {
             for (let c = 0; c < GRID; c++) {
                 const ch = MAP[r][c];
@@ -512,8 +807,18 @@ export class LagosMap {
                 if (ch === 'B') {
                     ctx.fillStyle = '#4a3527';
                     ctx.fillRect(c * px + px * 0.12, r * px + px * 0.12, px * 0.76, px * 0.76);
-                }
-                if (ch === 'T') {
+                } else if (ch === '#') {
+                    ctx.fillStyle = '#423023';
+                    ctx.fillRect(c * px + px * 0.15, r * px + px * 0.15, px * 0.7, px * 0.7);
+                    // Draw colorful market stall dot if bordering the road
+                    const facesRoad = Object.values(SIDES).some(s => cellAt(r + s.dr, c + s.dc) === 'R');
+                    if (facesRoad) {
+                        ctx.fillStyle = (r + c) % 2 === 0 ? '#f6ce34' : '#e04030';
+                        ctx.beginPath();
+                        ctx.arc((c + 0.5) * px, (r + 0.5) * px, px * 0.22, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                } else if (ch === 'T') {
                     ctx.fillStyle = '#3f8a3a';
                     ctx.beginPath();
                     ctx.arc((c + 0.5) * px, (r + 0.5) * px, px * 0.3, 0, Math.PI * 2);

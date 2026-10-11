@@ -50,20 +50,39 @@ export const GAME = {
     TIME_LIMIT: 90,
     CHECKPOINT_BONUS: 5, // seconds added per stop reached
     NPC_HIT_PENALTY: 2, // seconds lost when you bump a pedestrian
+    VEHICLE_HIT_PENALTY: 4, // seconds lost when you collide with a vehicle
     CHECKPOINT_RADIUS: 3.4,
     COUNTDOWN: 3
+};
+
+export const VEHICLE_CONFIG = {
+    FLEET: [
+        { type: 'danfo', speed: 7.6, lane: 'outer', offset01: 0.05 },
+        { type: 'keke', speed: 6.2, lane: 'outer', offset01: 0.30 },
+        { type: 'car', speed: 8.4, lane: 'outer', offset01: 0.55 },
+        { type: 'okada', speed: 9.0, lane: 'outer', offset01: 0.80 },
+        { type: 'okada', speed: 9.0, lane: 'inner', offset01: 0.15 },
+        { type: 'danfo', speed: 7.4, lane: 'inner', offset01: 0.40 },
+        { type: 'keke', speed: 6.4, lane: 'inner', offset01: 0.65 },
+        { type: 'car', speed: 8.2, lane: 'inner', offset01: 0.90 }
+    ]
 };
 
 export const BIKE = {
     RADIUS: 0.55,
     ROAD_MAX_SPEED: 10.5, // m/s on tarmac
     MUD_MAX_SPEED: 8.6, // m/s in the alleys – slower, but the route is much shorter
+    SPRINT_MAX_SPEED: 13.6, // m/s when sprinting/pedalling hard
     ACCEL: 5.5,
     MUD_ACCEL: 4.2,
+    SPRINT_ACCEL: 9.5,
     COAST_DECEL: 3,
     BRAKE_DECEL: 16,
     TURN_RATE: 2.5, // rad/s at full steer
-    WHEEL_RADIUS: 0.34
+    WHEEL_RADIUS: 0.34,
+    MAX_STAMINA: 100,
+    STAMINA_DRAIN: 28,
+    STAMINA_RECOVERY: 18
 };
 
 export const HAZARDS = {

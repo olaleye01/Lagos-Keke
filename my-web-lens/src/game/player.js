@@ -1,13 +1,10 @@
-import { Vec3, math } from 'playcanvas';
-import { createBicycleKid, createParticlePool } from '../graphics/models.js';
+import { Entity, StandardMaterial, Color, Vec3, math } from 'playcanvas';
+import { createBicycleKid } from '../graphics/models.js';
 import { BIKE, HAZARDS } from './constants.js';
 
 const _tmp = new Vec3();
 const _up = new Vec3();
 
-/**
- * Arcade bicycle. State is plain numbers (x, z, yaw, speed) – the entity only mirrors it.
- */
 export class Player {
     constructor(app, map, audio) {
         this.app = app;
@@ -15,7 +12,7 @@ export class Player {
         this.audio = audio;
         this.model = createBicycleKid(app);
         app.root.addChild(this.model.root);
-        this.particles = createParticlePool(app, 28);
+        this.particles = createParticlePool(app, 32);
         this._particleIndex = 0;
         this.reset();
     }
@@ -28,13 +25,21 @@ export class Player {
         this.speed = 0;
         this.steer = 0;
         this.surface = 'road';
-        this.wobble = 0; // seconds of wobble left
-        this.stun = 0; // seconds unable to pedal
+        this.wobble = 0;
+        this.stun = 0;
         this.wheelAngle = 0;
         this.crankAngle = 0;
         this.spray = 0;
-        this.shake = 0; // camera shake amplitude, read by the camera
-        this.stats = { potholes: 0, npcHits: 0, mudTime: 0, roadTime: 0 };
+        this.shake = 0;
+        this.stamina = BIKE.MAX_STAMINA;
+        this.isSprinting = false;
+        this.invulnerable = 0;
+
+        // Animation Timers
+        this.celebrateTimer = 0;
+        this.idlePhase = 0;
+
+        this.stats = { potholes: 0, npcHits: 0, vehicleHits: 0, mudTime: 0, roadTime: 0 };
         this.map.potholes.forEach(p => (p.cooldown = 0));
         this.particles.forEach(p => {
             p.life = 0;
@@ -51,47 +56,70 @@ export class Player {
         return -Math.cos(this.yaw);
     }
 
-    get maxSpeed() {
+    get baseMaxSpeed() {
         return this.surface === 'road' ? BIKE.ROAD_MAX_SPEED : BIKE.MUD_MAX_SPEED;
+    }
+
+    get maxSpeed() {
+        let max = this.baseMaxSpeed;
+        if (this.isSprinting) {
+            max = BIKE.SPRINT_MAX_SPEED * (this.surface === 'mud' ? 0.88 : 1.0);
+        }
+        return max;
+    }
+
+    triggerCelebrate() {
+        this.celebrateTimer = 1.4;
     }
 
     /**
      * @param {number} dt
-     * @param {{steer:number, brake:boolean}} input
-     * @param {boolean} active pedalling allowed (false during countdown / menus)
+     * @param {{steer:number, brake:boolean, sprint:boolean}} input
+     * @param {boolean} active
      * @returns {{pothole: boolean}}
      */
     update(dt, input, active) {
         const events = { pothole: false };
+        this.idlePhase += dt * 3.5;
         this.surface = this.map.surfaceAt(this.x, this.z);
+
+        // Active Gameplay Riding Logic
         if (active) {
             if (this.surface === 'mud') this.stats.mudTime += dt;
             else this.stats.roadTime += dt;
         }
 
-        // steering is smoothed so touch drags feel like handlebars, not a switch
-        this.steer = math.lerp(this.steer, input.steer, 1 - Math.exp(-10 * dt));
-
+        this.steer = math.lerp(this.steer, input.steer, 1 - Math.exp(-11 * dt));
         this.stun = Math.max(0, this.stun - dt);
         this.wobble = Math.max(0, this.wobble - dt);
+        this.celebrateTimer = Math.max(0, this.celebrateTimer - dt);
+        this.invulnerable = Math.max(0, this.invulnerable - dt);
 
-        const max = this.maxSpeed * (this.wobble > 0 ? 0.75 : 1);
+        // Sprint & Stamina
+        if (active && input.sprint && this.stamina > 2 && !input.brake && this.speed > 1.5) {
+            this.isSprinting = true;
+            this.stamina = Math.max(0, this.stamina - BIKE.STAMINA_DRAIN * dt);
+        } else {
+            this.isSprinting = false;
+            this.stamina = Math.min(BIKE.MAX_STAMINA, this.stamina + BIKE.STAMINA_RECOVERY * dt);
+        }
+
+        const max = this.maxSpeed * (this.wobble > 0 ? 0.72 : 1);
         if (!active || this.stun > 0) {
             this.speed = Math.max(0, this.speed - BIKE.BRAKE_DECEL * 0.6 * dt);
         } else if (input.brake) {
             this.speed = Math.max(0, this.speed - BIKE.BRAKE_DECEL * dt);
         } else if (this.speed < max) {
-            const accel = this.surface === 'road' ? BIKE.ACCEL : BIKE.MUD_ACCEL;
+            const accel = this.isSprinting ? BIKE.SPRINT_ACCEL : (this.surface === 'road' ? BIKE.ACCEL : BIKE.MUD_ACCEL);
             this.speed = Math.min(max, this.speed + accel * dt);
         } else {
             this.speed = Math.max(max, this.speed - BIKE.COAST_DECEL * 2 * dt);
         }
 
-        // turn rate scales down at low speed, but never to zero so you can always get unstuck
-        const turnScale = math.clamp(this.speed / 4, 0.45, 1);
+        const turnScale = math.clamp(this.speed / 4.2, 0.45, 1);
         let wobbleSteer = 0;
         if (this.wobble > 0) wobbleSteer = Math.sin(this.wobble * 28) * 0.5 * Math.min(1, this.wobble * 2);
-        if (this.surface === 'mud') wobbleSteer += Math.sin(performance.now() * 0.004) * 0.04;
+        if (this.surface === 'mud') wobbleSteer += Math.sin(performance.now() * 0.005) * 0.05;
         this.yaw -= (this.steer + wobbleSteer) * BIKE.TURN_RATE * turnScale * dt;
 
         const prevX = this.x;
@@ -99,27 +127,26 @@ export class Player {
         this.x += this.forwardX * this.speed * dt;
         this.z += this.forwardZ * this.speed * dt;
 
-        // collide with houses, fences and palms
+        // Collision with map obstacles
         const pos = { x: this.x, z: this.z };
         const hit = this.map.resolveCircle(pos, BIKE.RADIUS);
         this.x = pos.x;
         this.z = pos.z;
         if (hit.hit && this.speed > 0.5) {
-            const impact = -(this.forwardX * hit.nx + this.forwardZ * hit.nz); // 1 = head-on
+            const impact = -(this.forwardX * hit.nx + this.forwardZ * hit.nz);
             if (impact > 0.15) {
                 const before = this.speed;
                 this.speed *= 1 - 0.85 * impact;
                 if (before > 4 && impact > 0.55) {
                     this.audio.bump();
                     this.shake = Math.max(this.shake, 0.25 * impact);
-                    this.wobble = Math.max(this.wobble, 0.3);
+                    this.wobble = Math.max(this.wobble, 0.35);
                 }
             }
         }
-        // if pushed back, measure real displacement for wheel spin
         const moved = Math.hypot(this.x - prevX, this.z - prevZ);
 
-        // potholes
+        // Pothole collision check
         for (const p of this.map.potholes) {
             p.cooldown = Math.max(0, p.cooldown - dt);
             if (p.cooldown > 0) continue;
@@ -127,18 +154,18 @@ export class Player {
             if (d < p.r * 0.85 && this.speed > 2) {
                 p.cooldown = 1.5;
                 this.speed *= HAZARDS.POTHOLE_SPEED_KEEP;
-                this.wobble = 0.9;
-                this.shake = 0.5;
+                this.wobble = 0.95;
+                this.shake = 0.55;
                 this.stats.potholes++;
                 this.audio.pothole();
-                this._burst(p.x, p.z, 12, 2);
+                this._burst(p.x, p.z, 14, 2);
                 events.pothole = true;
             }
         }
 
-        // mud spray from the rear wheel
-        if (this.surface === 'mud' && this.speed > 3) {
-            this.spray += dt * this.speed * 1.4;
+        // Mud spray particles
+        if (this.surface === 'mud' && this.speed > 2.8) {
+            this.spray += dt * this.speed * 1.6;
             while (this.spray > 1) {
                 this.spray -= 1;
                 this._emit(this.x - this.forwardX * 0.6, 0.15, this.z - this.forwardZ * 0.6, 0);
@@ -153,11 +180,10 @@ export class Player {
         return events;
     }
 
-    /** Called when a pedestrian is bumped. */
     knock(fromX, fromZ) {
         this.speed = 0;
         this.stun = 0.7;
-        this.wobble = 0.8;
+        this.wobble = 0.85;
         this.shake = 0.45;
         this.stats.npcHits++;
         const dx = this.x - fromX;
@@ -167,6 +193,22 @@ export class Player {
         this.map.resolveCircle(pos, BIKE.RADIUS);
         this.x = pos.x;
         this.z = pos.z;
+    }
+
+    respawnAt(pose) {
+        this.x = pose.x;
+        this.z = pose.z;
+        if (pose.yaw !== undefined) {
+            this.yaw = pose.yaw;
+        }
+        this.speed = 0;
+        this.steer = 0;
+        this.wobble = 0;
+        this.stun = 0.25;
+        this.shake = 0.55;
+        this.invulnerable = 2.0; // protection against immediate vehicle re-collision
+        this._burst(this.x, this.z, 20, 2);
+        this._sync(0);
     }
 
     _emit(x, y, z, kind) {
@@ -204,31 +246,79 @@ export class Player {
         }
     }
 
-    /** Mirror state onto the entity hierarchy. */
+    /**
+     * Animate both Bicycle and modular Bitmoji-Ready Rider Avatar.
+     */
     _sync(dt) {
-        const { root, lean, frontWheel, rearWheel, crank, pedals, legs } = this.model;
+        const { root, lean, frontFork, frontWheel, rearWheel, crank, pedals, kickstand } = this.model;
+        const { avatarRoot, pelvis, torso, headMount, armL, armR, legs } = this.model.avatar;
+
         root.setPosition(this.x, 0, this.z);
         root.setEulerAngles(0, (this.yaw * 180) / Math.PI, 0);
 
-        const speed01 = math.clamp(this.speed / BIKE.ROAD_MAX_SPEED, 0, 1);
-        let roll = -this.steer * speed01 * 20;
-        if (this.wobble > 0) roll += Math.sin(this.wobble * 30) * 9 * Math.min(1, this.wobble * 2);
-        // a gentle side-to-side rock while pedalling
-        roll += Math.sin(this.crankAngle) * 2.5 * speed01;
-        lean.setLocalEulerAngles(0, 0, roll);
+        // Front fork & handlebars steering
+        frontFork.setLocalEulerAngles(0, this.steer * 24, 0);
 
+        // Wheels rotation
         const wheelDeg = (-this.wheelAngle * 180) / Math.PI;
-        frontWheel.setLocalEulerAngles(wheelDeg, (this.steer * 18), 0);
+        frontWheel.setLocalEulerAngles(wheelDeg, 0, 0);
         rearWheel.setLocalEulerAngles(wheelDeg, 0, 0);
 
-        // pedals on opposite sides of the crank
+        // Pedals rotation around crank
         const crankR = 0.17;
         pedals.forEach((pedal, i) => {
             const a = this.crankAngle + i * Math.PI;
             pedal.setLocalPosition((i === 0 ? -1 : 1) * 0.13, Math.sin(a) * crankR, -Math.cos(a) * crankR);
         });
 
-        // stretch each leg from the hip to its pedal
+        // Retract kickstand and center avatar on bike
+        kickstand.setLocalEulerAngles(0, 0, 65);
+        avatarRoot.setLocalPosition(0, 0, 0);
+
+        const speed01 = math.clamp(this.speed / BIKE.ROAD_MAX_SPEED, 0, 1);
+        let roll = -this.steer * speed01 * 22;
+        if (this.wobble > 0) roll += Math.sin(this.wobble * 30) * 9 * Math.min(1, this.wobble * 2);
+        roll += Math.sin(this.crankAngle) * 2.8 * speed01;
+        lean.setLocalEulerAngles(0, 0, roll);
+
+        // Standing up on pedals when accelerating or in mud
+        const isStruggling = (this.speed > 0.5 && this.speed < 4.0) || (this.surface === 'mud' && this.speed > 1.0);
+        const standPump = isStruggling ? 0.11 : 0.0;
+        const sideRock = Math.sin(this.crankAngle) * (isStruggling ? 5.5 : 2.5);
+
+        pelvis.setLocalPosition(0, 1.05 + standPump, 0.2);
+        pelvis.setLocalEulerAngles(0, 0, sideRock);
+
+        // Aero Sprint Tuck when boosting/sprinting
+        let torsoPitch = -26;
+        if (this.isSprinting && this.speed > 5) {
+            torsoPitch = -42; // aggressive low tuck!
+        } else if (this.wobble > 0) {
+            torsoPitch = -12; // flailing backward
+        }
+        torso.setLocalEulerAngles(torsoPitch, 0, -sideRock * 0.5);
+
+        // Head tracking: looks into turns and tilts up when tucked
+        const headYaw = -this.steer * 20;
+        const headPitch = this.isSprinting ? 22 : 0;
+        headMount.setLocalEulerAngles(headPitch, headYaw, 0);
+
+        // Arm gestures
+        if (this.celebrateTimer > 0) {
+            // Victory fist pump!
+            armR.setLocalEulerAngles(-110, 0, -18);
+            armL.setLocalEulerAngles(40, 0, 0);
+        } else if (this.wobble > 0) {
+            // Flailing arms on pothole hit
+            armL.setLocalEulerAngles(20 + Math.sin(this.wobble * 35) * 25, -20, 0);
+            armR.setLocalEulerAngles(20 - Math.sin(this.wobble * 35) * 25, 20, 0);
+        } else {
+            // Normal hands on handlebars
+            armL.setLocalEulerAngles(40, 0, 0);
+            armR.setLocalEulerAngles(40, 0, 0);
+        }
+
+        // Legs tracking pedals
         _up.copy(root.forward);
         legs.forEach((leg, i) => {
             const target = pedals[i].getPosition();
@@ -237,6 +327,21 @@ export class Player {
             leg.entity.lookAt(target, _up);
             leg.entity.setLocalScale(1, 1, d);
         });
-        void dt;
     }
+}
+
+function createParticlePool(app, count) {
+    const pool = [];
+    const mat = new StandardMaterial();
+    mat.diffuse = new Color(0.48, 0.28, 0.16);
+    mat.update();
+
+    for (let i = 0; i < count; i++) {
+        const e = new Entity('MudParticle');
+        e.addComponent('render', { type: 'box', material: mat });
+        e.enabled = false;
+        app.root.addChild(e);
+        pool.push({ entity: e, life: 0, vx: 0, vy: 0, vz: 0, size: 0.1 });
+    }
+    return pool;
 }

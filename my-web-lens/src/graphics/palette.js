@@ -62,7 +62,51 @@ export const PALETTE = {
         [240, 120, 30],
         [30, 160, 170],
         [240, 240, 236]
-    ]
+    ],
+    sidewalk: [178, 174, 168],
+    marketUmbrellas: [
+        [246, 206, 52],
+        [222, 60, 52],
+        [40, 140, 80],
+        [40, 100, 190],
+        [240, 120, 30],
+        [240, 240, 236]
+    ],
+    crates: [
+        [220, 45, 45],
+        [40, 145, 65],
+        [35, 95, 190],
+        [240, 185, 40]
+    ],
+    fruitOrange: [248, 135, 30],
+    fruitGreen: [85, 165, 55],
+    fruitRed: [220, 50, 50],
+    woodTable: [145, 100, 68],
+    kioskMetal: [
+        [50, 140, 190],
+        [246, 206, 52],
+        [220, 65, 55],
+        [45, 145, 85]
+    ],
+    danfoYellow: [246, 206, 52],
+    danfoStripe: [26, 26, 28],
+    kekeYellow: [250, 212, 45],
+    kekeRoof: [30, 30, 32],
+    carColors: [
+        [210, 215, 222], // silver metallic
+        [42, 92, 168],   // lagos blue
+        [240, 240, 240], // white
+        [175, 40, 40],   // wine red
+        [45, 45, 50]     // graphite
+    ],
+    okadaColors: [
+        [220, 45, 45],
+        [40, 95, 200],
+        [26, 26, 28]
+    ],
+    headlight: [255, 245, 170],
+    taillight: [230, 30, 30],
+    vehicleGlass: [135, 180, 210]
 };
 
 /** Small deterministic PRNG so the neighbourhood looks the same every run. */

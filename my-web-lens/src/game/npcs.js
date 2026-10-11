@@ -76,19 +76,7 @@ export class NPCManager {
         }
     }
 
-    onBell(playerX, playerZ) {
-        let reacted = false;
-        for (const npc of this.npcs) {
-            const dist = Math.hypot(npc.x - playerX, npc.z - playerZ);
-            if (dist < 12) {
-                npc.scared = 1.2; // freeze or jump back
-                reacted = true;
-            }
-        }
-        return reacted;
-    }
-
-    update(dt, player, active) {
+    update(dt, player, active, vehicleManager = null) {
         let bumpedToast = null;
 
         for (const npc of this.npcs) {
@@ -103,15 +91,23 @@ export class NPCManager {
             if (!npc.crossing) {
                 npc.delayTimer -= dt;
                 if (npc.delayTimer <= 0) {
-                    npc.crossing = true;
-                    npc.progress = 0;
+                    // Look both ways: wait at curb if vehicle is approaching
+                    if (vehicleManager && npc.cross && npc.cross.isMainRoad && vehicleManager.isVehicleApproaching(npc.x, npc.z, 8.0)) {
+                        npc.delayTimer = 1.0;
+                    } else {
+                        npc.crossing = true;
+                        npc.progress = 0;
+                    }
                 }
             } else {
                 // If not scared, advance across the road
                 if (npc.scared <= 0) {
                     const totalDist = Math.hypot(npc.endPt.x - npc.startPt.x, npc.endPt.z - npc.startPt.z);
-                    npc.progress += (npc.speed * dt) / (totalDist || 1);
-                    npc.walkPhase += dt * npc.speed * 6;
+                    // Hustle if vehicle is approaching near crossing
+                    const hustle = (vehicleManager && npc.cross && npc.cross.isMainRoad && vehicleManager.isVehicleApproaching(npc.x, npc.z, 5.5)) ? 1.45 : 1.0;
+                    const moveSpeed = npc.speed * hustle;
+                    npc.progress += (moveSpeed * dt) / (totalDist || 1);
+                    npc.walkPhase += dt * moveSpeed * 6;
 
                     // Animate leg swing
                     const swing = Math.sin(npc.walkPhase) * 28;
