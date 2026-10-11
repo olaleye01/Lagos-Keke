@@ -233,11 +233,13 @@ const STATE = {
     TITLE: 'TITLE',
     COUNTDOWN: 'COUNTDOWN',
     PLAYING: 'PLAYING',
+    PAUSED: 'PAUSED',
     GAMEOVER: 'GAMEOVER',
     VICTORY: 'VICTORY'
 };
 
 let gameState = STATE.TITLE;
+let previousStateBeforePause = null;
 let timeLeft = GAME.TIME_LIMIT;
 let sessionElapsed = 0;
 let currentCPIndex = 0;
@@ -326,6 +328,7 @@ function respawnPlayerAtLastCheckpoint(reason = 'crash') {
 
 function startCountdown() {
     gameState = STATE.COUNTDOWN;
+    previousStateBeforePause = null;
     countdownTimer = 3;
     timeLeft = GAME.TIME_LIMIT;
     sessionElapsed = 0;
@@ -340,6 +343,11 @@ function startCountdown() {
 
     if (dashFx) dashFx.classList.remove('active');
     if (btnSprint) btnSprint.classList.remove('dashing');
+
+    const pauseScreen = document.getElementById('pause-screen');
+    if (pauseScreen) pauseScreen.classList.add('hidden');
+    document.querySelectorAll('.pause-icon').forEach(el => el.classList.remove('hidden'));
+    document.querySelectorAll('.play-icon').forEach(el => el.classList.add('hidden'));
 
     titleScreen.classList.add('hidden');
     endScreen.classList.add('hidden');
@@ -386,10 +394,16 @@ function startGame() {
 
 function endGame(won) {
     gameState = won ? STATE.VICTORY : STATE.GAMEOVER;
+    previousStateBeforePause = null;
     input.enabled = false;
     audio.setRolling(0, 'road');
     if (dashFx) dashFx.classList.remove('active');
     if (btnSprint) btnSprint.classList.remove('dashing');
+
+    const pauseScreen = document.getElementById('pause-screen');
+    if (pauseScreen) pauseScreen.classList.add('hidden');
+    document.querySelectorAll('.pause-icon').forEach(el => el.classList.remove('hidden'));
+    document.querySelectorAll('.play-icon').forEach(el => el.classList.add('hidden'));
 
     if (won) {
         audio.win();
@@ -429,23 +443,103 @@ btnRetry.addEventListener('click', () => {
     startCountdown();
 });
 
-// Sound toggle button on welcome screen
-const btnSoundToggle = document.getElementById('btn-sound-toggle');
-const soundIconOn = document.getElementById('sound-icon-on');
-const soundIconOff = document.getElementById('sound-icon-off');
-if (btnSoundToggle) {
-    btnSoundToggle.addEventListener('click', () => {
-        audio.unlock();
-        audio.muted = !audio.muted;
-        if (audio.master) {
-            audio.master.gain.value = audio.muted ? 0 : 0.7;
-        }
-        if (soundIconOn && soundIconOff) {
-            soundIconOn.classList.toggle('hidden', audio.muted);
-            soundIconOff.classList.toggle('hidden', !audio.muted);
-        }
-    });
+// --- Unified Sound Controls ---
+function toggleSound() {
+    audio.unlock();
+    audio.muted = !audio.muted;
+    if (audio.master) {
+        audio.master.gain.value = audio.muted ? 0 : 0.7;
+    }
+    updateSoundIcons();
 }
+
+function updateSoundIcons() {
+    const isMuted = audio.muted;
+    document.querySelectorAll('.sound-icon-on').forEach(el => el.classList.toggle('hidden', isMuted));
+    document.querySelectorAll('.sound-icon-off').forEach(el => el.classList.toggle('hidden', !isMuted));
+    const soundText = document.getElementById('pause-sound-text');
+    if (soundText) soundText.textContent = isMuted ? 'SOUND OFF' : 'SOUND ON';
+}
+
+// --- Pause Controls ---
+const pauseScreen = document.getElementById('pause-screen');
+const btnPause = document.getElementById('btn-pause');
+const btnResume = document.getElementById('btn-resume');
+const btnRestart = document.getElementById('btn-restart');
+const btnSoundHud = document.getElementById('btn-sound-hud');
+const btnPauseSound = document.getElementById('btn-pause-sound');
+const btnSoundToggle = document.getElementById('btn-sound-toggle');
+
+function pauseGame() {
+    if (gameState !== STATE.PLAYING && gameState !== STATE.COUNTDOWN) return;
+    previousStateBeforePause = gameState;
+    gameState = STATE.PAUSED;
+
+    // Silence active tyre rolling audio while paused
+    audio.setRolling(0, 'road');
+
+    // Update pause card metrics
+    const pauseCpName = document.getElementById('pause-cp-name');
+    const pauseTimeVal = document.getElementById('pause-time-val');
+    if (pauseCpName) {
+        const cp = map.checkpoints[currentCPIndex];
+        pauseCpName.textContent = `${currentCPIndex + 1}/${CHECKPOINTS.length} (${cp ? cp.name : ''})`;
+    }
+    if (pauseTimeVal) {
+        pauseTimeVal.textContent = `${Math.max(0, timeLeft).toFixed(1)}s`;
+    }
+
+    // Toggle HUD pause button icon to play
+    document.querySelectorAll('.pause-icon').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.play-icon').forEach(el => el.classList.remove('hidden'));
+
+    if (pauseScreen) pauseScreen.classList.remove('hidden');
+}
+
+function resumeGame() {
+    if (gameState !== STATE.PAUSED) return;
+    gameState = previousStateBeforePause || STATE.PLAYING;
+    previousStateBeforePause = null;
+
+    // Toggle HUD pause button icon back to pause
+    document.querySelectorAll('.pause-icon').forEach(el => el.classList.remove('hidden'));
+    document.querySelectorAll('.play-icon').forEach(el => el.classList.add('hidden'));
+
+    if (pauseScreen) pauseScreen.classList.add('hidden');
+}
+
+function togglePause() {
+    if (gameState === STATE.PAUSED) {
+        resumeGame();
+    } else if (gameState === STATE.PLAYING || gameState === STATE.COUNTDOWN) {
+        pauseGame();
+    }
+}
+
+// Event Listeners for Pause and Sound
+if (btnPause) btnPause.addEventListener('click', togglePause);
+if (btnResume) btnResume.addEventListener('click', resumeGame);
+if (btnRestart) btnRestart.addEventListener('click', () => {
+    resumeGame();
+    startCountdown();
+});
+
+if (btnSoundHud) btnSoundHud.addEventListener('click', toggleSound);
+if (btnPauseSound) btnPauseSound.addEventListener('click', toggleSound);
+if (btnSoundToggle) btnSoundToggle.addEventListener('click', toggleSound);
+
+// Keyboard shortcuts: P or ESC to pause/resume, M to toggle sound
+window.addEventListener('keydown', e => {
+    if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+        if (gameState === STATE.PAUSED || gameState === STATE.PLAYING || gameState === STATE.COUNTDOWN) {
+            e.preventDefault();
+            togglePause();
+        }
+    } else if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        toggleSound();
+    }
+});
 
 let titleSwayTime = 0;
 
@@ -467,6 +561,11 @@ cameraEntity.lookAt(currentCamLook);
 app.on('update', dt => {
     // Clamp delta time to maintain stability
     dt = Math.min(dt, 0.08);
+
+    if (gameState === STATE.PAUSED) {
+        // Complete simulation freeze while game is paused
+        return;
+    }
 
     input.update();
 
