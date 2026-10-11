@@ -615,63 +615,7 @@ html, body {
 .chip.road { background: var(--road-tarmac); color: var(--arcade-yellow); }
 .chip.mud { background: var(--laterite-mud); color: #ffffff; }
 
-/* 5. SPEEDOMETER BADGE (Right Column, Stacked Below Minimap) */
-.speedometer-panel,
-#speedometer {
-  position: absolute;
-  top: calc(114px + var(--safe-top));
-  right: calc(max(12px, var(--safe-right)) + 14px);
-  width: 60px;
-  height: 60px;
-  border-radius: 50%; /* Circular Oval */
-  background: var(--panel-bg);
-  border: 3px solid var(--outline-dark);
-  box-shadow: 0 4px 0 var(--outline-deep), 0 8px 16px rgba(0,0,0,0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 13;
-}
 
-/* Circular Bicycle Chain Pattern wrapping around the Speedometer */
-.sticker-chain-ring {
-  position: absolute;
-  inset: -5px;
-  width: calc(100% + 10px);
-  height: calc(100% + 10px);
-  pointer-events: none;
-  filter: drop-shadow(0 2px 0 var(--outline-dark));
-}
-
-.speed-dial-center {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  line-height: 0.95;
-}
-
-#speed-num {
-  font-family: var(--font-display);
-  font-size: 19px;
-  font-weight: 900;
-  color: #ffffff;
-  text-shadow: 0 1.5px 0 var(--outline-dark);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.03em;
-}
-
-.speed-unit {
-  font-family: var(--font-display);
-  font-size: 8.5px;
-  font-weight: 900;
-  color: var(--arcade-yellow);
-  text-shadow: 0 1.5px 0 var(--outline-dark);
-  letter-spacing: 0.1em;
-  margin-top: 1px;
-}
 
 /* 6. VERTICAL BOOST / STAMINA METER (Right Column, Just Above Sprint Pedal) */
 .stamina-panel,
@@ -1837,17 +1781,6 @@ html, body {
     left: -18px;
   }
 
-  /* Speedometer */
-  #speedometer {
-    top: calc(144px + var(--safe-top));
-    right: calc(max(16px, var(--safe-right)) + 18px);
-    width: 68px;
-    height: 68px;
-    border-width: 3.5px;
-  }
-  #speed-num {
-    font-size: 21px;
-  }
 
   /* Stamina & Boost (Vertical Above Sprint) */
   #stamina-container {
@@ -1928,15 +1861,6 @@ html, body {
   }
   .sticker-pole-bracket {
     display: none;
-  }
-  #speedometer {
-    top: calc(74px + var(--safe-top));
-    right: calc(max(10px, var(--safe-right)) + 8px);
-    width: 48px;
-    height: 48px;
-  }
-  #speed-num {
-    font-size: 15px;
   }
   #stamina-container {
     bottom: calc(86px + var(--safe-bottom));

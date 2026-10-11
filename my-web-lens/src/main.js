@@ -45,7 +45,6 @@ const surfaceChip = document.getElementById('surface-chip');
 const toastEl = document.getElementById('toast');
 const steerKnob = document.getElementById('steer-knob');
 
-const speedNumEl = document.getElementById('speed-num');
 const staminaBarEl = document.getElementById('stamina-bar');
 const staminaValEl = document.getElementById('stamina-val');
 const speedLinesCanvas = document.getElementById('speed-lines');
@@ -691,11 +690,6 @@ app.on('update', dt => {
             timerContainer.className = 'sticker-bubble timer-panel';
         }
 
-        // Speedometer display (km/h)
-        if (speedNumEl) {
-            const kmh = Math.round(player.speed * 3.6);
-            speedNumEl.textContent = kmh.toString();
-        }
 
         // Stamina gauge display
         if (staminaBarEl && staminaValEl) {
