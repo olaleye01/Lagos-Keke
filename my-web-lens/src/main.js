@@ -20,6 +20,10 @@ import { GAME, CHECKPOINTS, BIKE } from './game/constants.js';
 
 // --- DOM References ---
 const canvas = document.getElementById('game-canvas');
+const loadingScreen = document.getElementById('loading-screen');
+const loadingBarFill = document.getElementById('loading-bar-fill');
+const loadingStatus = document.getElementById('loading-status');
+const loadingPct = document.getElementById('loading-pct');
 const hud = document.getElementById('hud');
 const titleScreen = document.getElementById('title-screen');
 const countdownScreen = document.getElementById('countdown');
@@ -46,6 +50,7 @@ const staminaBarEl = document.getElementById('stamina-bar');
 const staminaValEl = document.getElementById('stamina-val');
 const speedLinesCanvas = document.getElementById('speed-lines');
 const speedLinesCtx = speedLinesCanvas ? speedLinesCanvas.getContext('2d') : null;
+const dashFx = document.getElementById('dash-fx');
 
 const btnStart = document.getElementById('btn-start');
 const btnRetry = document.getElementById('btn-retry');
@@ -159,12 +164,12 @@ window.gameDebug = { app, map, player, camera: cameraEntity };
 const minimapBase = map.renderMinimapBase(minimapCanvas.width);
 
 // Speed lines helper
-const STREAK_COUNT = 24;
+const STREAK_COUNT = 54;
 const streaks = Array.from({ length: STREAK_COUNT }, () => ({
     angle: Math.random() * Math.PI * 2,
-    radius: 0.15 + Math.random() * 0.85,
-    speed: 0.9 + Math.random() * 1.5,
-    length: 30 + Math.random() * 70
+    radius: 0.12 + Math.random() * 0.88,
+    speed: 1.1 + Math.random() * 1.8,
+    length: 35 + Math.random() * 80
 }));
 
 function resizeSpeedCanvas() {
@@ -193,23 +198,29 @@ function renderSpeedLines(dt, playerSpeed, isSprinting) {
     const intensity = isSprinting ? 1.0 : (sprintRatio - 0.65) / 0.35;
     const maxR = Math.hypot(cx, cy);
 
-    speedLinesCtx.lineWidth = isSprinting ? 2.5 : 1.8;
+    speedLinesCtx.lineWidth = isSprinting ? 3.0 : 1.8;
     for (const s of streaks) {
-        s.radius += s.speed * dt * (isSprinting ? 2.2 : 1.3);
+        s.radius += s.speed * dt * (isSprinting ? 2.6 : 1.3);
         if (s.radius > 1.25) {
-            s.radius = 0.1 + Math.random() * 0.2;
+            s.radius = 0.08 + Math.random() * 0.22;
             s.angle = Math.random() * Math.PI * 2;
         }
         const r1 = s.radius * maxR;
-        const r2 = r1 + s.length * (isSprinting ? 1.5 : 1.0);
+        const r2 = r1 + s.length * (isSprinting ? 1.8 : 1.0);
         const x1 = cx + Math.cos(s.angle) * r1;
         const y1 = cy + Math.sin(s.angle) * r1;
         const x2 = cx + Math.cos(s.angle) * r2;
         const y2 = cy + Math.sin(s.angle) * r2;
 
         const grad = speedLinesCtx.createLinearGradient(x1, y1, x2, y2);
-        grad.addColorStop(0, 'rgba(255, 235, 120, 0)');
-        grad.addColorStop(1, `rgba(255, 255, 255, ${(0.42 * intensity).toFixed(2)})`);
+        if (isSprinting) {
+            grad.addColorStop(0, 'rgba(255, 140, 0, 0)');
+            grad.addColorStop(0.35, 'rgba(255, 210, 50, 0.5)');
+            grad.addColorStop(1, 'rgba(255, 255, 255, 0.95)');
+        } else {
+            grad.addColorStop(0, 'rgba(255, 235, 120, 0)');
+            grad.addColorStop(1, `rgba(255, 255, 255, ${(0.42 * intensity).toFixed(2)})`);
+        }
         speedLinesCtx.strokeStyle = grad;
         speedLinesCtx.beginPath();
         speedLinesCtx.moveTo(x1, y1);
@@ -328,6 +339,9 @@ function startCountdown() {
     vehicles.reset();
     updateBeaconPosition();
 
+    if (dashFx) dashFx.classList.remove('active');
+    if (btnSprint) btnSprint.classList.remove('dashing');
+
     titleScreen.classList.add('hidden');
     endScreen.classList.add('hidden');
     hud.classList.remove('hidden');
@@ -375,6 +389,8 @@ function endGame(won) {
     gameState = won ? STATE.VICTORY : STATE.GAMEOVER;
     input.enabled = false;
     audio.setRolling(0, 'road');
+    if (dashFx) dashFx.classList.remove('active');
+    if (btnSprint) btnSprint.classList.remove('dashing');
 
     if (won) {
         audio.win();
@@ -641,13 +657,20 @@ app.on('update', dt => {
         cameraEntity.setPosition(currentCamPos);
         cameraEntity.lookAt(currentCamLook);
 
-        // Dynamic Camera FOV for speed rush sensation
-        const targetFov = 54 + speedRatio * (player.isSprinting ? 8 : 4);
+        // Dynamic Camera FOV for speed rush sensation (stops boost punch when boost < 5%)
+        const minBoostPct = BIKE.MIN_BOOST_STAMINA_PCT || 5;
+        const hasBoost = (player.stamina / BIKE.MAX_STAMINA) * 100 >= minBoostPct;
+        const isBoostActive = player.isSprinting && hasBoost;
+
+        const targetFov = 54 + speedRatio * (isBoostActive ? 8 : 4);
         cameraEntity.camera.fov = math.lerp(cameraEntity.camera.fov, targetFov, 1 - Math.exp(-6 * dt));
     }
 
-    // 4. Speed lines rendering
-    renderSpeedLines(dt, player.speed, player.isSprinting);
+    // 4. Speed lines rendering (stops boost speed lines when boost < 5%)
+    const minBoostPct = BIKE.MIN_BOOST_STAMINA_PCT || 5;
+    const hasBoost = (player.stamina / BIKE.MAX_STAMINA) * 100 >= minBoostPct;
+    const isBoostActive = player.isSprinting && hasBoost;
+    renderSpeedLines(dt, player.speed, isBoostActive);
 
     // 5. Animate Checkpoint Beacon
     const now = performance.now() * 0.001;
@@ -685,8 +708,16 @@ app.on('update', dt => {
                 staminaBarEl.classList.remove('exhausted');
             }
             const staminaContainer = document.getElementById('stamina-container');
+            // Stop dash and boost effect once boost is less than 5%
+            const isDashing = isRiding && isBoostActive;
             if (staminaContainer) {
-                staminaContainer.classList.toggle('boosting', player.isSprinting && player.stamina > 0);
+                staminaContainer.classList.toggle('boosting', isDashing);
+            }
+            if (dashFx) {
+                dashFx.classList.toggle('active', isDashing);
+            }
+            if (btnSprint) {
+                btnSprint.classList.toggle('dashing', isDashing);
             }
         }
 
@@ -806,3 +837,55 @@ function renderMinimap(activeCP) {
 
     minimapCtx.restore();
 }
+
+// --- Preloader: "Gearing Up" Sequence ---
+// Only reveals the welcome screen once fonts, map, 3D assets, and GPU shaders are fully loaded & rendered
+function updateLoadingProgress(percent, statusText) {
+    if (loadingBarFill) loadingBarFill.style.width = `${percent}%`;
+    if (loadingPct) loadingPct.textContent = `${Math.round(percent)}%`;
+    if (loadingStatus && statusText) loadingStatus.textContent = statusText;
+}
+
+async function initLoadingSequence() {
+    updateLoadingProgress(15, 'Preparing gears');
+
+    // 1. Wait for Google Web Fonts (Fredoka, Outfit, Sniglet) to be fully ready
+    try {
+        if (document.fonts && document.fonts.ready) {
+            await document.fonts.ready;
+        }
+    } catch {
+        // Fallback gracefully
+    }
+    updateLoadingProgress(45, 'Loading typography & UI');
+
+    // 2. Yield briefly for procedural terrain, shops & props creation
+    await new Promise(resolve => setTimeout(resolve, 100));
+    updateLoadingProgress(75, 'Assembling Lagos streets & traffic');
+
+    // 3. Wait for WebGL GPU pipeline & PlayCanvas initial render passes
+    await new Promise(resolve => {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                resolve();
+            });
+        });
+    });
+    updateLoadingProgress(100, 'Ready to ride');
+
+    // 4. Smooth dwell so player sees 100% completion before scene reveal
+    await new Promise(resolve => setTimeout(resolve, 360));
+
+    // 5. Unhide welcome screen and smoothly fade out loading screen
+    if (titleScreen) titleScreen.classList.remove('hidden');
+    if (loadingScreen) {
+        loadingScreen.classList.add('fade-out');
+        setTimeout(() => {
+            loadingScreen.classList.add('hidden');
+        }, 460);
+    }
+}
+
+// Start loading sequence immediately
+initLoadingSequence();
+

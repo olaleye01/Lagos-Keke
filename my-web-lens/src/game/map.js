@@ -296,7 +296,113 @@ export class LagosMap {
         }
     }
 
+    /**
+     * Builds a compact, charming roadside Lagos kiosk shop directly behind the rider's initial spawn point.
+     * Replaces the oversized two-storey residential block with a low-profile single-storey shop.
+     */
+    _buildSpawnRearShop(b, r, c, x, z) {
+        const x0 = x - HALF_CELL;
+        const x1 = x + HALF_CELL;
+        const z0 = z - HALF_CELL;
+        const z1 = z + HALF_CELL;
+
+        // 1. Paved concrete sidewalk
+        b.flat(x0, z0, x1, z1, 0.012, PALETTE.sidewalk, 0.04);
+
+        // Shop dimensions: low-profile single storey (2.35m vs previous 6.4m!)
+        const bWidth = 3.6;   // compact width
+        const bDepth = 2.4;   // compact depth
+        const bh = 2.35;      // single-storey height
+        const bx = x;         // centered at x = 0
+        const bz = z + 1.4;   // sits at z = 61.4, leaving open sidewalk in front (z = 57..60.2)
+
+        // 2. Solid collision: compact and low-profile so elevated camera never collides
+        this.solids[r][c] = {
+            type: 'box',
+            minX: bx - bWidth / 2 - 0.15,
+            maxX: bx + bWidth / 2 + 0.15,
+            minZ: bz - bDepth / 2 - 0.15,
+            maxZ: z1,
+            h: bh + 0.4
+        };
+
+        // 3. Shop Foundation & Walls
+        // Concrete foundation curb
+        b.boxAt(bx, 0.1, bz, bWidth + 0.15, 0.2, bDepth + 0.15, [145, 140, 132], 0, 0.04);
+
+        // Vibrant sunny Lagos yellow stucco shop walls
+        const wallCol = [238, 185, 68]; // warm golden yellow
+        b.boxAt(bx, bh / 2, bz, bWidth, bh, bDepth, wallCol, 0, 0.04);
+
+        // Dark baseboard trim
+        b.boxAt(bx, 0.22, bz, bWidth + 0.05, 0.25, bDepth + 0.05, [55, 65, 80], 0, 0);
+
+        // 4. Corrugated Zinc Shed Roof (sloping back slightly)
+        const roofOverhangW = bWidth + 0.6; // 4.2m
+        const roofOverhangD = bDepth + 0.7; // 3.1m
+        b.box(GeoBuilder.trs(bx, bh + 0.08, bz + 0.05, -7, 0, 0, roofOverhangW, 0.08, roofOverhangD), PALETTE.roofZinc);
+
+        // 5. Open Service Counter Hatch & Ledge on front facade (facing North, -Z)
+        const frontZ = bz - bDepth / 2;
+        // Dark interior recess behind counter hatch
+        b.boxAt(bx, 1.35, frontZ + 0.06, 2.2, 1.05, 0.14, [32, 28, 26], 0, 0);
+
+        // Wooden serving counter ledge
+        b.boxAt(bx, 0.88, frontZ - 0.16, 2.4, 0.1, 0.42, PALETTE.woodTable, 0, 0.05);
+
+        // Goods displayed on the counter ledge (colorful soda bottles / snack jars)
+        b.cylinder(GeoBuilder.trs(bx - 0.75, 0.98, frontZ - 0.15, 0, 0, 0, 0.05, 0.18, 0.05), 6, [210, 45, 40]); // Coca-cola bottle
+        b.cylinder(GeoBuilder.trs(bx - 0.58, 0.98, frontZ - 0.15, 0, 0, 0, 0.05, 0.18, 0.05), 6, [245, 165, 30]); // Fanta bottle
+        b.cylinder(GeoBuilder.trs(bx - 0.41, 0.98, frontZ - 0.15, 0, 0, 0, 0.05, 0.18, 0.05), 6, [45, 160, 75]);  // Sprite bottle
+        b.boxAt(bx + 0.6, 1.02, frontZ - 0.15, 0.28, 0.22, 0.25, [240, 205, 90], 0, 0); // Plantain chips jar
+        b.boxAt(bx + 0.85, 1.02, frontZ - 0.15, 0.24, 0.22, 0.24, [215, 80, 45], 0, 0); // Gala sausage jar
+
+        // 6. Striped Fabric Sun Awning over the Counter
+        // Alternating orange and yellow awning canopy sloping forward
+        const awningY = bh - 0.28; // 2.07m
+        const awningZ = frontZ - 0.42;
+        b.box(GeoBuilder.trs(bx, awningY, awningZ, 18, 0, 0, 2.7, 0.05, 0.95), [235, 90, 40], 0, 0.05);
+        // Yellow accent stripes on awning
+        b.box(GeoBuilder.trs(bx - 0.65, awningY + 0.01, awningZ, 18, 0, 0, 0.35, 0.06, 0.96), [248, 215, 60], 0, 0);
+        b.box(GeoBuilder.trs(bx + 0.65, awningY + 0.01, awningZ, 18, 0, 0, 0.35, 0.06, 0.96), [248, 215, 60], 0, 0);
+
+        // 7. Colorful Shop Banner Signboard across upper front
+        // Royal Blue banner with white/yellow trim
+        b.boxAt(bx, bh - 0.05, frontZ - 0.06, 3.2, 0.48, 0.1, [32, 90, 195], 0, 0);
+        // Accent border on sign
+        b.boxAt(bx, bh - 0.05, frontZ - 0.115, 3.0, 0.38, 0.02, [245, 210, 50], 0, 0);
+        b.boxAt(bx, bh - 0.05, frontZ - 0.125, 2.7, 0.26, 0.02, [245, 245, 250], 0, 0);
+
+        // 8. Sidewalk Street Details in Front of the Shop
+        // Stack of red & yellow beverage crates on the left
+        const crateX = bx - 1.6;
+        const crateZ = frontZ - 0.45;
+        b.boxAt(crateX, 0.18, crateZ, 0.55, 0.36, 0.45, [210, 45, 40], 5, 0.04);
+        b.boxAt(crateX + 0.05, 0.54, crateZ - 0.02, 0.55, 0.36, 0.45, [245, 175, 35], -8, 0.04);
+        b.boxAt(crateX - 0.05, 0.88, crateZ + 0.03, 0.52, 0.34, 0.42, [210, 45, 40], 12, 0.04);
+
+        // Small wooden customer bench on the right
+        const benchX = bx + 1.55;
+        const benchZ = frontZ - 0.4;
+        b.boxAt(benchX, 0.38, benchZ, 1.1, 0.08, 0.38, PALETTE.woodTable, 0, 0.04); // seat
+        b.boxAt(benchX - 0.42, 0.19, benchZ, 0.08, 0.38, 0.32, [60, 55, 50], 0, 0); // left leg
+        b.boxAt(benchX + 0.42, 0.19, benchZ, 0.08, 0.38, 0.32, [60, 55, 50], 0, 0); // right leg
+
+        // Roadside Sandwich Signboard on the sidewalk ("COLD DRINKS / RECHARGE CARD")
+        const signBoardX = bx + 1.65;
+        const signBoardZ = frontZ - 1.25;
+        b.box(GeoBuilder.trs(signBoardX, 0.42, signBoardZ, 12, 0, 0, 0.55, 0.82, 0.06), [240, 205, 50], 0, 0.04);
+        b.box(GeoBuilder.trs(signBoardX, 0.42, signBoardZ + 0.14, -12, 0, 0, 0.55, 0.82, 0.06), [240, 205, 50], 0, 0.04);
+    }
+
     _buildPerimeterMarket(b, r, c, x, z) {
+        // Special case: Directly behind the player's initial spawn position (r = 20, c = 10)
+        // Build a charming, compact roadside provisions shop rather than an oversized residential tenement
+        if (r === 20 && c === 10) {
+            this._buildSpawnRearShop(b, r, c, x, z);
+            return;
+        }
+
         const rand = this.rand;
         const x0 = x - HALF_CELL;
         const x1 = x + HALF_CELL;

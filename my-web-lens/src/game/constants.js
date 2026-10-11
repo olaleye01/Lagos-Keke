@@ -83,7 +83,8 @@ export const BIKE = {
     WHEEL_RADIUS: 0.34,
     MAX_STAMINA: 100,
     STAMINA_DRAIN: 28,
-    STAMINA_RECOVERY: 18
+    STAMINA_RECOVERY: 18,
+    MIN_BOOST_STAMINA_PCT: 5 // Cutoff threshold: boost stops immediately if stamina is less than 5%
 };
 
 export const HAZARDS = {

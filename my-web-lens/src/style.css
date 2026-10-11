@@ -71,6 +71,217 @@ html, body {
   user-select: none;
 }
 
+#speed-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  z-index: 18;
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity 0.15s ease-out;
+}
+#speed-lines.active {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   SPRINT DASH UI EFFECT (Screen Warp, Fiery Speed Vignette, Wind Tunnel, Pill)
+   ========================================================================== */
+
+.dash-fx-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 22;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.18s;
+  overflow: hidden;
+}
+
+.dash-fx-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 1. Fiery Screen Edge Speed Flare Vignette */
+.dash-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    transparent 42%,
+    rgba(245, 158, 11, 0.16) 68%,
+    rgba(239, 68, 68, 0.36) 88%,
+    rgba(185, 28, 28, 0.62) 100%
+  );
+  box-shadow: 
+    inset 0 0 50px rgba(245, 158, 11, 0.45),
+    inset 0 0 95px rgba(220, 38, 38, 0.35);
+  animation: dashPulse 0.42s ease-in-out infinite alternate;
+}
+
+@keyframes dashPulse {
+  0% {
+    opacity: 0.82;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+/* 2. Kinetic Wind Tunnel Streaks */
+.dash-wind-tunnel {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.wind-line {
+  position: absolute;
+  display: block;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.95), rgba(254, 240, 138, 0.6), transparent);
+  border-radius: 9999px;
+  filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.85));
+  animation: windRush 0.22s linear infinite;
+}
+
+/* Left side streaming cuts */
+.wind-line.wl-1 { top: 18%; left: 0; width: 140px; height: 3px; animation-delay: 0s; }
+.wind-line.wl-2 { top: 34%; left: 0; width: 190px; height: 3.5px; animation-delay: 0.08s; }
+.wind-line.wl-3 { top: 62%; left: 0; width: 160px; height: 2.5px; animation-delay: 0.14s; }
+.wind-line.wl-4 { top: 80%; left: 0; width: 130px; height: 3px; animation-delay: 0.04s; }
+
+/* Right side streaming cuts (reverse gradient) */
+.wind-line.wl-5 {
+  top: 22%; right: 0; width: 170px; height: 3.5px;
+  background: linear-gradient(270deg, rgba(255, 255, 255, 0.95), rgba(254, 240, 138, 0.6), transparent);
+  animation-delay: 0.05s;
+}
+.wind-line.wl-6 {
+  top: 45%; right: 0; width: 210px; height: 4px;
+  background: linear-gradient(270deg, rgba(255, 255, 255, 0.95), rgba(254, 240, 138, 0.6), transparent);
+  animation-delay: 0.12s;
+}
+.wind-line.wl-7 {
+  top: 68%; right: 0; width: 150px; height: 3px;
+  background: linear-gradient(270deg, rgba(255, 255, 255, 0.95), rgba(254, 240, 138, 0.6), transparent);
+  animation-delay: 0.02s;
+}
+.wind-line.wl-8 {
+  top: 85%; right: 0; width: 180px; height: 2.5px;
+  background: linear-gradient(270deg, rgba(255, 255, 255, 0.95), rgba(254, 240, 138, 0.6), transparent);
+  animation-delay: 0.16s;
+}
+
+@keyframes windRush {
+  0% {
+    opacity: 0.3;
+    transform: scaleX(0.7);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1.15);
+  }
+  100% {
+    opacity: 0.3;
+    transform: scaleX(0.7);
+  }
+}
+
+/* 3. Floating Arcade Dash / Sprint Badge Pill */
+.dash-badge-pill {
+  position: absolute;
+  top: calc(72px + var(--safe-top));
+  left: 50%;
+  transform: translate(-50%, -15px) scale(0.85);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 16px 5px 10px;
+  background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+  border: 2.8px solid #160c05;
+  border-radius: 9999px;
+  box-shadow: 
+    0 4px 0 #160c05,
+    0 0 24px rgba(245, 158, 11, 0.75),
+    0 8px 16px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.15s ease-out;
+  pointer-events: none;
+}
+
+.dash-fx-overlay.active .dash-badge-pill {
+  transform: translate(-50%, 0) scale(1);
+  opacity: 1;
+}
+
+.dash-badge-icon-box {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #160c05;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1.5px 0 #160c05;
+  animation: boltShake 0.18s ease-in-out infinite alternate;
+}
+
+.dash-bolt-icon {
+  width: 16px;
+  height: 16px;
+}
+
+@keyframes boltShake {
+  0% { transform: rotate(-8deg) scale(1); }
+  100% { transform: rotate(8deg) scale(1.15); }
+}
+
+.dash-badge-label {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  text-shadow: 
+    -1.5px -1.5px 0 #160c05,
+     1.5px -1.5px 0 #160c05,
+    -1.5px  1.5px 0 #160c05,
+     1.5px  1.5px 0 #160c05,
+     0 2.5px 0 #160c05;
+}
+
+.dash-badge-sub {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  background: #fef08a;
+  color: #160c05;
+  border: 1.5px solid #160c05;
+  letter-spacing: 0.04em;
+}
+
+/* 4. Sprint Pedal Nitro Dash State */
+.pedal-control.dashing {
+  transform: scale(0.95);
+  filter: drop-shadow(0 0 18px rgba(245, 158, 11, 0.9)) drop-shadow(0 0 32px rgba(239, 68, 68, 0.7));
+}
+
+.pedal-control.dashing .pedal-surface {
+  background: linear-gradient(180deg, #fef08a 0%, #f97316 100%);
+  border-color: #fef08a;
+}
+
 .hidden {
   display: none !important;
 }
@@ -841,6 +1052,293 @@ html, body {
   border: 4px solid var(--outline-dark);
   border-radius: 32px; /* Heavily Rounded Rectangle */
   box-shadow: 0 8px 0 var(--outline-deep), 0 16px 32px rgba(0, 0, 0, 0.55);
+}
+
+/* ==========================================================================
+   LOADING SCREEN ("Gearing Up" - Rolling Gear Animation & Welcome Transition)
+   ========================================================================== */
+
+.loading-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  background-color: #faf6ed; /* Exact color of the welcome screen ui card bg */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(16px + var(--safe-top)) max(16px, var(--safe-right)) calc(16px + var(--safe-bottom)) max(16px, var(--safe-left));
+  box-sizing: border-box;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.45s ease-out, visibility 0.45s ease-out;
+  touch-action: none;
+  user-select: none;
+}
+
+.loading-screen.fade-out {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Central Card */
+.loading-card {
+  width: 100%;
+  max-width: 380px;
+  background: #faf6ed; /* Consistent signature warm cream card */
+  border: 3.5px solid var(--outline-dark);
+  border-radius: 32px;
+  box-shadow: 0 8px 0 var(--outline-deep), 0 20px 40px rgba(22, 12, 5, 0.16);
+  padding: clamp(26px, 6vw, 34px) clamp(18px, 5vw, 24px) 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-sizing: border-box;
+  animation: loadCardPop 0.45s cubic-bezier(0.18, 0.89, 0.32, 1.25);
+}
+
+@keyframes loadCardPop {
+  0% { transform: scale(0.92); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Rolling Gear Stage */
+.loading-gear-stage {
+  position: relative;
+  width: 230px;
+  height: 104px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.rolling-gear-assembly {
+  position: relative;
+  width: 100%;
+  height: 86px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+/* Independent Suspension Wrapper (Prevents CSS Transform collision with rotation) */
+.gear-suspension-wrap {
+  position: relative;
+  z-index: 3;
+  margin-bottom: -5px; /* Sits firmly onto the road track */
+  animation: gearSuspension 0.4s ease-in-out infinite alternate;
+}
+
+@keyframes gearSuspension {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-3.5px); }
+}
+
+/* Primary Hero Rolling Gear */
+.loading-gear-svg.gear-primary {
+  width: 72px;
+  height: 72px;
+  display: block;
+  filter: drop-shadow(0 4px 0 var(--outline-deep));
+  transform-origin: center center;
+  animation: gearSpin 1.1s linear infinite;
+}
+
+/* Secondary Interlocking Silver Gear */
+.loading-gear-svg.gear-secondary {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  right: 48px;
+  top: 4px;
+  filter: drop-shadow(0 3px 0 var(--outline-deep));
+  transform-origin: center center;
+  animation: gearSpinRev 0.825s linear infinite;
+  z-index: 2;
+}
+
+@keyframes gearSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes gearSpinRev {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-360deg); }
+}
+
+/* Road Dust Puffs (Emit backward from rolling gear) */
+.rolling-dust-box {
+  position: absolute;
+  left: 62px;
+  bottom: 8px;
+  width: 36px;
+  height: 18px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.dust-puff {
+  position: absolute;
+  bottom: 0;
+  left: 100%;
+  background: #b45309; /* Laterite mud orange */
+  border: 1.5px solid var(--outline-dark);
+  border-radius: 50%;
+  opacity: 0;
+}
+
+.dust-puff.d1 {
+  width: 7px;
+  height: 7px;
+  animation: puffFly 0.65s infinite ease-out;
+}
+
+.dust-puff.d2 {
+  width: 5px;
+  height: 5px;
+  animation: puffFly 0.65s infinite ease-out 0.22s;
+}
+
+.dust-puff.d3 {
+  width: 6px;
+  height: 6px;
+  animation: puffFly 0.65s infinite ease-out 0.44s;
+}
+
+@keyframes puffFly {
+  0% { transform: translate(0, 0) scale(0.6); opacity: 0.85; }
+  100% { transform: translate(-26px, -12px) scale(1.4); opacity: 0; }
+}
+
+/* Rolling Road Track Surface */
+.rolling-track {
+  position: relative;
+  width: 220px;
+  height: 13px;
+  background: #384252; /* Road tarmac color */
+  border: 2.5px solid var(--outline-dark);
+  border-radius: 9px;
+  box-shadow: 0 3px 0 var(--outline-deep);
+  overflow: hidden;
+}
+
+.track-dashes {
+  position: absolute;
+  inset: 0;
+  width: 200%;
+  background: repeating-linear-gradient(
+    90deg,
+    #fecb16 0px,
+    #fecb16 16px,
+    transparent 16px,
+    transparent 32px
+  );
+  animation: trackScroll 0.45s linear infinite;
+}
+
+@keyframes trackScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-32px); }
+}
+
+/* Typography */
+.loading-text-group {
+  margin-bottom: 20px;
+}
+
+.loading-title {
+  font-family: var(--font-display);
+  font-size: clamp(21px, 5.5vw, 25px);
+  font-weight: 900;
+  color: var(--outline-dark);
+  letter-spacing: 0.04em;
+  margin: 0 0 4px;
+  line-height: 1.2;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.loading-dots span {
+  display: inline-block;
+  animation: dotPulse 1.2s infinite;
+}
+
+.loading-dots .ld-1 { animation-delay: 0s; }
+.loading-dots .ld-2 { animation-delay: 0.2s; }
+.loading-dots .ld-3 { animation-delay: 0.4s; }
+
+@keyframes dotPulse {
+  0%, 20% { opacity: 0.2; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-2.5px); }
+  80%, 100% { opacity: 0.2; transform: translateY(0); }
+}
+
+.loading-subtitle {
+  font-family: var(--font-body);
+  font-size: clamp(12px, 3.3vw, 13.5px);
+  font-weight: 600;
+  color: #52525b;
+  margin: 0;
+}
+
+/* Progress Bar and Meta */
+.loading-bar-wrap {
+  width: 100%;
+  max-width: 270px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.loading-bar-track {
+  width: 100%;
+  height: 17px;
+  background: #ffffff;
+  border: 2.5px solid var(--outline-dark);
+  border-radius: 12px;
+  box-shadow: 0 3px 0 var(--outline-deep);
+  overflow: hidden;
+  padding: 2.5px;
+  box-sizing: border-box;
+}
+
+.loading-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #fecb16 0%, #f59e0b 50%, #fecb16 100%);
+  background-size: 30px 100%;
+  border-radius: 7px;
+  transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: barStripe 0.7s linear infinite;
+}
+
+@keyframes barStripe {
+  0% { background-position: 0 0; }
+  100% { background-position: 30px 0; }
+}
+
+.loading-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0 3px;
+}
+
+.loading-status {
+  color: #52525b;
+}
+
+.loading-pct {
+  color: var(--outline-dark);
+  font-weight: 900;
 }
 
 /* ==========================================================================

@@ -41,6 +41,7 @@ export class Player {
         this.shake = 0;
         this.stamina = BIKE.MAX_STAMINA;
         this.isSprinting = false;
+        this._boostExhausted = false;
         this.invulnerable = 0;
 
         // Animation Timers & States
@@ -105,10 +106,29 @@ export class Player {
         this.celebrateTimer = Math.max(0, this.celebrateTimer - dt);
         this.invulnerable = Math.max(0, this.invulnerable - dt);
 
-        // Sprint & Stamina
-        if (active && input.sprint && this.stamina > 2 && !input.brake && this.speed > 1.5) {
+        // Sprint & Stamina (Stop dash and boost effect once boost is less than 5%)
+        const minBoostStamina = BIKE.MAX_STAMINA * ((BIKE.MIN_BOOST_STAMINA_PCT || 5) / 100);
+
+        // Reset exhaustion lock if user releases sprint button/key or stamina recovers comfortably
+        if (!input.sprint || this.stamina >= minBoostStamina + 5) {
+            this._boostExhausted = false;
+        }
+
+        const canSprint = active &&
+            input.sprint &&
+            !this._boostExhausted &&
+            this.stamina >= minBoostStamina &&
+            !input.brake &&
+            this.speed > 1.5;
+
+        if (canSprint) {
             this.isSprinting = true;
             this.stamina = Math.max(0, this.stamina - BIKE.STAMINA_DRAIN * dt);
+            if (this.stamina < minBoostStamina) {
+                // Instantly cut off sprint boost when stamina drops below 5%
+                this.isSprinting = false;
+                this._boostExhausted = true;
+            }
         } else {
             this.isSprinting = false;
             this.stamina = Math.min(BIKE.MAX_STAMINA, this.stamina + BIKE.STAMINA_RECOVERY * dt);

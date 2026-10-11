@@ -16,6 +16,30 @@
     <canvas id="game-canvas" aria-label="Bicycle Street Rush game view"></canvas>
     <canvas id="speed-lines" class="speed-lines" aria-hidden="true"></canvas>
 
+    <!-- Full-screen Sprint Dash UI FX Overlay -->
+    <div id="dash-fx" class="dash-fx-overlay" aria-hidden="true">
+      <div class="dash-vignette"></div>
+      <div class="dash-wind-tunnel">
+        <span class="wind-line wl-1"></span>
+        <span class="wind-line wl-2"></span>
+        <span class="wind-line wl-3"></span>
+        <span class="wind-line wl-4"></span>
+        <span class="wind-line wl-5"></span>
+        <span class="wind-line wl-6"></span>
+        <span class="wind-line wl-7"></span>
+        <span class="wind-line wl-8"></span>
+      </div>
+      <div class="dash-badge-pill">
+        <div class="dash-badge-icon-box">
+          <svg viewBox="0 0 24 24" fill="none" class="dash-bolt-icon">
+            <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="#fde047" stroke="#160c05" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="dash-badge-label">DASH BOOST</span>
+        <span class="dash-badge-sub">2X SPRINT</span>
+      </div>
+    </div>
+
     <!-- In-game HUD with Modular Floating Bubble Panels -->
     <section id="hud" class="hidden" aria-live="polite">
       <!-- Top Center Floating Bubble: Large Urgent Timer with Hanging Stopwatch -->
@@ -301,8 +325,74 @@
       </div>
     </section>
 
+    <!-- Initial Loading Screen: "Gearing Up" with Rolling Gear Animation -->
+    <section id="loading-screen" class="loading-screen" aria-label="Loading game">
+      <div class="loading-card">
+        <div class="loading-gear-stage">
+          <div class="rolling-gear-assembly">
+            <!-- Road Dust Puffs (emit backward from rolling gear) -->
+            <div class="rolling-dust-box" aria-hidden="true">
+              <span class="dust-puff d1"></span>
+              <span class="dust-puff d2"></span>
+              <span class="dust-puff d3"></span>
+            </div>
+
+            <!-- Primary Rolling Golden Gear with Independent Suspension -->
+            <div class="gear-suspension-wrap">
+              <svg class="loading-gear-svg gear-primary" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M 15 2 L 21 2 L 21 5 L 24.5 6.5 L 27 4.5 L 31.5 9 L 29.5 11.5 L 31 15 L 34 15 L 34 21 L 31 21 L 29.5 24.5 L 31.5 27 L 27 31.5 L 24.5 29.5 L 21 31 L 21 34 L 15 34 L 15 31 L 11.5 29.5 L 9 31.5 L 4.5 27 L 6.5 24.5 L 5 21 L 2 21 L 2 15 L 5 15 L 6.5 11.5 L 4.5 9 L 9 4.5 L 11.5 6.5 L 15 5 Z" fill="#fecb16" stroke="#160c05" stroke-width="2.6" stroke-linejoin="round" />
+                <circle cx="18" cy="18" r="9.5" fill="#e59d0b" stroke="#160c05" stroke-width="2" />
+                <!-- 4 Cog Spoke Windows -->
+                <circle cx="18" cy="11.2" r="1.5" fill="#160c05" />
+                <circle cx="18" cy="24.8" r="1.5" fill="#160c05" />
+                <circle cx="11.2" cy="18" r="1.5" fill="#160c05" />
+                <circle cx="24.8" cy="18" r="1.5" fill="#160c05" />
+                <!-- Hub & Axle Nut -->
+                <circle cx="18" cy="18" r="5" fill="#f8fafc" stroke="#160c05" stroke-width="1.8" />
+                <polygon points="18,15 20.6,16.5 20.6,19.5 18,21 15.4,19.5 15.4,16.5" fill="#334155" stroke="#160c05" stroke-width="1.2" />
+                <circle cx="18" cy="18" r="1.4" fill="#160c05" />
+                <circle cx="16" cy="16" r="1.2" fill="#ffffff" />
+              </svg>
+            </div>
+
+            <!-- Secondary Interlocking Counter-Spinning Gear -->
+            <svg class="loading-gear-svg gear-secondary" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M 15 2 L 21 2 L 21 5 L 24.5 6.5 L 27 4.5 L 31.5 9 L 29.5 11.5 L 31 15 L 34 15 L 34 21 L 31 21 L 29.5 24.5 L 31.5 27 L 27 31.5 L 24.5 29.5 L 21 31 L 21 34 L 15 34 L 15 31 L 11.5 29.5 L 9 31.5 L 4.5 27 L 6.5 24.5 L 5 21 L 2 21 L 2 15 L 5 15 L 6.5 11.5 L 4.5 9 L 9 4.5 L 11.5 6.5 L 15 5 Z" fill="#e2e8f0" stroke="#160c05" stroke-width="2.6" stroke-linejoin="round" />
+              <circle cx="18" cy="18" r="9.5" fill="#94a3b8" stroke="#160c05" stroke-width="2" />
+              <circle cx="18" cy="12" r="1.3" fill="#160c05" />
+              <circle cx="18" cy="24" r="1.3" fill="#160c05" />
+              <circle cx="12" cy="18" r="1.3" fill="#160c05" />
+              <circle cx="24" cy="18" r="1.3" fill="#160c05" />
+              <circle cx="18" cy="18" r="5" fill="#ffffff" stroke="#160c05" stroke-width="1.8" />
+              <circle cx="18" cy="18" r="2.2" fill="#160c05" />
+            </svg>
+          </div>
+
+          <!-- Rolling Road Track Surface -->
+          <div class="rolling-track">
+            <div class="track-dashes"></div>
+          </div>
+        </div>
+
+        <div class="loading-text-group">
+          <h2 class="loading-title">GEARING UP<span class="loading-dots" aria-hidden="true"><span class="ld-1">.</span><span class="ld-2">.</span><span class="ld-3">.</span></span></h2>
+          <p class="loading-subtitle">Preparing Lagos streets &amp; vehicles</p>
+        </div>
+
+        <div class="loading-bar-wrap">
+          <div class="loading-bar-track">
+            <div id="loading-bar-fill" class="loading-bar-fill" style="width: 0%;"></div>
+          </div>
+          <div class="loading-meta">
+            <span id="loading-status" class="loading-status">Loading assets</span>
+            <span id="loading-pct" class="loading-pct">0%</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Title screen: Arcade Welcome View with Unobscured 3D Road View & Bottom Sheet -->
-    <section id="title-screen" class="welcome-screen">
+    <section id="title-screen" class="welcome-screen hidden">
       <!-- Top Arcade Title Bar -->
       <header class="welcome-top-bar">
         <button id="btn-sound-toggle" class="welcome-sound-btn" aria-label="Toggle sound">
