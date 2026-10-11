@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#1b1206" />
+  <meta name="description" content="Lagos Bike Rush – a low-poly bicycle race through a Lagos neighbourhood. Beat the 90-second clock, dodge potholes and jaywalkers, and take the muddy shortcuts." />
+  <title>Lagos Bike Rush – Low-Poly Lagos Bicycle Race</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+<body>
+  <main id="app">
+    <canvas id="game-canvas" aria-label="Lagos Bike Rush game view"></canvas>
+
+    <!-- In-game HUD -->
+    <section id="hud" class="hidden" aria-live="polite">
+      <div class="hud-top">
+        <div id="cp-card" class="glass card">
+          <span class="card-label">NEXT STOP <b id="cp-count">1/4</b></span>
+          <span id="cp-name" class="card-value">Mama Caro's Shop</span>
+        </div>
+        <div id="timer" class="glass timer">
+          <span id="timer-value">90.0</span>
+        </div>
+        <canvas id="minimap" class="glass" width="240" height="240" aria-label="Minimap"></canvas>
+      </div>
+
+      <div id="nav" class="glass nav">
+        <svg id="nav-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 L20 20 L12 15 L4 20 Z" /></svg>
+        <span id="nav-dist">120m</span>
+        <span id="surface-chip" class="chip road">TARMAC</span>
+      </div>
+
+      <div id="toast" class="toast"></div>
+
+      <div id="steer-meter" class="steer-meter" aria-hidden="true"><div id="steer-knob"></div></div>
+
+      <button id="btn-brake" class="ctrl-btn brake" aria-label="Brake">BRAKE</button>
+      <button id="btn-bell" class="ctrl-btn bell" aria-label="Ring bell">🔔</button>
+    </section>
+
+    <!-- Title screen -->
+    <section id="title-screen" class="overlay">
+      <div class="title-wrap">
+        <p class="kicker">A LAGOS STREET RACE</p>
+        <h1 class="logo"><span>LAGOS</span><span class="accent">BIKE RUSH</span></h1>
+        <p class="tagline">90 seconds. 4 stops. Tarmac or mud – your choice.</p>
+        <ul class="howto">
+          <li><span class="ico">👆</span>Drag left / right to steer</li>
+          <li><span class="ico">🛣️</span>Main road: smooth, long, potholes &amp; jaywalkers</li>
+          <li><span class="ico">🟫</span>Mud alleys between houses: shorter route</li>
+          <li><span class="ico">🔔</span>Ring your bell to warn people</li>
+        </ul>
+        <button id="btn-start" class="cta">TAP TO RIDE</button>
+        <p class="keys">Keyboard: ← → steer · ↓ brake · Space bell</p>
+      </div>
+    </section>
+
+    <!-- Countdown -->
+    <section id="countdown" class="overlay passthrough hidden"><span id="countdown-value">3</span></section>
+
+    <!-- End screen -->
+    <section id="end-screen" class="overlay hidden">
+      <div class="end-card glass">
+        <h2 id="end-title">DELIVERED!</h2>
+        <p id="end-rank" class="rank">Oga Rider 👑</p>
+        <dl class="stats">
+          <div><dt>Time left</dt><dd id="stat-time">0.0s</dd></div>
+          <div><dt>Stops</dt><dd id="stat-cps">4/4</dd></div>
+          <div><dt>Mud shortcuts</dt><dd id="stat-mud">0%</dd></div>
+          <div><dt>Potholes hit</dt><dd id="stat-potholes">0</dd></div>
+          <div><dt>Near accidents</dt><dd id="stat-npcs">0</dd></div>
+        </dl>
+        <button id="btn-retry" class="cta">RIDE AGAIN</button>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
