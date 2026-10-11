@@ -40,6 +40,7 @@ export class Player {
         this.idlePhase = 0;
 
         this.stats = { potholes: 0, npcHits: 0, vehicleHits: 0, mudTime: 0, roadTime: 0 };
+        this.gutterCooldown = 0;
         this.map.potholes.forEach(p => (p.cooldown = 0));
         this.particles.forEach(p => {
             p.life = 0;
@@ -79,7 +80,7 @@ export class Player {
      * @returns {{pothole: boolean}}
      */
     update(dt, input, active) {
-        const events = { pothole: false };
+        const events = { pothole: false, gutter: false };
         this.idlePhase += dt * 3.5;
         this.surface = this.map.surfaceAt(this.x, this.z);
 
@@ -161,6 +162,18 @@ export class Player {
                 this._burst(p.x, p.z, 14, 2);
                 events.pothole = true;
             }
+        }
+
+        // Open Gutter hazard check (entering the open trench instead of safely crossing on the wooden plank bridge)
+        this.gutterCooldown = Math.max(0, (this.gutterCooldown || 0) - dt);
+        if (this.gutterCooldown <= 0 && this.speed > 1.2 && this.map.isInOpenGutter && this.map.isInOpenGutter(this.x, this.z, BIKE.RADIUS * 0.45)) {
+            this.gutterCooldown = 1.6;
+            this.speed *= HAZARDS.POTHOLE_SPEED_KEEP; // Same speed drop effect as pothole
+            this.wobble = 1.0;
+            this.shake = 0.65;
+            this.audio.pothole();
+            this._burst(this.x, this.z, 16, 2);
+            events.gutter = true;
         }
 
         // Mud spray particles

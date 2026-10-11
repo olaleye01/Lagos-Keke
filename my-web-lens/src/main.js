@@ -115,8 +115,8 @@ sun.addComponent('light', {
     castShadows: true,
     shadowDistance: 60,
     shadowResolution: 2048,
-    shadowBias: 0.15,
-    normalOffsetBias: 0.08
+    shadowBias: 0.06,
+    normalOffsetBias: 0.04
 });
 sun.setEulerAngles(48, 135, 0); // shining along -Y
 app.root.addChild(sun);
@@ -151,6 +151,9 @@ const npcs = new NPCManager(app, map, audio);
 const vehicles = new VehicleManager(app, map, audio);
 const beacon = createCheckpointBeacon(app);
 app.root.addChild(beacon.root);
+
+// Expose runtime debug handle
+window.gameDebug = { app, map, player, camera: cameraEntity };
 
 // Pre-rendered minimap background
 const minimapBase = map.renderMinimapBase(minimapCanvas.width);
@@ -318,6 +321,15 @@ function startCountdown() {
     const topHeight = 16.0;
     currentCamPos.set(player.x - player.forwardX * topDist, topHeight, player.z - player.forwardZ * topDist);
     currentCamLook.set(player.x, 0.9, player.z);
+
+    if (new URLSearchParams(window.location.search).get('gutter') === '1') {
+        player.x = 0;
+        player.z = 12.0;
+        player.yaw = 0; // facing North directly towards South plank bridge at z=7.8
+        currentCamPos.set(0, 2.25, 12.0 + 4.2);
+        currentCamLook.set(0, 1.20, 12.0 - 2.0);
+    }
+
     cameraEntity.setPosition(currentCamPos);
     cameraEntity.lookAt(currentCamLook);
 }
@@ -491,6 +503,9 @@ app.on('update', dt => {
     if (playerEvents.pothole) {
         showToast('⚠️ Wahala! Pothole!', 'bad', 1400);
     }
+    if (playerEvents.gutter) {
+        showToast('⚠️ Wahala! you don enter gutter!', 'bad', 1600);
+    }
 
     const npcToast = npcs.update(dt, player, isRiding, vehicles);
     if (npcToast) {
@@ -520,7 +535,7 @@ app.on('update', dt => {
 
         // Desired camera position behind the rider
         const followDist = 4.2 + (player.speed / player.maxSpeed) * 0.8;
-        const camHeight = 2.1 + (player.speed / player.maxSpeed) * 0.2;
+        const camHeight = 2.25 + (player.speed / player.maxSpeed) * 0.2;
         const desiredX = player.x - forwardX * followDist;
         const desiredZ = player.z - forwardZ * followDist;
         let desiredY = camHeight;
@@ -548,7 +563,7 @@ app.on('update', dt => {
         // Look slightly ahead of the bicycle
         const lookDistAhead = 2.0;
         const targetLookX = player.x + forwardX * lookDistAhead;
-        const targetLookY = 1.35;
+        const targetLookY = 1.20;
         const targetLookZ = player.z + forwardZ * lookDistAhead;
 
         currentCamLook.x = math.lerp(currentCamLook.x, targetLookX, 1 - Math.exp(-12 * dt));

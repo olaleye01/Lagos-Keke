@@ -31,6 +31,25 @@ export const PALETTE = {
     pole: [96, 76, 56],
     potholeRim: [44, 44, 46],
     potholeWater: [86, 70, 56],
+    gutterConcrete: [182, 178, 170],
+    gutterConcreteDark: [60, 58, 54],
+    gutterWater: [62, 68, 46],
+    gutterSlime: [74, 94, 50],
+    // Deep open drain: lighter weathered concrete at the lip, darker and wetter towards the floor
+    drainCap: [186, 180, 168],
+    drainWallTop: [160, 154, 142],
+    drainWallMid: [124, 118, 108],
+    drainWallLow: [90, 88, 78],
+    drainStain: [96, 90, 80],
+    drainAlgae: [78, 98, 56],
+    drainFloor: [86, 78, 64],
+    drainSilt: [106, 92, 72],
+    sachetWhite: [232, 236, 240],
+    sachetBlue: [70, 124, 204],
+    plankWood: [144, 104, 68],
+    plankWoodLight: [168, 126, 82],
+    plankWoodDark: [112, 78, 48],
+    plankNail: [68, 66, 64],
     walls: [
         [236, 226, 196], // cream
         [168, 206, 222], // faded blue
