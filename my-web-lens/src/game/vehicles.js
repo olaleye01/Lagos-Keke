@@ -189,11 +189,12 @@ export class VehicleManager {
         this.audio = audio;
         this.rand = mulberry32(8881);
 
-        // Lane trajectories
-        // Outer lane (Clockwise): offset +1.4m towards perimeter
-        this.outerTrack = new LoopTrack(55.4, 4.0, true);
-        // Inner lane (Counter-Clockwise): offset -1.4m towards neighborhood
-        this.innerTrack = new LoopTrack(52.6, 4.0, false);
+        // Lane trajectories for Right-Hand Traffic (RHT):
+        // In RHT, vehicles always drive on the right side of the two-way road.
+        // Outer lane (55.4m): travels Counter-Clockwise -> on the right side of the road
+        this.outerTrack = new LoopTrack(55.4, 4.0, false);
+        // Inner lane (52.6m): travels Clockwise -> on the right side of the road
+        this.innerTrack = new LoopTrack(52.6, 4.0, true);
 
         this.vehicles = [];
         this._initFleet();
