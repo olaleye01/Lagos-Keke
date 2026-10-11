@@ -1,7 +1,7 @@
 // Touch + keyboard input. Owns its DOM listeners and removes them in destroy().
 
 export class Input {
-    constructor(surface, { brakeButton, sprintButton }) {
+    constructor(surface, { brakeButton, sprintButton, steerMeter }) {
         this.steer = 0; // -1 (left) .. 1 (right)
         this.brake = false;
         this.sprint = false;
@@ -24,13 +24,17 @@ export class Input {
         };
         this._listeners = [];
 
-        // drag anywhere on the canvas to steer (relative to where the finger went down)
-        listen(surface, 'pointerdown', e => {
+        // drag anywhere on the canvas or steer meter to steer
+        const onPointerDown = e => {
             if (this._pointerId !== null) return;
             this._pointerId = e.pointerId;
             this._startX = e.clientX;
             this._touchSteer = 0;
-        });
+        };
+        listen(surface, 'pointerdown', onPointerDown);
+        if (steerMeter) {
+            listen(steerMeter, 'pointerdown', onPointerDown);
+        }
         listen(window, 'pointermove', e => {
             if (e.pointerId !== this._pointerId) return;
             const range = Math.max(60, window.innerWidth * 0.16);

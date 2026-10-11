@@ -1,28 +1,47 @@
+/* ==========================================================================
+   LAGOS BIKE RUSH - CARTOON POP & STICKER DESIGN SYSTEM
+   ========================================================================== */
+
 :root {
-  --lagos-yellow: hsl(46, 100%, 55%);
-  --lagos-yellow-deep: hsl(38, 100%, 48%);
-  --naija-green: hsl(148, 72%, 38%);
-  --laterite: hsl(18, 62%, 42%);
-  --ink: hsl(30, 40%, 8%);
-  --cream: hsl(40, 60%, 96%);
-  --danger: hsl(4, 85%, 56%);
-  --glass-bg: hsla(30, 40%, 8%, 0.55);
-  --glass-border: hsla(46, 100%, 70%, 0.22);
-  --font-display: 'Baloo 2', 'Arial Rounded MT Bold', 'Trebuchet MS', system-ui, sans-serif;
-  --font-body: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* Color Palette */
+  --outline-dark: #160c05;       /* Thick 2D sticker stroke */
+  --outline-deep: #0e0602;       /* 3D bottom extrusion color */
+  --panel-bg: linear-gradient(180deg, #482c1b 0%, #2e1a0f 100%); /* Warm earth-tone medium-to-dark brown */
+  --panel-bg-alt: linear-gradient(180deg, #583722 0%, #3a2215 100%);
+  --panel-well: #1b0e07;         /* Recessed track/well */
+  
+  --primary-white: #ffffff;      /* Pure white for critical data/numbers */
+  --arcade-yellow: #fecb16;      /* Bright saturated arcade yellow */
+  --arcade-yellow-deep: #e59d0b; /* Deep gold highlight */
+  --laterite-mud: #b45309;       /* Laterite orange for mud alleys */
+  --road-tarmac: #384252;        /* Slate dark for tarmac road */
+  --danger-red: #ea3838;         /* Danger / alert red */
+  --success-green: #22c55e;      /* Success / good green */
+  
+  /* Typography */
+  --font-display: 'Fredoka', 'Sniglet', 'Baloo 2', system-ui, sans-serif;
+  --font-body: 'Fredoka', 'Outfit', system-ui, sans-serif;
+
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: var(--ink);
-  color: var(--cream);
+  background: #140b05;
+  color: #fff;
   font-family: var(--font-body);
+  font-weight: 700;
   -webkit-user-select: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -30,7 +49,10 @@ html, body {
   overscroll-behavior: none;
 }
 
-#app { position: fixed; inset: 0; }
+#app {
+  position: fixed;
+  inset: 0;
+}
 
 #game-canvas {
   position: absolute;
@@ -41,455 +63,1169 @@ html, body {
   touch-action: none;
 }
 
-.hidden { display: none !important; }
+.hidden {
+  display: none !important;
+}
 
+/* ==========================================================================
+   CORE STICKER PANEL STYLING (Heavily Rounded, Thick Stroke, Cartoon Pop)
+   ========================================================================== */
+
+.sticker-bubble,
+.panel,
 .glass {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(10px) saturate(140%);
-  -webkit-backdrop-filter: blur(10px) saturate(140%);
-  box-shadow: 0 8px 24px hsla(0, 0%, 0%, 0.3);
+  background: var(--panel-bg);
+  border: 3.5px solid var(--outline-dark);
+  border-radius: 26px;
+  box-shadow: 0 5px 0 var(--outline-deep), 0 10px 22px rgba(0, 0, 0, 0.45);
+  position: relative;
+  pointer-events: auto;
 }
 
-/* ---------- HUD ---------- */
-#hud { position: absolute; inset: 0; pointer-events: none; }
+/* Text 3D Cartoon Drop-Shadow Extrusion */
+.sticker-text-white,
+.card-value,
+.speed-dial-center #speed-num,
+.timer-display #timer-value,
+#nav-dist,
+.cta {
+  color: var(--primary-white);
+  font-family: var(--font-display);
+  font-weight: 900;
+  text-shadow: 
+    -2px -2px 0 var(--outline-dark),
+     2px -2px 0 var(--outline-dark),
+    -2px  2px 0 var(--outline-dark),
+     2px  2px 0 var(--outline-dark),
+     0 3.5px 0 var(--outline-deep),
+     0 5px 8px rgba(0, 0, 0, 0.5);
+}
 
-.hud-top {
+.sticker-text-yellow,
+.quest-title,
+.speed-unit,
+.timer-tag {
+  color: var(--arcade-yellow);
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-shadow: 
+    -1.5px -1.5px 0 var(--outline-dark),
+     1.5px -1.5px 0 var(--outline-dark),
+    -1.5px  1.5px 0 var(--outline-dark),
+     1.5px  1.5px 0 var(--outline-dark),
+     0 2.5px 0 var(--outline-deep);
+}
+
+/* Overlapping Illustrations */
+.sticker-icon {
   position: absolute;
-  top: calc(10px + var(--safe-top));
-  left: 10px;
-  right: 10px;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: start;
-  gap: 8px;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 0 var(--outline-deep)) drop-shadow(0 6px 10px rgba(0,0,0,0.4));
+  z-index: 10;
 }
 
-.card {
-  justify-self: start;
+/* ==========================================================================
+   MODULAR FLOATING HUD PANELS
+   ========================================================================== */
+
+#hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* 1. HIERARCHY: URGENT GAMEPLAY TIMER (Top Center Hero Pill) */
+.timer-panel,
+#timer {
+  position: absolute;
+  top: calc(8px + var(--safe-top));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 18px 4px 14px;
+  border-radius: 9999px; /* Pure Pill Shape */
+  z-index: 15;
+  transition: transform 0.2s cubic-bezier(.2, 1.6, .4, 1), background 0.2s, border-color 0.2s;
+}
+
+/* Illustrated Stopwatch hanging off the top-left shoulder */
+.sticker-stopwatch {
+  top: -12px;
+  left: -14px;
+  width: 38px;
+  height: 38px;
+  transform: rotate(-12deg);
+}
+
+.timer-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+
+.timer-tag {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  opacity: 0.95;
+  margin-bottom: 1px;
+}
+
+#timer-value {
+  font-size: clamp(26px, 7.5vw, 36px);
+  line-height: 0.95;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Timer State Animations */
+#timer.warn {
+  border-color: #d97706;
+  box-shadow: 0 5px 0 #92400e, 0 0 16px rgba(245, 158, 11, 0.4);
+}
+#timer.warn #timer-value {
+  color: var(--arcade-yellow);
+}
+
+#timer.danger {
+  border-color: var(--danger-red);
+  background: linear-gradient(180deg, #621b1b 0%, #360f0f 100%);
+  box-shadow: 0 5px 0 #280909, 0 0 24px rgba(239, 68, 68, 0.6);
+  animation: timerPanic 0.4s ease-in-out infinite alternate;
+}
+#timer.danger #timer-value {
+  color: #ff6b6b;
+}
+
+#timer.bonus {
+  animation: timerBonusPop 0.45s ease-out;
+}
+#timer.bonus #timer-value {
+  color: #86efac;
+}
+
+/* 2. QUEST / NEXT STOP INFO (Floating Rounded Bubble on Left Column) */
+.quest-panel,
+#cp-card {
+  position: absolute;
+  top: calc(56px + var(--safe-top));
+  left: max(8px, var(--safe-left));
+  padding: 6px 12px 6px 14px;
+  border-radius: 20px;
+  max-width: min(52vw, 195px);
+  z-index: 12;
+}
+
+/* Overlapping 3D Cartoon Map Pin */
+.sticker-mappin {
+  top: -12px;
+  left: -10px;
+  width: 28px;
+  height: 34px;
+  transform: rotate(-10deg);
+}
+
+.quest-content {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 8px 12px;
-  border-radius: 14px;
-  max-width: 100%;
+  margin-left: 8px; /* offset for overlapping map pin */
   min-width: 0;
+  overflow: hidden;
 }
-.card-header {
+
+.quest-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 4px;
 }
-.card-label { font-size: 10px; letter-spacing: 0.14em; opacity: 0.75; font-weight: 600; white-space: nowrap; }
-.card-label b { color: var(--lagos-yellow); }
-.cp-route-badge {
-  font-size: 9px;
+
+.quest-label {
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  opacity: 0.9;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  padding: 1.5px 6px;
-  border-radius: 6px;
+  white-space: nowrap;
+  color: #fef08a;
+  text-shadow: 0 1.5px 0 var(--outline-dark);
+}
+
+.quest-label b {
+  color: var(--arcade-yellow);
+}
+
+.cp-route-badge {
+  font-size: 7.5px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  padding: 1.5px 5px;
+  border-radius: 9999px; /* Pill */
   text-transform: uppercase;
   white-space: nowrap;
-  line-height: 1.2;
+  border: 1.8px solid var(--outline-dark);
+  box-shadow: 0 1.5px 0 var(--outline-deep);
 }
+
 .cp-route-badge.mud {
-  background: var(--laterite);
-  color: var(--cream);
-  box-shadow: 0 0 10px rgba(186, 73, 34, 0.45);
+  background: var(--laterite-mud);
+  color: #ffffff;
 }
+
 .cp-route-badge.road {
-  background: hsl(220, 10%, 26%);
-  color: var(--lagos-yellow);
-  border: 1px solid rgba(246, 206, 52, 0.35);
+  background: var(--road-tarmac);
+  color: var(--arcade-yellow);
 }
+
+.quest-title,
 .card-value {
-  font-family: var(--font-display);
-  font-size: clamp(13px, 3.6vw, 17px);
-  font-weight: 800;
-  line-height: 1.1;
-  color: var(--lagos-yellow);
+  font-size: clamp(11px, 3.1vw, 13.5px);
+  line-height: 1.15;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  letter-spacing: 0.02em;
+  display: block;
+  max-width: 100%;
 }
 
-.timer {
-  padding: 4px 18px 0;
-  border-radius: 18px;
-  text-align: center;
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: clamp(30px, 9vw, 44px);
-  line-height: 1.15;
-  font-variant-numeric: tabular-nums;
-  color: var(--cream);
-  transition: color 0.2s, transform 0.2s;
-}
-.timer.warn { color: var(--lagos-yellow); }
-.timer.danger { color: var(--danger); animation: pulse 0.5s ease-in-out infinite alternate; }
-.timer.bonus { animation: pop 0.45s ease-out; color: hsl(130, 80%, 60%); }
-
-#minimap {
-  justify-self: end;
-  width: clamp(84px, 24vw, 120px);
-  height: clamp(84px, 24vw, 120px);
-  border-radius: 16px;
-  padding: 0;
-}
-
-.speed-lines {
+/* 3. MINIMAP WITH CONCEPTUAL UTILITY POLE ANCHOR (Right Column Cluster) */
+.minimap-cluster {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  top: calc(56px + var(--safe-top));
+  right: max(8px, var(--safe-right));
+  z-index: 12;
+  display: flex;
+  align-items: center;
+}
+
+.sticker-pole-bracket {
+  position: absolute;
+  left: -14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 80px;
+  z-index: 1;
   pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.2s ease-out;
-  mix-blend-mode: screen;
+  filter: drop-shadow(0 2.5px 0 var(--outline-dark));
+}
+
+.minimap-container {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  padding: 3px;
   z-index: 2;
 }
-.speed-lines.active {
-  opacity: 0.9;
+
+#minimap {
+  display: block;
+  width: clamp(72px, 19vw, 88px);
+  height: clamp(72px, 19vw, 88px);
+  border-radius: 17px;
+  background: #2b180d;
 }
 
-.hud-mid {
+/* 4. NAVIGATION COMPASS (Left Column, Stacked Below Quest Card) */
+.nav-panel,
+#nav {
   position: absolute;
-  top: calc(82px + var(--safe-top));
-  left: 0;
-  right: 0;
+  top: calc(114px + var(--safe-top));
+  left: max(8px, var(--safe-left));
   display: flex;
-  justify-content: center;
   align-items: center;
-  gap: 10px;
-  pointer-events: none;
+  gap: 6px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 9999px; /* Pill */
+  z-index: 11;
 }
 
-.nav {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 14px 6px 10px;
-  border-radius: 999px;
-  font-weight: 800;
-  font-size: 15px;
+#nav-arrow {
+  width: 18px;
+  height: 18px;
+  fill: var(--arcade-yellow);
+  filter: drop-shadow(0 2px 0 var(--outline-dark));
+  transition: transform 0.08s linear;
+}
+
+#nav-dist {
+  font-size: 13.5px;
+  letter-spacing: 0.03em;
   white-space: nowrap;
 }
-#nav-arrow { width: 22px; height: 22px; fill: var(--lagos-yellow); transition: transform 0.08s linear; }
+
 .chip {
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  padding: 3px 8px;
-  border-radius: 999px;
-  font-weight: 800;
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: 9999px;
+  border: 1.8px solid var(--outline-dark);
+  box-shadow: 0 1.5px 0 var(--outline-deep);
 }
-.chip.road { background: hsl(220, 8%, 30%); color: var(--cream); }
-.chip.mud { background: var(--laterite); color: var(--cream); }
+.chip.road { background: var(--road-tarmac); color: #ffffff; }
+.chip.mud { background: var(--laterite-mud); color: #ffffff; }
 
-.speed-badge {
-  display: flex;
-  align-items: baseline;
-  gap: 3px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-family: var(--font-display);
-  font-weight: 800;
-  color: var(--cream);
-}
-#speed-num {
-  font-size: 18px;
-  color: var(--lagos-yellow);
-  font-variant-numeric: tabular-nums;
-}
-.speed-unit {
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  opacity: 0.75;
-}
-
-/* Stamina bar */
-.stamina-wrap {
+/* 5. SPEEDOMETER BADGE (Right Column, Stacked Below Minimap) */
+.speedometer-panel,
+#speedometer {
   position: absolute;
-  top: calc(128px + var(--safe-top));
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(75vw, 240px);
-  padding: 5px 10px 7px;
-  border-radius: 12px;
+  top: calc(152px + var(--safe-top));
+  right: max(10px, var(--safe-right));
+  width: 58px;
+  height: 58px;
+  border-radius: 50%; /* Circular Oval */
+  background: var(--panel-bg);
+  border: 3px solid var(--outline-dark);
+  box-shadow: 0 4px 0 var(--outline-deep), 0 8px 16px rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 11;
+}
+
+/* Circular Bicycle Chain Pattern wrapping around the Speedometer */
+.sticker-chain-ring {
+  position: absolute;
+  inset: -5px;
+  width: calc(100% + 10px);
+  height: calc(100% + 10px);
+  pointer-events: none;
+  filter: drop-shadow(0 2px 0 var(--outline-dark));
+}
+
+.speed-dial-center {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  align-items: center;
+  justify-content: center;
+  line-height: 0.95;
 }
-.stamina-label {
+
+#speed-num {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+.speed-unit {
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  margin-top: 1px;
+}
+
+/* 6. VERTICAL BOOST / STAMINA METER (Right Column, Just Above Sprint Pedal) */
+.stamina-panel,
+#stamina-container {
+  position: absolute;
+  bottom: calc(124px + var(--safe-bottom));
+  right: calc(max(12px, var(--safe-right)) + 13px);
+  width: 46px;
+  padding: 10px 4px 7px;
+  border-radius: 22px; /* Vertical Pill Capsule */
   display: flex;
-  justify-content: space-between;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.15em;
-  opacity: 0.85;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  z-index: 15;
 }
-.stamina-label span:last-child {
-  color: var(--lagos-yellow);
+
+/* Cartoon Fire / Exhaust Flame bursting out of the top */
+.sticker-flame {
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%) rotate(0deg);
+  width: 32px;
+  height: 30px;
+  transition: transform 0.12s ease-out, filter 0.12s ease-out;
 }
+
+.stamina-panel.boosting .sticker-flame {
+  transform: translateX(-50%) rotate(4deg) scale(1.3) translateY(-4px);
+  filter: drop-shadow(0 0 12px rgba(249, 115, 22, 0.85)) drop-shadow(0 3px 0 var(--outline-dark));
+  animation: flameFlicker 0.15s infinite alternate ease-in-out;
+}
+
+.stamina-title {
+  font-family: var(--font-display);
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: var(--arcade-yellow);
+  text-shadow: 0 1.5px 0 var(--outline-dark);
+  line-height: 1;
+}
+
 .stamina-track {
-  width: 100%;
-  height: 6px;
-  background: hsla(0, 0%, 100%, 0.12);
-  border-radius: 999px;
+  width: 10px;
+  height: 56px;
+  background: var(--panel-well);
+  border: 2px solid var(--outline-dark);
+  border-radius: 9999px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end; /* Fills from bottom upwards */
 }
+
 .stamina-fill {
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, hsl(38, 100%, 50%), hsl(52, 100%, 55%));
-  border-radius: 999px;
-  box-shadow: 0 0 8px hsla(46, 100%, 50%, 0.7);
-  transition: width 0.08s linear;
-}
-.stamina-fill.exhausted {
-  background: hsl(0, 75%, 55%);
-  box-shadow: 0 0 8px hsl(0, 80%, 50%);
+  background: linear-gradient(180deg, #fde047 0%, #f59e0b 100%);
+  border-radius: 9999px;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.6);
+  transition: height 0.08s linear;
 }
 
+.stamina-fill.exhausted {
+  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+}
+
+.stamina-pct,
+#stamina-val {
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 900;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-shadow: 0 1.5px 0 var(--outline-dark);
+}
+
+/* 7. TOAST NOTIFICATIONS (Chunky Comic Sticker, Mobile-Safe Text Wrapping) */
 .toast {
   position: absolute;
-  top: 30%;
+  top: 36%;
   left: 50%;
-  transform: translate(-50%, -50%) scale(0.8);
+  transform: translate(-50%, -50%) scale(0.75);
+  width: max-content;
+  max-width: min(88vw, 340px);
+  box-sizing: border-box;
   font-family: var(--font-display);
-  font-weight: 800;
-  font-size: clamp(22px, 7vw, 34px);
+  font-weight: 900;
+  font-size: clamp(15px, 4.2vw, 22px);
+  line-height: 1.25;
   text-align: center;
-  color: var(--lagos-yellow);
-  text-shadow: 0 3px 0 var(--ink), 0 0 18px hsla(0, 0%, 0%, 0.6);
+  padding: 8px 18px;
+  border-radius: 22px;
+  background: var(--panel-bg);
+  border: 3.5px solid var(--outline-dark);
+  box-shadow: 0 6px 0 var(--outline-deep), 0 12px 24px rgba(0, 0, 0, 0.5);
+  color: var(--arcade-yellow);
+  text-shadow: 
+    -2px -2px 0 var(--outline-dark),
+     2px -2px 0 var(--outline-dark),
+    -2px  2px 0 var(--outline-dark),
+     2px  2px 0 var(--outline-dark),
+     0 3px 0 var(--outline-deep);
   opacity: 0;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
+  text-wrap: balance;
+  pointer-events: none;
+  z-index: 30;
   transition: opacity 0.2s, transform 0.25s cubic-bezier(.2, 1.6, .4, 1);
 }
-.toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-.toast.bad { color: hsl(8, 100%, 66%); }
-.toast.good { color: hsl(130, 85%, 62%); }
+.toast.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+.toast.bad {
+  color: #ff6b6b;
+  border-color: #991b1b;
+}
+.toast.good {
+  color: #86efac;
+  border-color: #166534;
+}
 
-.steer-meter {
+/* 8. BICYCLE HANDLEBAR STEER MECHANISM */
+.steer-meter-box {
   position: absolute;
-  bottom: calc(34px + var(--safe-bottom));
+  bottom: calc(14px + var(--safe-bottom));
   left: 50%;
-  width: 30vw;
-  max-width: 150px;
-  height: 7px;
   transform: translateX(-50%);
-  border-radius: 999px;
-  background: hsla(0, 0%, 100%, 0.18);
-}
-#steer-knob {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--lagos-yellow);
-  box-shadow: 0 0 12px var(--lagos-yellow);
-  transform: translate(-50%, -50%);
-}
-
-.ctrl-btn {
-  position: absolute;
-  bottom: calc(18px + var(--safe-bottom));
-  font-family: var(--font-display);
-  font-weight: 800;
-  color: var(--cream);
-  pointer-events: auto;
-  touch-action: none;
-  cursor: pointer;
+  width: clamp(180px, 46vw, 216px);
+  height: 58px;
+  background: rgba(22, 12, 5, 0.76);
+  border: 2.5px solid var(--outline-dark);
+  border-radius: 22px;
+  box-shadow: 0 4px 0 var(--outline-deep), 0 8px 18px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  transition: transform 0.1s, filter 0.1s;
-  box-shadow: 0 8px 24px hsla(0, 0%, 0%, 0.4);
-}
-.ctrl-btn:active, .ctrl-btn.pressed { transform: scale(0.92); filter: brightness(1.2); }
-.ctrl-btn.brake {
-  left: 18px;
-  width: 70px;
-  height: 70px;
-  border-radius: 18px;
-  border: 2px solid hsla(0, 0%, 100%, 0.4);
-  background: linear-gradient(160deg, hsl(4, 85%, 58%), hsl(350, 75%, 38%));
-  box-shadow: 0 8px 20px hsla(4, 85%, 45%, 0.35), 0 4px 12px hsla(0, 0%, 0%, 0.3);
-  font-size: 13px;
-  letter-spacing: 0.06em;
+  pointer-events: auto;
+  touch-action: none;
+  z-index: 10;
+  user-select: none;
 }
 
-/* Modern Pedal / Sprint Button */
-.pedal-control {
+/* Floating "STEER" badge bubble */
+.steer-badge {
   position: absolute;
-  right: 18px;
-  bottom: calc(16px + var(--safe-bottom));
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--panel-bg);
+  border: 2.2px solid var(--outline-dark);
+  border-radius: 9999px;
+  padding: 2px 10px;
+  box-shadow: 0 2.5px 0 var(--outline-deep), 0 4px 8px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  z-index: 5;
+}
+.steer-badge span {
+  font-family: var(--font-display);
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  color: var(--arcade-yellow);
+  text-shadow: 0 1px 0 var(--outline-dark);
+  display: block;
+  line-height: 1.1;
+}
+
+/* L/R Floating Indicators with Warm Backlight Glow */
+.steer-side-ind {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 2px;
+  pointer-events: none;
+  z-index: 4;
+  filter: drop-shadow(0 0 6px rgba(254, 203, 22, 0.6));
+  transition: filter 0.1s ease, transform 0.1s ease, opacity 0.1s;
+  opacity: 0.85;
+}
+.steer-side-ind.left {
+  left: 6px;
+}
+.steer-side-ind.right {
+  right: 6px;
+}
+.steer-side-ind.active {
+  opacity: 1;
+  filter: drop-shadow(0 0 12px rgba(254, 203, 22, 0.95)) drop-shadow(0 0 4px #ffffff);
+  transform: translateY(-50%) scale(1.15);
+}
+.steer-arrow-ico {
+  width: 9px;
+  height: 9px;
+  display: block;
+}
+.steer-letter {
+  font-family: var(--font-display);
+  font-size: 9.5px;
+  font-weight: 900;
+  color: var(--arcade-yellow);
+  text-shadow: 0 1.5px 0 var(--outline-dark);
+  line-height: 1;
+}
+
+/* Track SVG */
+.steer-track-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* Draggable Glowing Bicycle Gear Cog Steering Knob */
+#steer-knob,
+.steer-gear-knob {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  top: 62%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 6;
+  filter: drop-shadow(0 0 8px rgba(254, 203, 22, 0.8)) drop-shadow(0 3px 0 var(--outline-deep));
+  transition: filter 0.1s ease;
+}
+
+.gear-cog-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+/* 9. TACTILE CONTROL PEDALS (Brake & Sprint) */
+.ctrl-btn {
+  position: absolute;
+  font-family: var(--font-display);
+  font-weight: 900;
+  color: #ffffff;
   pointer-events: auto;
   touch-action: none;
   cursor: pointer;
-  user-select: none;
-  -webkit-user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.08s, filter 0.08s;
+  z-index: 20;
+}
+.ctrl-btn:active, .ctrl-btn.pressed {
+  transform: translateY(4px) scale(0.95);
+}
+
+.ctrl-btn.brake {
+  left: max(12px, var(--safe-left));
+  bottom: calc(18px + var(--safe-bottom));
+  width: clamp(62px, 16vw, 72px);
+  height: clamp(62px, 16vw, 72px);
+  border-radius: 20px; /* Chunky Rounded Pill */
+  border: 3.5px solid var(--outline-dark);
+  background: linear-gradient(160deg, #ef4444 0%, #b91c1c 100%);
+  box-shadow: 0 6px 0 #7f1d1d, 0 8px 18px rgba(0, 0, 0, 0.4);
+  font-size: clamp(11px, 3.2vw, 13px);
+  letter-spacing: 0.08em;
+  text-shadow: 0 2px 0 var(--outline-dark);
+}
+
+.pedal-control {
+  position: absolute;
+  right: max(12px, var(--safe-right));
+  bottom: calc(18px + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  pointer-events: auto;
+  touch-action: none;
+  cursor: pointer;
+  z-index: 20;
 }
 .pedal-surface {
   position: relative;
-  width: 76px;
-  height: 94px;
-  border-radius: 20px 12px 14px 14px;
-  border: 2px solid hsla(0, 0%, 100%, 0.45);
-  background: linear-gradient(155deg, hsla(0, 0%, 100%, 0.18) 0%, hsla(220, 16%, 12%, 0.72) 100%);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 8px 24px hsla(0, 0%, 0%, 0.45), inset 0 1px 1px hsla(0, 0%, 100%, 0.35);
+  width: clamp(64px, 17vw, 76px);
+  height: clamp(74px, 20vw, 88px);
+  border-radius: 22px; /* Heavy Rounded Shape */
+  border: 3.5px solid var(--outline-dark);
+  background: linear-gradient(160deg, #4d2f1d 0%, #2e1a0e 100%);
+  box-shadow: 0 6px 0 var(--outline-deep), 0 10px 20px rgba(0,0,0,0.45);
   display: flex;
   align-items: center;
   justify-content: center;
-  transform: skewX(-3deg);
-  transition: transform 0.1s ease, background 0.12s, border-color 0.12s, box-shadow 0.12s;
+  transition: transform 0.08s ease, background 0.1s;
 }
 .pedal-art {
-  width: 62px;
-  height: 62px;
-  transform: skewX(3deg);
-  filter: drop-shadow(0 2px 4px hsla(0, 0%, 0%, 0.5));
+  width: clamp(48px, 13vw, 58px);
+  height: clamp(48px, 13vw, 58px);
+  filter: drop-shadow(0 2px 0 var(--outline-dark));
 }
 .pedal-label {
   font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  color: #ffffff;
-  text-shadow: 0 1px 3px hsla(0, 0%, 0%, 0.9);
+  font-size: clamp(9.5px, 2.8vw, 11px);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: var(--arcade-yellow);
+  text-shadow: 0 2px 0 var(--outline-dark);
   text-transform: uppercase;
-  pointer-events: none;
 }
 .pedal-control:active .pedal-surface,
 .pedal-control.pressed .pedal-surface {
-  transform: skewX(-3deg) scale(0.93) translateY(4px);
-  border-color: var(--lagos-yellow);
-  background: linear-gradient(155deg, hsla(43, 92%, 58%, 0.38) 0%, hsla(24, 95%, 48%, 0.8) 100%);
-  box-shadow: 0 0 24px hsla(43, 92%, 58%, 0.55), inset 0 1px 2px hsla(0, 0%, 100%, 0.5);
+  transform: translateY(4px) scale(0.95);
+  background: linear-gradient(160deg, #d97706 0%, #92400e 100%);
+  box-shadow: 0 2px 0 var(--outline-deep);
 }
 
-/* ---------- Overlays ---------- */
+/* ==========================================================================
+   OVERLAYS: TITLE SCREEN & END SCREEN (Sticker Cards)
+   ========================================================================== */
+
 .overlay {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: calc(20px + var(--safe-top)) 20px calc(20px + var(--safe-bottom));
+  padding: calc(16px + var(--safe-top)) 16px calc(16px + var(--safe-bottom));
+  background: rgba(18, 9, 4, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  z-index: 40;
 }
 .overlay.passthrough { pointer-events: none; }
 
-#title-screen {
-  background:
-    radial-gradient(120% 70% at 50% 110%, hsla(18, 70%, 20%, 0.85), transparent 60%),
-    linear-gradient(180deg, hsla(30, 40%, 6%, 0.25) 0%, hsla(30, 40%, 6%, 0.75) 100%);
+/* CRITICAL: Remove blur and dark background on countdown so 3D camera swoop is crystal clear */
+#countdown.overlay {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
-.title-wrap { text-align: center; max-width: 420px; animation: rise 0.7s cubic-bezier(.2, .9, .3, 1); }
-.kicker { font-size: 12px; font-weight: 800; letter-spacing: 0.35em; color: var(--lagos-yellow); opacity: 0.9; }
+.sticker-card {
+  background: var(--panel-bg);
+  border: 4px solid var(--outline-dark);
+  border-radius: 32px; /* Heavily Rounded Rectangle */
+  box-shadow: 0 8px 0 var(--outline-deep), 0 16px 32px rgba(0, 0, 0, 0.55);
+}
+
+.title-wrap {
+  text-align: center;
+  width: min(92vw, 420px);
+  max-width: 420px;
+  padding: clamp(22px, 5vw, 32px) clamp(16px, 4vw, 24px) clamp(18px, 4vw, 26px);
+  margin: auto;
+  animation: rise 0.6s cubic-bezier(.2, .9, .3, 1);
+}
+
+.kicker {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.3em;
+  color: var(--arcade-yellow);
+  text-shadow: 0 2px 0 var(--outline-dark);
+}
+
 .logo {
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 900;
   line-height: 0.88;
-  margin: 10px 0 12px;
+  margin: 8px 0 10px;
   display: flex;
   flex-direction: column;
-  font-size: clamp(54px, 17vw, 86px);
-  text-shadow: 0 5px 0 var(--ink), 0 12px 30px hsla(0, 0%, 0%, 0.5);
+  font-size: clamp(44px, 13vw, 76px);
+}
+.logo span:first-child {
+  color: #ffffff;
+  text-shadow: 
+    -3px -3px 0 var(--outline-dark),
+     3px -3px 0 var(--outline-dark),
+    -3px  3px 0 var(--outline-dark),
+     3px  3px 0 var(--outline-dark),
+     0 6px 0 var(--outline-deep);
 }
 .logo .accent {
-  background: linear-gradient(180deg, var(--lagos-yellow) 0%, hsl(28, 100%, 55%) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 5px 0 var(--ink));
-  text-shadow: none;
+  color: var(--arcade-yellow);
+  text-shadow: 
+    -3px -3px 0 var(--outline-dark),
+     3px -3px 0 var(--outline-dark),
+    -3px  3px 0 var(--outline-dark),
+     3px  3px 0 var(--outline-dark),
+     0 6px 0 var(--outline-deep);
 }
-.tagline { font-size: 16px; font-weight: 600; opacity: 0.92; margin-bottom: 18px; }
+
+.tagline {
+  font-size: clamp(12.5px, 3.4vw, 15px);
+  font-weight: 800;
+  color: #fef08a;
+  text-shadow: 0 2px 0 var(--outline-dark);
+  margin-bottom: 16px;
+}
+
 .howto {
   list-style: none;
   display: grid;
-  gap: 8px;
+  gap: 7px;
   text-align: left;
-  margin: 0 auto 24px;
+  margin: 0 auto 20px;
   max-width: 340px;
-  font-size: 14px;
+  font-size: clamp(11.5px, 3.2vw, 13.5px);
 }
 .howto li {
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: hsla(30, 40%, 8%, 0.5);
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  padding: 8px 12px;
+  gap: 8px;
+  background: var(--panel-well);
+  border: 2.5px solid var(--outline-dark);
+  border-radius: 14px; /* Rounded pill item */
+  box-shadow: 0 3px 0 var(--outline-deep);
+  padding: 6px 10px;
 }
-.howto .ico { font-size: 18px; width: 22px; text-align: center; }
+.howto .ico {
+  font-size: 17px;
+  width: 22px;
+  text-align: center;
+}
 
 .cta {
   font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 22px;
-  letter-spacing: 0.06em;
-  color: var(--ink);
-  border: none;
-  border-radius: 999px;
-  padding: 14px 42px;
+  font-weight: 900;
+  font-size: clamp(18px, 5.2vw, 22px);
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  border: 3.5px solid var(--outline-dark);
+  border-radius: 9999px; /* Puffy Pill Button */
+  padding: 12px clamp(28px, 8vw, 44px);
   cursor: pointer;
-  background: linear-gradient(180deg, var(--lagos-yellow) 0%, var(--lagos-yellow-deep) 100%);
-  box-shadow: 0 6px 0 hsl(30, 90%, 28%), 0 14px 30px hsla(46, 100%, 50%, 0.35);
+  background: linear-gradient(180deg, #f6ce34 0%, #d97706 100%);
+  box-shadow: 0 6px 0 #92400e, 0 14px 28px rgba(246, 206, 52, 0.4);
   animation: breathe 1.6s ease-in-out infinite;
   transition: transform 0.1s;
 }
-.cta:active { transform: translateY(4px); box-shadow: 0 2px 0 hsl(30, 90%, 28%); }
-.keys { margin-top: 16px; font-size: 12px; opacity: 0.6; }
+.cta:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 #92400e;
+}
+.keys {
+  margin-top: 12px;
+  font-size: 10.5px;
+  opacity: 0.75;
+}
 
+/* Countdown Display */
 #countdown-value {
   font-family: var(--font-display);
-  font-weight: 800;
-  font-size: clamp(110px, 38vw, 200px);
-  color: var(--lagos-yellow);
-  text-shadow: 0 8px 0 var(--ink), 0 0 40px hsla(46, 100%, 50%, 0.6);
+  font-weight: 900;
+  font-size: clamp(90px, 30vw, 180px);
+  color: var(--arcade-yellow);
+  text-shadow: 
+    -5px -5px 0 var(--outline-dark),
+     5px -5px 0 var(--outline-dark),
+    -5px  5px 0 var(--outline-dark),
+     5px  5px 0 var(--outline-dark),
+     0 12px 0 var(--outline-deep),
+     0 0 50px rgba(246, 206, 52, 0.7);
 }
-#countdown-value.tick { animation: count 0.9s ease-out; }
+#countdown-value.tick {
+  animation: count 0.9s ease-out;
+}
 
-#end-screen { background: hsla(30, 40%, 5%, 0.55); }
+/* End Screen with 3D Trophy */
 .end-card {
   width: min(92vw, 380px);
-  border-radius: 24px;
-  padding: 26px 22px 24px;
+  padding: clamp(38px, 9vw, 46px) clamp(14px, 4vw, 22px) 22px; /* Extra top padding for trophy */
   text-align: center;
+  position: relative;
+  margin: auto;
   animation: rise 0.5s cubic-bezier(.2, .9, .3, 1);
 }
-#end-title { font-family: var(--font-display); font-size: 46px; font-weight: 800; line-height: 1; color: var(--lagos-yellow); }
-#end-title.lose { color: var(--danger); }
-.rank { font-size: 20px; font-weight: 800; margin: 8px 0 18px; }
-.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 22px; }
-.stats div { background: hsla(0, 0%, 100%, 0.07); border-radius: 12px; padding: 8px; }
-.stats div:first-child { grid-column: span 2; }
-.stats dt { font-size: 11px; letter-spacing: 0.1em; opacity: 0.7; text-transform: uppercase; }
-.stats dd { font-family: var(--font-display); font-size: 24px; font-weight: 800; }
 
-/* ---------- Animations ---------- */
-@keyframes pulse { from { transform: scale(1); } to { transform: scale(1.08); } }
-@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } }
-@keyframes rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
-@keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-@keyframes count { 0% { transform: scale(1.8); opacity: 0; } 25% { transform: scale(1); opacity: 1; } 100% { transform: scale(0.85); opacity: 0.85; } }
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; }
+.sticker-trophy {
+  position: absolute;
+  top: -44px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: clamp(74px, 18vw, 90px);
+  height: clamp(74px, 18vw, 90px);
+  filter: drop-shadow(0 6px 0 var(--outline-dark));
 }
 
-@media (min-aspect-ratio: 4/3) {
-  .nav { top: calc(70px + var(--safe-top)); }
+#end-title {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 8vw, 40px);
+  font-weight: 900;
+  line-height: 1;
+  color: var(--arcade-yellow);
+  margin-top: 10px;
+}
+#end-title.lose {
+  color: #ff6b6b;
+}
+
+.rank {
+  font-size: clamp(15px, 4.2vw, 18px);
+  font-weight: 900;
+  color: #fef08a;
+  text-shadow: 0 2px 0 var(--outline-dark);
+  margin: 5px 0 14px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin-bottom: 20px;
+}
+.stat-pill {
+  background: var(--panel-well);
+  border: 2.5px solid var(--outline-dark);
+  border-radius: 16px; /* Rounded capsule */
+  box-shadow: 0 3px 0 var(--outline-deep);
+  padding: 6px 8px;
+}
+.stat-pill:first-child {
+  grid-column: span 2;
+}
+.stat-pill dt {
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  opacity: 0.8;
+  text-transform: uppercase;
+  color: #fef08a;
+}
+.stat-pill dd {
+  font-family: var(--font-display);
+  font-size: clamp(18px, 5vw, 22px);
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2px 0 var(--outline-dark);
+}
+
+/* ==========================================================================
+   RESPONSIVE LAYOUT ENHANCEMENTS (Desktop & Landscape)
+   ========================================================================== */
+
+@media (min-width: 680px) and (min-height: 520px) {
+  /* Timer */
+  #timer {
+    top: calc(14px + var(--safe-top));
+    padding: 6px 24px 6px 20px;
+  }
+  .sticker-stopwatch {
+    top: -16px;
+    left: -18px;
+    width: 48px;
+    height: 48px;
+  }
+  #timer-value {
+    font-size: 44px;
+  }
+  .timer-tag {
+    font-size: 10px;
+  }
+
+  /* Quest Card */
+  #cp-card {
+    top: calc(14px + var(--safe-top));
+    left: max(16px, var(--safe-left));
+    padding: 8px 16px 8px 18px;
+    border-radius: 24px;
+    max-width: 230px;
+  }
+  .sticker-mappin {
+    top: -16px;
+    left: -12px;
+    width: 36px;
+    height: 42px;
+  }
+  .quest-label {
+    font-size: 10px;
+  }
+  .quest-title, .card-value {
+    font-size: 14.5px;
+  }
+
+  /* Navigation */
+  #nav {
+    top: calc(88px + var(--safe-top));
+    left: max(16px, var(--safe-left));
+    padding: 6px 14px 6px 10px;
+  }
+  #nav-arrow {
+    width: 24px;
+    height: 24px;
+  }
+  #nav-dist {
+    font-size: 15px;
+  }
+
+  /* Minimap */
+  .minimap-cluster {
+    top: calc(12px + var(--safe-top));
+    right: max(16px, var(--safe-right));
+  }
+  #minimap {
+    width: 106px;
+    height: 106px;
+    border-radius: 20px;
+  }
+  .sticker-pole-bracket {
+    width: 26px;
+    height: 98px;
+    left: -18px;
+  }
+
+  /* Speedometer */
+  #speedometer {
+    top: calc(136px + var(--safe-top));
+    right: max(16px, var(--safe-right));
+    width: 66px;
+    height: 66px;
+    border-width: 3.5px;
+  }
+  #speed-num {
+    font-size: 20px;
+  }
+
+  /* Stamina & Boost (Vertical Above Sprint) */
+  #stamina-container {
+    bottom: calc(130px + var(--safe-bottom));
+    right: calc(max(18px, var(--safe-right)) + 15px);
+    width: 46px;
+    padding: 8px 4px 7px;
+  }
+  .stamina-track {
+    width: 11px;
+    height: 60px;
+  }
+  .sticker-flame {
+    top: -20px;
+    right: -9px;
+    width: 34px;
+    height: 32px;
+  }
+
+  /* Toast */
+  .toast {
+    font-size: clamp(20px, 4vw, 30px);
+    padding: 10px 24px;
+  }
+
+  /* Controls */
+  .ctrl-btn.brake {
+    left: max(18px, var(--safe-left));
+    bottom: calc(16px + var(--safe-bottom));
+    width: 72px;
+    height: 72px;
+  }
+  .pedal-control {
+    right: max(18px, var(--safe-right));
+    bottom: calc(14px + var(--safe-bottom));
+  }
+  .pedal-surface {
+    width: 76px;
+    height: 88px;
+  }
+}
+
+/* Mobile Landscape Compact HUD */
+@media (max-height: 500px) {
+  #timer {
+    top: calc(4px + var(--safe-top));
+    padding: 3px 14px 3px 12px;
+  }
+  .sticker-stopwatch {
+    top: -9px;
+    left: -11px;
+    width: 30px;
+    height: 30px;
+  }
+  #timer-value {
+    font-size: 24px;
+  }
+  #cp-card {
+    top: calc(4px + var(--safe-top));
+    left: max(8px, var(--safe-left));
+    padding: 4px 10px;
+  }
+  #nav {
+    top: calc(52px + var(--safe-top));
+    left: max(8px, var(--safe-left));
+    padding: 3px 8px;
+  }
+  .minimap-cluster {
+    top: calc(4px + var(--safe-top));
+    right: max(8px, var(--safe-right));
+  }
+  #minimap {
+    width: 64px;
+    height: 64px;
+  }
+  .sticker-pole-bracket {
+    display: none;
+  }
+  #speedometer {
+    top: calc(76px + var(--safe-top));
+    right: max(8px, var(--safe-right));
+    width: 48px;
+    height: 48px;
+  }
+  #speed-num {
+    font-size: 15px;
+  }
+  #stamina-container {
+    bottom: calc(86px + var(--safe-bottom));
+    right: calc(max(8px, var(--safe-right)) + 10px);
+    width: 36px;
+    padding: 5px 3px 4px;
+    gap: 2px;
+  }
+  .stamina-track {
+    width: 8px;
+    height: 34px;
+  }
+  .stamina-title {
+    font-size: 7px;
+  }
+  .stamina-pct, #stamina-val {
+    font-size: 8px;
+  }
+  .sticker-flame {
+    top: -14px;
+    right: -6px;
+    width: 22px;
+    height: 22px;
+  }
+  .ctrl-btn.brake {
+    bottom: calc(8px + var(--safe-bottom));
+    width: 54px;
+    height: 54px;
+  }
+  .pedal-control {
+    bottom: calc(8px + var(--safe-bottom));
+  }
+  .pedal-surface {
+    width: 56px;
+    height: 64px;
+  }
+  .steer-meter-box {
+    bottom: calc(8px + var(--safe-bottom));
+    height: 48px;
+    width: 170px;
+  }
+  .steer-gear-knob {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+/* ==========================================================================
+   ANIMATIONS
+   ========================================================================== */
+
+@keyframes timerPanic {
+  from { transform: translateX(-50%) scale(1); }
+  to { transform: translateX(-50%) scale(1.08); }
+}
+
+@keyframes timerBonusPop {
+  0% { transform: translateX(-50%) scale(1); }
+  40% { transform: translateX(-50%) scale(1.22); }
+  100% { transform: translateX(-50%) scale(1); }
+}
+
+@keyframes flameFlicker {
+  0% { transform: rotate(18deg) scale(1.25) translateX(3px); }
+  100% { transform: rotate(26deg) scale(1.4) translateX(6px); }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+@keyframes count {
+  0% { transform: scale(1.6); opacity: 0; }
+  25% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.88); opacity: 0.85; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }

@@ -5,7 +5,7 @@ import { mulberry32, pick } from '../graphics/palette.js';
 
 const LAGOS_SHOUTS = [
     'Watch road o!',
-    'You wan kill person?!',
+    'You wan jam pesin?!',
     'Oga look front!',
     'Wetin be this?!',
     'Commot for road!',

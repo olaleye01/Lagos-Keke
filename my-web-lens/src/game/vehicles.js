@@ -33,7 +33,7 @@ const OKADA_SHOUTS = [
 const CAR_SHOUTS = [
     'Peep peep! My bumper! Mind yourself!',
     'Hey! Do you have eyes on your head?!',
-    'Gosh! Watch where you are pedaling!',
+    'Ah ah! Watch where you are pedaling!',
     'Look front oga! You wan scratch my motor?!'
 ];
 

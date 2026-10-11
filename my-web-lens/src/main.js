@@ -214,7 +214,8 @@ function showToast(text, type = 'normal', duration = 1800) {
 // Input initialization
 const input = new Input(canvas, {
     brakeButton: btnBrake,
-    sprintButton: btnSprint
+    sprintButton: btnSprint,
+    steerMeter: document.getElementById('steer-meter')
 });
 
 // Checkpoint setup
@@ -554,11 +555,11 @@ app.on('update', dt => {
         // Timer display
         timerValEl.textContent = Math.max(0, timeLeft).toFixed(1);
         if (timeLeft <= 15) {
-            timerContainer.className = 'glass timer danger';
+            timerContainer.className = 'sticker-bubble timer-panel danger';
         } else if (timeLeft <= 30) {
-            timerContainer.className = 'glass timer warn';
+            timerContainer.className = 'sticker-bubble timer-panel warn';
         } else {
-            timerContainer.className = 'glass timer';
+            timerContainer.className = 'sticker-bubble timer-panel';
         }
 
         // Speedometer display (km/h)
@@ -570,27 +571,42 @@ app.on('update', dt => {
         // Stamina gauge display
         if (staminaBarEl && staminaValEl) {
             const stamPct = Math.round((player.stamina / BIKE.MAX_STAMINA) * 100);
-            staminaBarEl.style.width = `${stamPct}%`;
+            staminaBarEl.style.height = `${stamPct}%`;
             staminaValEl.textContent = `${stamPct}%`;
             if (stamPct < 15) {
                 staminaBarEl.classList.add('exhausted');
             } else {
                 staminaBarEl.classList.remove('exhausted');
             }
+            const staminaContainer = document.getElementById('stamina-container');
+            if (staminaContainer) {
+                staminaContainer.classList.toggle('boosting', player.isSprinting && player.stamina > 0);
+            }
         }
 
         // Surface indicator chip
         if (player.surface === 'mud') {
             surfaceChip.className = 'chip mud';
-            surfaceChip.textContent = 'MUD SHORTCUT';
+            surfaceChip.textContent = 'MUD ALLEY';
         } else {
             surfaceChip.className = 'chip road';
-            surfaceChip.textContent = 'TARMAC ROAD';
+            surfaceChip.textContent = 'TARMAC';
         }
 
-        // Steer Knob indicator
-        const steerPercent = (input.steer * 0.5 + 0.5) * 100;
-        steerKnob.style.left = `${steerPercent}%`;
+        // Handlebar Steer Gear Knob along curved arc
+        const s = input.steer;
+        const xPct = 50 + s * 34; // travels between 16% and 84% along the handlebars
+        const yPct = 62 - (s * s) * 16; // arches upward toward grips
+        const rotDeg = s * 70; // gear cog rolls as you steer
+        steerKnob.style.left = `${xPct}%`;
+        steerKnob.style.top = `${yPct}%`;
+        steerKnob.style.transform = `translate(-50%, -50%) rotate(${rotDeg}deg)`;
+
+        // Glowing L/R indicator highlight
+        const leftInd = document.getElementById('steer-ind-left');
+        const rightInd = document.getElementById('steer-ind-right');
+        if (leftInd) leftInd.classList.toggle('active', s < -0.15);
+        if (rightInd) rightInd.classList.toggle('active', s > 0.15);
 
         // Compass / Direction Arrow & Distance to Checkpoint
         const activeCP = map.checkpoints[currentCPIndex];
