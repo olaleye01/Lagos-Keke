@@ -327,9 +327,6 @@ function endGame(won) {
         ? `${sessionElapsed.toFixed(1)}s (Left: ${Math.max(0, timeLeft).toFixed(1)}s)`
         : `${Math.max(0, timeLeft).toFixed(1)}s`;
     document.getElementById('stat-cps').textContent = `${won ? CHECKPOINTS.length : currentCPIndex}/${CHECKPOINTS.length}`;
-    const totalTime = player.stats.mudTime + player.stats.roadTime || 1;
-    const mudPct = Math.round((player.stats.mudTime / totalTime) * 100);
-    document.getElementById('stat-mud').textContent = `${mudPct}%`;
     document.getElementById('stat-potholes').textContent = player.stats.potholes;
     document.getElementById('stat-npcs').textContent = player.stats.npcHits;
     const statVehiclesEl = document.getElementById('stat-vehicles');
