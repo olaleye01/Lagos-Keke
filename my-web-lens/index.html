@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#1b1206" />
-  <meta name="description" content="Lagos Bike Rush – a low-poly bicycle race through a Lagos neighbourhood. Beat the 90-second clock, dodge potholes and jaywalkers, and take the muddy shortcuts." />
+  <meta name="description" content="Lagos Bike Rush – a low-poly bicycle race through a Lagos neighbourhood. Beat the 90-second clock, reach all 9 stops, dodge potholes and traffic, and conquer the muddy shortcuts." />
   <title>Lagos Bike Rush – Low-Poly Lagos Bicycle Race</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -20,11 +20,14 @@
     <section id="hud" class="hidden" aria-live="polite">
       <div class="hud-top">
         <div id="cp-card" class="glass card">
-          <span class="card-label">NEXT STOP <b id="cp-count">1/4</b></span>
-          <span id="cp-name" class="card-value">Mama Caro's Shop</span>
+          <div class="card-header">
+            <span class="card-label">NEXT STOP <b id="cp-count">1/9</b></span>
+            <span id="cp-route-badge" class="cp-route-badge mud">MUD ALLEY</span>
+          </div>
+          <span id="cp-name" class="card-value">Suya Alley Mud Corner</span>
         </div>
         <div id="timer" class="glass timer">
-          <span id="timer-value">90.0</span>
+          <span id="timer-value">85.0</span>
         </div>
         <canvas id="minimap" class="glass" width="240" height="240" aria-label="Minimap"></canvas>
       </div>
@@ -32,7 +35,7 @@
       <div class="hud-mid">
         <div id="nav" class="glass nav">
           <svg id="nav-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 L20 20 L12 15 L4 20 Z" /></svg>
-          <span id="nav-dist">120m</span>
+          <span id="nav-dist">84m</span>
           <span id="surface-chip" class="chip road">TARMAC</span>
         </div>
         <div id="speedometer" class="glass speed-badge">
@@ -76,7 +79,7 @@
       <div class="title-wrap">
         <p class="kicker">A LAGOS STREET RACE</p>
         <h1 class="logo"><span>LAGOS</span><span class="accent">BIKE RUSH</span></h1>
-        <p class="tagline">90 seconds. 4 stops. Tarmac or mud – your choice.</p>
+        <p class="tagline">2-Minute Rush · 9 Distant Stops · Tarmac &amp; Mud Alleys</p>
         <ul class="howto">
           <li><span class="ico">👆</span>Drag screen to steer / use A &amp; D keys</li>
           <li><span class="ico">⚡</span>Hold <b>SPRINT</b> (or Space / W / Shift) for high-speed tuck</li>
@@ -97,7 +100,7 @@
         <p id="end-rank" class="rank">Oga Rider 👑</p>
         <dl class="stats">
           <div><dt>Time left</dt><dd id="stat-time">0.0s</dd></div>
-          <div><dt>Stops</dt><dd id="stat-cps">4/4</dd></div>
+          <div><dt>Stops</dt><dd id="stat-cps">9/9</dd></div>
           <div><dt>Mud shortcuts</dt><dd id="stat-mud">0%</dd></div>
           <div><dt>Potholes hit</dt><dd id="stat-potholes">0</dd></div>
           <div><dt>Pedestrian bumps</dt><dd id="stat-npcs">0</dd></div>

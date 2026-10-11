@@ -30,6 +30,7 @@ const endRank = document.getElementById('end-rank');
 
 const cpCountEl = document.getElementById('cp-count');
 const cpNameEl = document.getElementById('cp-name');
+const cpRouteBadgeEl = document.getElementById('cp-route-badge');
 const timerValEl = document.getElementById('timer-value');
 const timerContainer = document.getElementById('timer');
 const minimapCanvas = document.getElementById('minimap');
@@ -195,6 +196,7 @@ const STATE = {
 
 let gameState = STATE.TITLE;
 let timeLeft = GAME.TIME_LIMIT;
+let sessionElapsed = 0;
 let currentCPIndex = 0;
 let countdownTimer = 3;
 let toastTimeout = null;
@@ -221,6 +223,11 @@ function updateBeaconPosition() {
     beacon.root.setPosition(cp.x, 0, cp.z);
     cpCountEl.textContent = `${currentCPIndex + 1}/${CHECKPOINTS.length}`;
     cpNameEl.textContent = cp.name;
+    if (cpRouteBadgeEl) {
+        const isMud = cp.type === 'mud';
+        cpRouteBadgeEl.textContent = isMud ? 'MUD ALLEY' : 'TARMAC';
+        cpRouteBadgeEl.className = `cp-route-badge ${isMud ? 'mud' : 'road'}`;
+    }
 }
 
 function getLastCheckpointPose() {
@@ -255,6 +262,7 @@ function startCountdown() {
     gameState = STATE.COUNTDOWN;
     countdownTimer = 3;
     timeLeft = GAME.TIME_LIMIT;
+    sessionElapsed = 0;
     currentCPIndex = 0;
     lastTickSecond = -1;
 
@@ -287,7 +295,7 @@ function startGame() {
     gameState = STATE.PLAYING;
     countdownScreen.classList.add('hidden');
     input.enabled = true;
-    showToast('OYA GO! Beat the 90s clock!', 'good', 2000);
+    showToast('OYA GO! Beat the 2-minute clock!', 'good', 2000);
 }
 
 function endGame(won) {
@@ -297,24 +305,26 @@ function endGame(won) {
 
     if (won) {
         audio.win();
-        endTitle.textContent = 'DELIVERED!';
+        endTitle.textContent = 'ALL 9 STOPS DELIVERED!';
         endTitle.classList.remove('lose');
         const mudRatio = player.stats.mudTime / (player.stats.mudTime + player.stats.roadTime || 1);
-        if (mudRatio > 0.45) {
-            endRank.textContent = 'Lagos Shortcut Master ⚡';
+        if (mudRatio > 0.40) {
+            endRank.textContent = 'Lagos Mud Alley Legend ⚡';
         } else if (player.stats.potholes === 0) {
             endRank.textContent = 'Smooth Sailor 👑';
         } else {
-            endRank.textContent = 'Oga Express Rider 🚲';
+            endRank.textContent = 'Master Dispatch Rider 🚲';
         }
     } else {
         audio.lose();
         endTitle.textContent = "E DON CAST! 🛑";
         endTitle.classList.add('lose');
-        endRank.textContent = "Time Elapsed – Don't Give Up!";
+        endRank.textContent = `Reached ${currentCPIndex}/${CHECKPOINTS.length} Stops – Don't Give Up!`;
     }
 
-    document.getElementById('stat-time').textContent = `${Math.max(0, timeLeft).toFixed(1)}s`;
+    document.getElementById('stat-time').textContent = won
+        ? `${sessionElapsed.toFixed(1)}s (Left: ${Math.max(0, timeLeft).toFixed(1)}s)`
+        : `${Math.max(0, timeLeft).toFixed(1)}s`;
     document.getElementById('stat-cps').textContent = `${won ? CHECKPOINTS.length : currentCPIndex}/${CHECKPOINTS.length}`;
     const totalTime = player.stats.mudTime + player.stats.roadTime || 1;
     const mudPct = Math.round((player.stats.mudTime / totalTime) * 100);
@@ -406,6 +416,7 @@ app.on('update', dt => {
         cameraEntity.setPosition(currentCamPos);
         cameraEntity.lookAt(currentCamLook);
     } else if (gameState === STATE.PLAYING) {
+        sessionElapsed += dt;
         timeLeft -= dt;
 
         // Checkpoint proximity check
@@ -415,12 +426,15 @@ app.on('update', dt => {
         if (distToCP < GAME.CHECKPOINT_RADIUS) {
             audio.checkpoint();
             player.triggerCelebrate();
-            timeLeft += GAME.CHECKPOINT_BONUS;
+            // Bonus time capped at Snapchat 2-minute (120s) limit
+            timeLeft = Math.min(GAME.MAX_SESSION_TIME, timeLeft + GAME.CHECKPOINT_BONUS);
             timerContainer.classList.remove('bonus');
             void timerContainer.offsetWidth;
             timerContainer.classList.add('bonus');
 
-            showToast(`⭐ ${activeCP.name}! +${GAME.CHECKPOINT_BONUS}s`, 'good', 1600);
+            const isMud = activeCP.type === 'mud';
+            const icon = isMud ? '🟫' : '⭐';
+            showToast(`${icon} ${activeCP.name}! +${GAME.CHECKPOINT_BONUS}s`, 'good', 1600);
             currentCPIndex++;
 
             if (currentCPIndex >= CHECKPOINTS.length) {
@@ -430,8 +444,8 @@ app.on('update', dt => {
             }
         }
 
-        // Timer expiration
-        if (timeLeft <= 0) {
+        // Timer expiration or Snapchat 2-minute hard limit reached
+        if (timeLeft <= 0 || sessionElapsed >= GAME.MAX_SESSION_TIME) {
             timeLeft = 0;
             endGame(false);
         }
@@ -612,12 +626,29 @@ function renderMinimap(activeCP) {
     map.checkpoints.forEach((cp, idx) => {
         const { mx, my } = map.toMinimap(cp.x, cp.z, size);
         minimapCtx.beginPath();
-        minimapCtx.arc(mx, my, idx === currentCPIndex ? 7 : 4, 0, Math.PI * 2);
-        minimapCtx.fillStyle = idx === currentCPIndex ? '#f6ce34' : '#888';
-        minimapCtx.fill();
-        minimapCtx.lineWidth = 1.5;
-        minimapCtx.strokeStyle = '#1b1206';
-        minimapCtx.stroke();
+        if (idx === currentCPIndex) {
+            const pulse = 1 + Math.sin(performance.now() * 0.008) * 0.22;
+            minimapCtx.arc(mx, my, 6.5 * pulse, 0, Math.PI * 2);
+            minimapCtx.fillStyle = '#f6ce34';
+            minimapCtx.fill();
+            minimapCtx.lineWidth = 2;
+            minimapCtx.strokeStyle = '#ffffff';
+            minimapCtx.stroke();
+        } else if (idx < currentCPIndex) {
+            minimapCtx.arc(mx, my, 3.5, 0, Math.PI * 2);
+            minimapCtx.fillStyle = 'rgba(34, 197, 94, 0.7)';
+            minimapCtx.fill();
+            minimapCtx.lineWidth = 1;
+            minimapCtx.strokeStyle = '#0e3816';
+            minimapCtx.stroke();
+        } else {
+            minimapCtx.arc(mx, my, 4, 0, Math.PI * 2);
+            minimapCtx.fillStyle = cp.type === 'mud' ? '#c26338' : '#eab308';
+            minimapCtx.fill();
+            minimapCtx.lineWidth = 1.2;
+            minimapCtx.strokeStyle = '#1b1206';
+            minimapCtx.stroke();
+        }
     });
 
     // 3. Draw Vehicle Blips on the Minimap

@@ -75,8 +75,34 @@ html, body {
   max-width: 100%;
   min-width: 0;
 }
-.card-label { font-size: 10px; letter-spacing: 0.14em; opacity: 0.75; font-weight: 600; }
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.card-label { font-size: 10px; letter-spacing: 0.14em; opacity: 0.75; font-weight: 600; white-space: nowrap; }
 .card-label b { color: var(--lagos-yellow); }
+.cp-route-badge {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 1.5px 6px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+.cp-route-badge.mud {
+  background: var(--laterite);
+  color: var(--cream);
+  box-shadow: 0 0 10px rgba(186, 73, 34, 0.45);
+}
+.cp-route-badge.road {
+  background: hsl(220, 10%, 26%);
+  color: var(--lagos-yellow);
+  border: 1px solid rgba(246, 206, 52, 0.35);
+}
 .card-value {
   font-family: var(--font-display);
   font-size: clamp(13px, 3.6vw, 17px);
