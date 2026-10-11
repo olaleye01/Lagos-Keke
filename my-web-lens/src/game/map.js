@@ -84,10 +84,11 @@ export class LagosMap {
                 break;
             case '.':
                 b.flat(x0, z0, x1, z1, 0, PALETTE.yard, 0.1);
-                if (rand() < 0.5) b.blob(x + (rand() - 0.5) * 3, 0.012, z + (rand() - 0.5) * 3, 0.8 + rand() * 0.6, 7, PALETTE.mudWet);
+                if (rand() < 0.5) b.blob(x + (rand() - 0.5) * 3, 0.012, z + (rand() - 0.5) * 3, 0.8 + rand() * 0.6, 7, PALETTE.mudWet, rand);
                 break;
             case 'T':
-                b.flat(x0, z0, x1, z1, 0, PALETTE.grass, 0.12);
+                b.flat(x0, z0, x1, z1, 0, PALETTE.yard, 0.1);
+                if (rand() < 0.6) b.blob(x + (rand() - 0.5) * 2, 0.012, z + (rand() - 0.5) * 2, 0.9 + rand() * 0.7, 7, PALETTE.mudWet, rand);
                 this._addPalm(b, x, z, 1);
                 this.solids[r][c] = { type: 'circle', x, z, r: 0.75, h: 6 };
                 break;
@@ -188,12 +189,6 @@ export class LagosMap {
         }
         if (rand() < 0.45) {
             b.blob(x + (rand() - 0.5) * 3.5, 0.014, z + (rand() - 0.5) * 3.5, 0.6 + rand() * 0.7, 7, PALETTE.mudWet, rand);
-        }
-        // tufts of grass along the edges
-        for (let i = 0; i < 3; i++) {
-            const gx = x + (rand() < 0.5 ? -1 : 1) * (2.4 + rand() * 0.4);
-            const gz = z + (rand() - 0.5) * 5;
-            b.pyramid(GeoBuilder.trs(gx, 0, gz, 0, rand() * 90, 0, 0.35, 0.3 + rand() * 0.3, 0.35), PALETTE.grass);
         }
     }
 

@@ -52,6 +52,36 @@ const btnRetry = document.getElementById('btn-retry');
 const btnBrake = document.getElementById('btn-brake');
 const btnSprint = document.getElementById('btn-sprint');
 
+// --- Anti-Zoom & Touch Gesture Shields for Mobile Gameplay ---
+// 1. Prevent iOS Safari pinch/rotate gestures (triggers on multi-touch e.g. steer + pedal)
+window.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
+window.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
+window.addEventListener('gestureend', e => e.preventDefault(), { passive: false });
+
+// 2. Prevent multi-touch pinch zoom
+window.addEventListener('touchmove', e => {
+    if (e.scale !== undefined && e.scale !== 1) {
+        if (e.cancelable) e.preventDefault();
+    }
+}, { passive: false });
+
+// 3. Prevent mobile double-tap zoom
+let lastTouchEndTime = 0;
+window.addEventListener('touchend', e => {
+    const now = Date.now();
+    if (now - lastTouchEndTime <= 300) {
+        if (e.cancelable) e.preventDefault();
+    }
+    lastTouchEndTime = now;
+}, { passive: false });
+
+// 4. Prevent touch callout / context menu on game elements
+window.addEventListener('contextmenu', e => {
+    if (e.pointerType === 'touch' || (e.target && e.target.closest && e.target.closest('#hud, #game-canvas, #app, #steer-meter, .ctrl-btn'))) {
+        e.preventDefault();
+    }
+});
+
 // --- PlayCanvas Application Bootstrap ---
 const app = new Application(canvas, {
     graphicsDeviceOptions: {
