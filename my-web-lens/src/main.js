@@ -323,9 +323,6 @@ function endGame(won) {
         endRank.textContent = `Reached ${currentCPIndex}/${CHECKPOINTS.length} Stops – Don't Give Up!`;
     }
 
-    document.getElementById('stat-time').textContent = won
-        ? `${sessionElapsed.toFixed(1)}s (Left: ${Math.max(0, timeLeft).toFixed(1)}s)`
-        : `${Math.max(0, timeLeft).toFixed(1)}s`;
     document.getElementById('stat-cps').textContent = `${won ? CHECKPOINTS.length : currentCPIndex}/${CHECKPOINTS.length}`;
     document.getElementById('stat-potholes').textContent = player.stats.potholes;
     document.getElementById('stat-npcs').textContent = player.stats.npcHits;

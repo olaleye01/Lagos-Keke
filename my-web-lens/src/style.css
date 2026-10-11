@@ -951,9 +951,6 @@ html, body {
   box-shadow: 0 3px 0 var(--outline-deep);
   padding: 6px 8px;
 }
-.stat-pill:first-child {
-  grid-column: span 2;
-}
 .stat-pill dt {
   font-size: 9.5px;
   letter-spacing: 0.1em;
