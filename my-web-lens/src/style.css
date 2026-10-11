@@ -1,5 +1,5 @@
 /* ==========================================================================
-   LAGOS BIKE RUSH - CARTOON POP & STICKER DESIGN SYSTEM
+   BICYCLE STREET RUSH - CARTOON POP & STICKER DESIGN SYSTEM
    ========================================================================== */
 
 :root {
@@ -544,7 +544,7 @@ html, body {
 /* 7. TOAST NOTIFICATIONS (Chunky Comic Sticker, Mobile-Safe Text Wrapping) */
 .toast {
   position: absolute;
-  top: 18%;
+  top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) scale(0.75);
   width: max-content;

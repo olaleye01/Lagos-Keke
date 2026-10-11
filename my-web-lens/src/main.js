@@ -259,7 +259,7 @@ function updateBeaconPosition() {
     cpNameEl.textContent = cp.name;
     if (cpRouteBadgeEl) {
         const isMud = cp.type === 'mud';
-        cpRouteBadgeEl.textContent = isMud ? 'MUD ALLEY' : 'TARMAC';
+        cpRouteBadgeEl.textContent = isMud ? 'MUD ALLEY' : 'MAIN ROAD';
         cpRouteBadgeEl.className = `cp-route-badge ${isMud ? 'mud' : 'road'}`;
     }
 }
@@ -338,7 +338,7 @@ function startGame() {
     gameState = STATE.PLAYING;
     countdownScreen.classList.add('hidden');
     input.enabled = true;
-    showToast('OYA GO! Beat the 2-minute clock!', 'good', 2000);
+    showToast('OYA GO! Beat the clock!', 'good', 2000);
 }
 
 function endGame(won) {
@@ -352,7 +352,7 @@ function endGame(won) {
         endTitle.classList.remove('lose');
         const mudRatio = player.stats.mudTime / (player.stats.mudTime + player.stats.roadTime || 1);
         if (mudRatio > 0.40) {
-            endRank.textContent = 'Lagos Mud Alley Legend ⚡';
+            endRank.textContent = 'Mud Alley Legend ⚡';
         } else if (player.stats.potholes === 0) {
             endRank.textContent = 'Smooth Sailor 👑';
         } else {
@@ -629,7 +629,7 @@ app.on('update', dt => {
             surfaceChip.textContent = 'MUD ALLEY';
         } else {
             surfaceChip.className = 'chip road';
-            surfaceChip.textContent = 'TARMAC';
+            surfaceChip.textContent = 'MAIN ROAD';
         }
 
         // Handlebar Steer Gear Knob along curved arc
