@@ -420,10 +420,14 @@ app.on('update', dt => {
         const dist = Math.hypot(dx, dz);
         navDistEl.textContent = `${Math.round(dist)}m`;
 
-        // Angle from player forward vector to target
-        const targetAngle = Math.atan2(dx, -dz);
-        const playerYaw = player.yaw;
-        const relativeAngle = targetAngle - playerYaw;
+        // Angle from player forward vector to target in player local space
+        const fX = player.forwardX;
+        const fZ = player.forwardZ;
+        const rX = -fZ;
+        const rZ = fX;
+        const forwardDist = dx * fX + dz * fZ;
+        const rightDist = dx * rX + dz * rZ;
+        const relativeAngle = Math.atan2(rightDist, forwardDist);
         const angleDeg = (relativeAngle * 180) / Math.PI;
         navArrow.style.transform = `rotate(${angleDeg}deg)`;
 
@@ -451,11 +455,11 @@ function renderMinimap(activeCP) {
         minimapCtx.stroke();
     });
 
-    // 3. Draw Player Position & Heading
+    // 3. Draw Player Position & Heading (-player.yaw rotates clockwise in 2D canvas)
     const { mx: px, my: py } = map.toMinimap(player.x, player.z, size);
     minimapCtx.save();
     minimapCtx.translate(px, py);
-    minimapCtx.rotate(player.yaw);
+    minimapCtx.rotate(-player.yaw);
 
     // Heading triangle
     minimapCtx.beginPath();
