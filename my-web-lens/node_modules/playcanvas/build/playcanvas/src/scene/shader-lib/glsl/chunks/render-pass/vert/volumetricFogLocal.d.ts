@@ -1,0 +1,2 @@
+declare const _default: "\n    attribute vec2 aPosition;\n\n    // normalized device coordinates of the light volume bounds: xy = min, zw = max\n    uniform vec4 uVolLightRect;\n\n    varying vec2 uv0;\n\n    void main(void)\n    {\n        vec2 ndc = mix(uVolLightRect.xy, uVolLightRect.zw, aPosition * 0.5 + 0.5);\n        gl_Position = vec4(ndc, 0.0, 1.0);\n        uv0 = getImageEffectUV(ndc * 0.5 + 0.5);\n    }\n";
+export default _default;

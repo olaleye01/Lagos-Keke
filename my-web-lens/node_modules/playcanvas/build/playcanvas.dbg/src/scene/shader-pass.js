@@ -1,0 +1,142 @@
+var __defProp = Object.defineProperty;
+var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+import { Debug } from "../core/debug.js";
+import { DeviceCache } from "../platform/graphics/device-cache.js";
+import {
+  SHADER_FORWARD,
+  SHADER_PICK,
+  SHADER_SHADOW,
+  SHADER_PREPASS,
+  SHADER_DEPTH_PICK,
+  LIGHTTYPE_DIRECTIONAL,
+  LIGHTTYPE_SPOT,
+  lightTypeNames,
+  shadowTypeInfo
+} from "./constants.js";
+const shaderPassDeviceCache = new DeviceCache();
+class ShaderPassInfo {
+  /**
+   * @param {string} name - The name, for example 'depth'. Must contain only letters, numbers,
+   * and underscores, and start with a letter.
+   * @param {number} index - Index from ShaderPass#nextIndex.
+   * @param {object} [options] - Options for additional configuration of the shader pass.
+   * @param {boolean} [options.isForward] - Whether the pass is forward.
+   * @param {boolean} [options.isShadow] - Whether the pass is shadow.
+   * @param {number} [options.lightType] - Type of light, for example `LIGHTTYPE_DIRECTIONAL`.
+   * @param {number} [options.shadowType] - Type of shadow, for example `SHADOW_PCF3_32F`.
+   */
+  constructor(name, index, options = {}) {
+    /** @type {number} */
+    __publicField(this, "index");
+    /** @type {string} */
+    __publicField(this, "name");
+    /** @type {Map<string, string>} */
+    __publicField(this, "defines", /* @__PURE__ */ new Map());
+    Debug.assert(/^[a-z]\w*$/i.test(name), `ShaderPass name can only contain letters, numbers and underscores and start with a letter: ${name}`);
+    this.name = name;
+    this.index = index;
+    Object.assign(this, options);
+    this.buildShaderDefines();
+  }
+  buildShaderDefines() {
+    let keyword;
+    if (this.isShadow) {
+      keyword = "SHADOW";
+      if (this.lightType !== void 0) {
+        const shadowInfo = shadowTypeInfo.get(this.shadowType);
+        Debug.assert(shadowInfo);
+        const perspectiveDepth = this.lightType === LIGHTTYPE_DIRECTIONAL || !shadowInfo.vsm && this.lightType === LIGHTTYPE_SPOT;
+        if (perspectiveDepth) this.defines.set("PERSPECTIVE_DEPTH", "");
+        this.defines.set("LIGHT_TYPE", `${lightTypeNames[this.lightType]}`);
+        this.defines.set("SHADOW_TYPE", `${shadowInfo.name}`);
+      }
+    } else if (this.isForward) {
+      keyword = "FORWARD";
+    } else if (this.index === SHADER_PICK) {
+      keyword = "PICK";
+    } else if (this.index === SHADER_DEPTH_PICK) {
+      keyword = "PICK";
+      this.defines.set("DEPTH_PICK_PASS", "");
+    }
+    if (keyword) {
+      this.defines.set(`${keyword}_PASS`, "");
+    }
+    this.defines.set(`${this.name.toUpperCase()}_PASS`, "");
+  }
+}
+class ShaderPass {
+  constructor() {
+    /**
+     * Allocated shader passes, map of a shader pass name to info.
+     *
+     * @type {Map<string, ShaderPassInfo>}
+     */
+    __publicField(this, "passesNamed", /* @__PURE__ */ new Map());
+    /**
+     * Allocated shader passes, indexed by their index.
+     *
+     * @type {Array<ShaderPassInfo>}
+     */
+    __publicField(this, "passesIndexed", []);
+    /** Next available index */
+    __publicField(this, "nextIndex", 0);
+    const add = (name, index, options) => {
+      const info = this.allocate(name, options);
+      Debug.assert(info.index === index);
+    };
+    add("forward", SHADER_FORWARD, { isForward: true });
+    add("prepass", SHADER_PREPASS);
+    add("shadow", SHADER_SHADOW);
+    add("pick", SHADER_PICK);
+    add("depth_pick", SHADER_DEPTH_PICK);
+  }
+  /**
+   * Get access to the shader pass instance for the specified device.
+   *
+   * @param {GraphicsDevice} device - The graphics device.
+   * @returns { ShaderPass } The shader pass instance for the specified device.
+   */
+  static get(device) {
+    Debug.assert(device);
+    return shaderPassDeviceCache.get(device, () => {
+      return new ShaderPass();
+    });
+  }
+  /**
+   * Allocates a shader pass with the specified name and options.
+   *
+   * @param {string} name - A name of the shader pass.
+   * @param {object} [options] - Options for the shader pass, which are added as properties to the
+   * shader pass info.
+   * @returns {ShaderPassInfo} The allocated shader pass info.
+   */
+  allocate(name, options) {
+    let info = this.passesNamed.get(name);
+    if (info === void 0) {
+      info = new ShaderPassInfo(name, this.nextIndex, options);
+      this.passesNamed.set(info.name, info);
+      this.passesIndexed[info.index] = info;
+      this.nextIndex++;
+    }
+    return info;
+  }
+  /**
+   * Return the shader pass info for the specified index.
+   *
+   * @param {number} index - The shader pass index.
+   * @returns {ShaderPassInfo} - The shader pass info.
+   */
+  getByIndex(index) {
+    const info = this.passesIndexed[index];
+    Debug.assert(info);
+    return info;
+  }
+  getByName(name) {
+    return this.passesNamed.get(name);
+  }
+}
+export {
+  ShaderPass,
+  ShaderPassInfo
+};

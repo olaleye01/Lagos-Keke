@@ -1,0 +1,20 @@
+{
+  "name": "my-web-lens",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "playcanvas": "^2.23.2"
+  },
+  "devDependencies": {
+    "vite": "^8.3.4"
+  }
+}
