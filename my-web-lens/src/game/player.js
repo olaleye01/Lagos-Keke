@@ -4,6 +4,13 @@ import { BIKE, HAZARDS } from './constants.js';
 
 const _tmp = new Vec3();
 const _up = new Vec3();
+const _armUp = new Vec3();
+const _armRight = new Vec3();
+const _armForward = new Vec3();
+const _targetR = new Vec3();
+const _targetCeleb = new Vec3();
+const _tmpMid = new Vec3();
+const _elbow = new Vec3();
 
 export class Player {
     constructor(app, map, audio) {
@@ -14,6 +21,7 @@ export class Player {
         app.root.addChild(this.model.root);
         this.particles = createParticlePool(app, 32);
         this._particleIndex = 0;
+        this.standFactor = 0;
         this.reset();
     }
 
@@ -35,9 +43,10 @@ export class Player {
         this.isSprinting = false;
         this.invulnerable = 0;
 
-        // Animation Timers
+        // Animation Timers & States
         this.celebrateTimer = 0;
         this.idlePhase = 0;
+        this.standFactor = 0;
 
         this.stats = { potholes: 0, npcHits: 0, vehicleHits: 0, mudTime: 0, roadTime: 0 };
         this.gutterCooldown = 0;
@@ -70,7 +79,7 @@ export class Player {
     }
 
     triggerCelebrate() {
-        this.celebrateTimer = 1.4;
+        this.celebrateTimer = 1.8;
     }
 
     /**
@@ -263,8 +272,8 @@ export class Player {
      * Animate both Bicycle and modular Bitmoji-Ready Rider Avatar.
      */
     _sync(dt) {
-        const { root, lean, frontFork, frontWheel, rearWheel, crank, pedals, kickstand } = this.model;
-        const { avatarRoot, pelvis, torso, headMount, armL, armR, legs } = this.model.avatar;
+        const { root, lean, frontFork, frontWheel, rearWheel, crank, pedals, kickstand, gripL, gripR } = this.model;
+        const { avatarRoot, pelvis, torso, headMount, arms, legs } = this.model.avatar;
 
         root.setPosition(this.x, 0, this.z);
         root.setEulerAngles(0, (this.yaw * 180) / Math.PI, 0);
@@ -294,42 +303,96 @@ export class Player {
         roll += Math.sin(this.crankAngle) * 2.8 * speed01;
         lean.setLocalEulerAngles(0, 0, roll);
 
-        // Standing up on pedals when accelerating or in mud
-        const isStruggling = (this.speed > 0.5 && this.speed < 4.0) || (this.surface === 'mud' && this.speed > 1.0);
-        const standPump = isStruggling ? 0.11 : 0.0;
-        const sideRock = Math.sin(this.crankAngle) * (isStruggling ? 5.5 : 2.5);
+        // Seated on road, standing up on pedals ONLY when in the muddy area
+        const targetStand = (this.surface === 'mud') ? 1.0 : 0.0;
+        this.standFactor = math.lerp(this.standFactor, targetStand, 1 - Math.exp(-8 * dt));
 
-        pelvis.setLocalPosition(0, 1.05 + standPump, 0.2);
+        // When seated on road: pelvis sits directly down on the saddle (Y=0.975, Z=0.25) with zero gap
+        // When in mud: pelvis lifts out of saddle to Y=1.08 and shifts forward to Z=0.17
+        const mudPump = this.standFactor > 0.05 ? Math.abs(Math.sin(this.crankAngle)) * 0.045 * this.standFactor : 0.0;
+        const pelvisY = math.lerp(0.975, 1.08, this.standFactor) + mudPump;
+        const pelvisZ = math.lerp(0.25, 0.17, this.standFactor);
+        const sideRock = Math.sin(this.crankAngle) * math.lerp(1.2, 5.5, this.standFactor);
+
+        pelvis.setLocalPosition(0, pelvisY, pelvisZ);
         pelvis.setLocalEulerAngles(0, 0, sideRock);
 
-        // Aero Sprint Tuck when boosting/sprinting
-        let torsoPitch = -26;
+        // Torso posture: comfortable road cycling lean, aggressive forward crouch when standing in mud or sprinting
+        let torsoPitch = math.lerp(-22, -32, this.standFactor);
         if (this.isSprinting && this.speed > 5) {
-            torsoPitch = -42; // aggressive low tuck!
+            torsoPitch -= 14; // aggressive aero tuck
         } else if (this.wobble > 0) {
-            torsoPitch = -12; // flailing backward
+            torsoPitch += 8;
         }
-        torso.setLocalEulerAngles(torsoPitch, 0, -sideRock * 0.5);
+        torso.setLocalEulerAngles(torsoPitch, 0, -sideRock * 0.4);
 
-        // Head tracking: looks into turns and tilts up when tucked
-        const headYaw = -this.steer * 20;
-        const headPitch = this.isSprinting ? 22 : 0;
-        headMount.setLocalEulerAngles(headPitch, headYaw, 0);
+        // Two-segment arms: UpperArm from shoulder to elbow, Forearm from elbow to grip
+        _armUp.copy(lean.up);
+        _armRight.copy(lean.right);
+        _armForward.copy(lean.forward);
 
-        // Arm gestures
+        // Calculate celebration blend (ramps up quickly, holds, lowers back down smoothly)
+        let celebrateBlend = 0;
         if (this.celebrateTimer > 0) {
-            // Victory fist pump!
-            armR.setLocalEulerAngles(-110, 0, -18);
-            armL.setLocalEulerAngles(40, 0, 0);
-        } else if (this.wobble > 0) {
-            // Flailing arms on pothole hit
-            armL.setLocalEulerAngles(20 + Math.sin(this.wobble * 35) * 25, -20, 0);
-            armR.setLocalEulerAngles(20 - Math.sin(this.wobble * 35) * 25, 20, 0);
-        } else {
-            // Normal hands on handlebars
-            armL.setLocalEulerAngles(40, 0, 0);
-            armR.setLocalEulerAngles(40, 0, 0);
+            if (this.celebrateTimer > 1.5) {
+                celebrateBlend = (1.8 - this.celebrateTimer) / 0.3; // rise up
+            } else if (this.celebrateTimer < 0.35) {
+                celebrateBlend = this.celebrateTimer / 0.35; // lower back down
+            } else {
+                celebrateBlend = 1.0; // held high
+            }
+            celebrateBlend = math.clamp(celebrateBlend, 0, 1);
         }
+
+        arms.forEach(arm => {
+            const isRight = arm.sx > 0;
+            const sPos = arm.shoulder.getPosition();
+            const gPos = isRight ? gripR.getPosition() : gripL.getPosition();
+
+            let target = gPos;
+            const isCeleb = isRight && celebrateBlend > 0.001;
+
+            if (isCeleb) {
+                const pump = Math.sin(this.celebrateTimer * 14) * 0.08;
+                _targetCeleb.copy(sPos)
+                    .addScaled(_armUp, 0.50 + pump)
+                    .addScaled(_armRight, 0.14)
+                    .addScaled(_armForward, 0.06);
+                _targetR.lerp(gPos, _targetCeleb, celebrateBlend);
+                target = _targetR;
+            }
+
+            // Elbow position with outward flare matching reference posture
+            const mid = _tmpMid.lerp(sPos, target, 0.48);
+            if (isCeleb) {
+                _elbow.copy(mid)
+                    .addScaled(_armRight, 0.12)
+                    .addScaled(_armForward, 0.06)
+                    .addScaled(_armUp, 0.04);
+            } else {
+                _elbow.copy(mid)
+                    .addScaled(_armRight, arm.sx * 0.15)
+                    .addScaled(_armUp, 0.03);
+            }
+
+            // Upper arm: Shoulder -> Elbow
+            const dUpper = _tmp.sub2(_elbow, sPos).length();
+            arm.upperArm.setPosition(sPos);
+            arm.upperArm.lookAt(_elbow, _armUp);
+            arm.upperArm.setLocalScale(1, 1, Math.max(0.15, dUpper));
+
+            // Forearm: Elbow -> Hand on Handlebar Grip / Celebration Fist
+            const dFore = _tmp.sub2(target, _elbow).length();
+            arm.forearm.setPosition(_elbow);
+            arm.forearm.lookAt(target, isCeleb ? _armForward : _armUp);
+            arm.forearm.setLocalScale(1, 1, Math.max(0.15, dFore));
+        });
+
+        // Head tracking: looks into turns and tilts up when tucked or celebrating
+        const headYaw = -this.steer * 20;
+        let headPitch = this.isSprinting ? 20 : 0;
+        if (celebrateBlend > 0.001) headPitch -= celebrateBlend * 18;
+        headMount.setLocalEulerAngles(headPitch, headYaw, 0);
 
         // Legs tracking pedals
         _up.copy(root.forward);

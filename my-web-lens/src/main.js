@@ -115,8 +115,8 @@ sun.addComponent('light', {
     castShadows: true,
     shadowDistance: 60,
     shadowResolution: 2048,
-    shadowBias: 0.06,
-    normalOffsetBias: 0.04
+    shadowBias: 0.02,
+    normalOffsetBias: 0.02
 });
 sun.setEulerAngles(48, 135, 0); // shining along -Y
 app.root.addChild(sun);
@@ -431,8 +431,8 @@ app.on('update', dt => {
 
         const topDist = 1.5;
         const topHeight = 16.5;
-        const normalDist = 4.2;
-        const normalHeight = 2.1;
+        const normalDist = 2.85;
+        const normalHeight = 1.95;
 
         const curDist = math.lerp(topDist, normalDist, easeT);
         const curHeight = math.lerp(topHeight, normalHeight, easeT);
@@ -441,8 +441,8 @@ app.on('update', dt => {
         const targetCamY = curHeight;
         const targetCamZ = player.z - player.forwardZ * curDist;
 
-        const curLookDist = math.lerp(0.2, 2.0, easeT);
-        const curLookY = math.lerp(0.9, 1.35, easeT);
+        const curLookDist = math.lerp(0.2, 1.8, easeT);
+        const curLookY = math.lerp(0.9, 1.15, easeT);
         const targetLookX = player.x + player.forwardX * curLookDist;
         const targetLookY = curLookY;
         const targetLookZ = player.z + player.forwardZ * curLookDist;
@@ -533,9 +533,9 @@ app.on('update', dt => {
         const forwardX = player.forwardX;
         const forwardZ = player.forwardZ;
 
-        // Desired camera position behind the rider
-        const followDist = 4.2 + (player.speed / player.maxSpeed) * 0.8;
-        const camHeight = 2.25 + (player.speed / player.maxSpeed) * 0.2;
+        // Desired camera position behind the rider (framing matching reference screenshot)
+        const followDist = 2.85 + (player.speed / (player.maxSpeed || 1)) * 0.45;
+        const camHeight = 1.95 + (player.speed / (player.maxSpeed || 1)) * 0.15;
         const desiredX = player.x - forwardX * followDist;
         const desiredZ = player.z - forwardZ * followDist;
         let desiredY = camHeight;
@@ -561,9 +561,9 @@ app.on('update', dt => {
         currentCamPos.z = math.lerp(currentCamPos.z, desiredZ, 1 - Math.exp(-camLerpSpeed * dt));
 
         // Look slightly ahead of the bicycle
-        const lookDistAhead = 2.0;
+        const lookDistAhead = 1.8;
         const targetLookX = player.x + forwardX * lookDistAhead;
-        const targetLookY = 1.20;
+        const targetLookY = 1.15;
         const targetLookZ = player.z + forwardZ * lookDistAhead;
 
         currentCamLook.x = math.lerp(currentCamLook.x, targetLookX, 1 - Math.exp(-12 * dt));

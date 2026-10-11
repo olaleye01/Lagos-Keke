@@ -13,11 +13,26 @@ import {
 import { GeoBuilder } from './builder.js';
 import { PALETTE, pick } from './palette.js';
 
-const SUPER_EAGLES_GREEN = [20, 150, 80];
-const WHITE = [240, 240, 236];
+const SUPER_EAGLES_GREEN = [20, 168, 80];
+const WHITE = [248, 248, 246];
 const TYRE = [26, 26, 28];
 const FRAME = [228, 40, 44];
 const METAL = [170, 172, 178];
+
+// Dedicated character design palette for the rider (matching Lagos reference image)
+const RIDER_SKIN = [142, 92, 60];
+const JERSEY_GREEN = [20, 168, 80];
+const JERSEY_WHITE = [248, 248, 246];
+const SHORTS_BLUE = [26, 38, 76];
+const SHORTS_DARK = [20, 28, 58];
+const SOCKS_BLACK = [28, 28, 30];
+const SNEAKERS_WHITE = [252, 252, 250];
+const SNEAKERS_SOLE = [34, 34, 38];
+const HELMET_YELLOW = [248, 206, 44];
+const HELMET_RED = [224, 40, 36];
+const HELMET_TRIM = [32, 32, 34];
+const CARGO_YELLOW = [248, 202, 36];
+const REFLECTOR_RED = [228, 36, 32];
 
 /**
  * Low-poly bicycle with steering front fork, rotating wheels, pedals, and kickstand.
@@ -49,10 +64,21 @@ export function createBicycle(app) {
     bar(0, 0.42, 0.02, 0, R, WB, 0.04, FRAME); // chain stay
     bar(0, 0.78, 0.22, 0, R, WB, 0.04, FRAME); // seat stay
 
-    // Saddle, rack, parcel, headlamp, mudguards
+    // Saddle, rack, yellow cargo crate, red reflector, headlamp, mudguards
     b.boxAt(0, 0.86, 0.26, 0.16, 0.06, 0.28, TYRE, 0, 0); // saddle
-    b.boxAt(0, 0.62, WB, 0.24, 0.04, 0.4, METAL, 0, 0); // rear carrier
-    b.boxAt(0, 0.66, WB + 0.02, 0.32, 0.2, 0.28, [222, 160, 40], 0, 0.1); // delivery parcel
+    b.boxAt(0, 0.58, WB + 0.02, 0.24, 0.04, 0.38, METAL, 0, 0); // rear carrier rack
+    b.boxAt(-0.10, 0.46, WB + 0.04, 0.025, 0.24, 0.025, METAL, 0, 0); // rack support strut L
+    b.boxAt(0.10, 0.46, WB + 0.04, 0.025, 0.24, 0.025, METAL, 0, 0); // rack support strut R
+
+    // Yellow rectangular cargo box mounted above the rear wheel
+    b.boxAt(0, 0.70, WB + 0.02, 0.32, 0.22, 0.28, CARGO_YELLOW, 0, 0); // main yellow box body
+    b.boxAt(0, 0.81, WB + 0.02, 0.325, 0.02, 0.285, [230, 184, 28], 0, 0); // box top rim
+    b.boxAt(0, 0.815, WB + 0.02, 0.26, 0.01, 0.22, [186, 148, 22], 0, 0); // inner cargo floor shadow
+
+    // Red reflector mounted at the bottom of the cargo box (facing rear chase camera)
+    b.boxAt(0, 0.635, WB + 0.162, 0.18, 0.06, 0.025, REFLECTOR_RED, 0, 0); // red reflector
+    b.boxAt(0, 0.635, WB + 0.158, 0.20, 0.075, 0.015, [32, 32, 34], 0, 0); // black reflector bezel
+
     b.boxAt(0, 0.98, -0.52, 0.12, 0.1, 0.08, [255, 236, 150], 0, 0); // lamp
     b.boxAt(0, R + 0.38, -WB, 0.1, 0.03, 0.5, METAL, 0, 0); // front mudguard
     b.boxAt(0, R + 0.38, WB - 0.1, 0.1, 0.03, 0.4, METAL, 0, 0); // rear mudguard
@@ -68,11 +94,20 @@ export function createBicycle(app) {
     const fb = new GeoBuilder();
     fb.box(GeoBuilder.trs(0, 0.06, 0.03, 0, 0, 0, 0.05, 0.14, 0.05), METAL, 0); // stem
     fb.box(GeoBuilder.trs(0, 0.13, 0.05, 0, 0, 0, 0.62, 0.04, 0.04), METAL, 0); // handlebar
-    fb.boxAt(-0.33, 0.13, 0.05, 0.1, 0.07, 0.07, TYRE, 0, 0); // left grip
-    fb.boxAt(0.33, 0.13, 0.05, 0.1, 0.07, 0.07, TYRE, 0, 0); // right grip
+    fb.boxAt(-0.31, 0.13, 0.05, 0.1, 0.07, 0.07, TYRE, 0, 0); // left grip
+    fb.boxAt(0.31, 0.13, 0.05, 0.1, 0.07, 0.07, TYRE, 0, 0); // right grip
     fb.box(GeoBuilder.trs(-0.04, -(0.95 - R) / 2, -(0.46 - WB) / 2, 0, 0, 0, 0.035, 0.95 - R, 0.05), METAL, 0);
     fb.box(GeoBuilder.trs(0.04, -(0.95 - R) / 2, -(0.46 - WB) / 2, 0, 0, 0, 0.035, 0.95 - R, 0.05), METAL, 0);
     forkRoot.addChild(fb.toEntity(app, 'HandlebarsAndFork'));
+
+    // Grip attachment anchors for rider hands tracking steering
+    const gripL = new Entity('GripL');
+    gripL.setLocalPosition(-0.31, 0.13, 0.05);
+    forkRoot.addChild(gripL);
+
+    const gripR = new Entity('GripR');
+    gripR.setLocalPosition(0.31, 0.13, 0.05);
+    forkRoot.addChild(gripR);
 
     // Wheels
     const makeWheel = name => {
@@ -117,7 +152,7 @@ export function createBicycle(app) {
     kickstand.addChild(kb.toEntity(app, 'KickstandLeg'));
     lean.addChild(kickstand);
 
-    return { root, lean, forkRoot, frontWheel, rearWheel, crank, pedals, kickstand };
+    return { root, lean, forkRoot, frontWheel, rearWheel, crank, pedals, kickstand, gripL, gripR };
 }
 
 /**
@@ -125,20 +160,20 @@ export function createBicycle(app) {
  * Structured with explicit nodes for easy replacement with user's Bitmoji:
  * - headMount (attach Bitmoji head / face)
  * - torso (forward lean, aero sprint, side pump)
- * - leftArm, rightArm (reach handlebars or perform gestures)
+ * - arms (two-segment articulated arms reaching handlebar grips or victory gesture)
  * - pelvis, leftLeg, rightLeg (mount hop, pedalling)
  */
 export function createRiderAvatar(app) {
     const avatarRoot = new Entity('RiderAvatar');
-    const skin = PALETTE.skin[0];
 
-    // Pelvis / Hips
+    // Pelvis / Hips (Seated firmly down on the saddle)
     const pelvis = new Entity('Pelvis');
-    pelvis.setLocalPosition(0, 1.05, 0.2);
+    pelvis.setLocalPosition(0, 0.975, 0.25);
     avatarRoot.addChild(pelvis);
 
     const hb = new GeoBuilder();
-    hb.boxAt(0, 0, 0, 0.3, 0.18, 0.22, [30, 40, 80], 0, 0); // shorts
+    hb.boxAt(0, 0.02, 0, 0.32, 0.16, 0.22, SHORTS_BLUE, 0, 0); // dark blue shorts
+    hb.boxAt(0, -0.06, 0.02, 0.26, 0.08, 0.22, SHORTS_DARK, 0, 0); // seated cushion fit
     pelvis.addChild(hb.toEntity(app, 'Hips'));
 
     // Torso / Chest (can lean forward, pump, aero tuck)
@@ -147,9 +182,13 @@ export function createRiderAvatar(app) {
     pelvis.addChild(torso);
 
     const tb = new GeoBuilder();
-    tb.box(GeoBuilder.trs(0, 0.16, 0, 0, 0, 0, 0.36, 0.44, 0.22), SUPER_EAGLES_GREEN, 0); // jersey
-    tb.boxAt(0, 0.2, 0.01, 0.37, 0.08, 0.23, WHITE, 0, 0); // white stripe
-    tb.boxAt(0, 0.39, -0.01, 0.11, 0.08, 0.11, skin, 0, 0); // neck
+    // Green cycling jersey base
+    tb.box(GeoBuilder.trs(0, 0.16, 0, 0, 0, 0, 0.36, 0.44, 0.22), JERSEY_GREEN, 0);
+    // White horizontal stripe across upper back
+    tb.boxAt(0, 0.22, 0.01, 0.37, 0.09, 0.23, JERSEY_WHITE, 0, 0);
+    // Collar & bare skin neck
+    tb.boxAt(0, 0.36, -0.01, 0.16, 0.06, 0.16, JERSEY_GREEN, 0, 0); // jersey collar
+    tb.boxAt(0, 0.39, -0.01, 0.12, 0.08, 0.12, RIDER_SKIN, 0, 0); // bare skin neck
     torso.addChild(tb.toEntity(app, 'Jersey'));
 
     // HEAD MOUNT (Dedicated slot for Snapchat Bitmoji 3D Head / Avatar)
@@ -157,30 +196,90 @@ export function createRiderAvatar(app) {
     headMount.setLocalPosition(0, 0.44, -0.01);
     torso.addChild(headMount);
 
-    // Default Stylized Placeholder Head & Cap (can be swapped in 1 line with Bitmoji)
+    // Low-poly Striped Road Cycling Helmet (matching reference image)
     const headPlaceholder = new Entity('DefaultHeadPlaceholder');
     const headB = new GeoBuilder();
-    headB.boxAt(0, 0.12, 0, 0.26, 0.28, 0.26, skin, 0, 0.04); // head
-    headB.boxAt(0, 0.27, 0, 0.28, 0.08, 0.28, [222, 50, 44], 0, 0); // red cap
-    headB.boxAt(0, 0.25, -0.19, 0.24, 0.03, 0.15, [222, 50, 44], 0, 0); // cap peak
-    headB.boxAt(-0.07, 0.13, -0.135, 0.04, 0.04, 0.02, [20, 20, 20], 0, 0); // eye L
-    headB.boxAt(0.07, 0.13, -0.135, 0.04, 0.04, 0.02, [20, 20, 20], 0, 0); // eye R
+    headB.boxAt(0, 0.12, 0, 0.24, 0.26, 0.24, RIDER_SKIN, 0, 0.04); // head core
+
+    // Vertical striped helmet: covers crown AND full rear skull down to neck rim
+    // 1. Center Yellow Stripe
+    headB.box(GeoBuilder.trs(0, 0.275, -0.01, -10, 0, 0, 0.065, 0.08, 0.26), HELMET_YELLOW);
+    headB.box(GeoBuilder.trs(0, 0.195, 0.115, 28, 0, 0, 0.065, 0.14, 0.06), HELMET_YELLOW);
+
+    // 2. Inner Red Stripes (flanking center yellow)
+    headB.box(GeoBuilder.trs(-0.06, 0.27, -0.01, -10, 0, 0, 0.055, 0.075, 0.25), HELMET_RED);
+    headB.box(GeoBuilder.trs(0.06, 0.27, -0.01, -10, 0, 0, 0.055, 0.075, 0.25), HELMET_RED);
+    headB.box(GeoBuilder.trs(-0.06, 0.19, 0.115, 28, 0, 0, 0.055, 0.135, 0.06), HELMET_RED);
+    headB.box(GeoBuilder.trs(0.06, 0.19, 0.115, 28, 0, 0, 0.055, 0.135, 0.06), HELMET_RED);
+
+    // 3. Outer Yellow Stripes
+    headB.box(GeoBuilder.trs(-0.11, 0.26, -0.01, -10, 0, 0, 0.045, 0.07, 0.23), HELMET_YELLOW);
+    headB.box(GeoBuilder.trs(0.11, 0.26, -0.01, -10, 0, 0, 0.045, 0.07, 0.23), HELMET_YELLOW);
+    headB.box(GeoBuilder.trs(-0.11, 0.185, 0.11, 28, 0, 0, 0.045, 0.13, 0.055), HELMET_YELLOW);
+    headB.box(GeoBuilder.trs(0.11, 0.185, 0.11, 28, 0, 0, 0.045, 0.13, 0.055), HELMET_YELLOW);
+
+    // 4. Outer Red Temples / Sides
+    headB.box(GeoBuilder.trs(-0.14, 0.245, -0.01, -10, 0, 0, 0.03, 0.065, 0.21), HELMET_RED);
+    headB.box(GeoBuilder.trs(0.14, 0.245, -0.01, -10, 0, 0, 0.03, 0.065, 0.21), HELMET_RED);
+    headB.box(GeoBuilder.trs(-0.14, 0.18, 0.105, 28, 0, 0, 0.03, 0.12, 0.05), HELMET_RED);
+    headB.box(GeoBuilder.trs(0.14, 0.18, 0.105, 28, 0, 0, 0.03, 0.12, 0.05), HELMET_RED);
+
+    // Helmet Base Trim, Rear Rim & Front Visor Peak
+    headB.boxAt(0, 0.12, 0.115, 0.28, 0.025, 0.05, HELMET_TRIM); // dark lower edge across back of helmet
+    headB.boxAt(0, 0.20, -0.155, 0.24, 0.03, 0.06, HELMET_RED); // front peak visor
+    headB.boxAt(0, 0.21, 0, 0.28, 0.03, 0.27, HELMET_RED); // perimeter band
+
+    // Eyes
+    headB.boxAt(-0.07, 0.13, -0.125, 0.04, 0.04, 0.02, [20, 20, 20], 0, 0);
+    headB.boxAt(0.07, 0.13, -0.125, 0.04, 0.04, 0.02, [20, 20, 20], 0, 0);
+    // Chin strap
+    headB.boxAt(-0.125, 0.07, -0.01, 0.015, 0.18, 0.02, HELMET_TRIM);
+    headB.boxAt(0.125, 0.07, -0.01, 0.015, 0.18, 0.02, HELMET_TRIM);
     headPlaceholder.addChild(headB.toEntity(app, 'HeadMesh'));
     headMount.addChild(headPlaceholder);
 
-    // Arms
+    // Two-segment articulated arms (UpperArm from shoulder to elbow, Forearm from elbow to grip)
     const arms = [];
     for (const sx of [-1, 1]) {
-        const armRoot = new Entity(sx < 0 ? 'LeftArm' : 'RightArm');
-        armRoot.setLocalPosition(sx * 0.2, 0.34, -0.02);
-        torso.addChild(armRoot);
+        const sideName = sx < 0 ? 'Left' : 'Right';
+        const shoulder = new Entity(`${sideName}Shoulder`);
+        shoulder.setLocalPosition(sx * 0.20, 0.34, -0.02);
+        torso.addChild(shoulder);
 
-        const ab = new GeoBuilder();
-        ab.box(GeoBuilder.trs(0, -0.16, -0.14, 40, 0, 0, 0.1, 0.1, 0.42), skin, 0);
-        ab.boxAt(0, 0, 0, 0.13, 0.13, 0.14, SUPER_EAGLES_GREEN, 0, 0); // sleeve
-        ab.boxAt(0, -0.3, -0.28, 0.09, 0.08, 0.09, skin, 0, 0); // hand
-        armRoot.addChild(ab.toEntity(app, 'ArmMesh'));
-        arms.push(armRoot);
+        // 1. Upper Arm (origin at shoulder, unit length along local -Z to elbow)
+        const upperArm = new Entity(`${sideName}UpperArm`);
+        torso.addChild(upperArm);
+
+        const ub = new GeoBuilder();
+        // Green jersey sleeve at shoulder
+        ub.box(GeoBuilder.trs(0, 0, -0.16, 0, 0, 0, 0.14, 0.14, 0.24), JERSEY_GREEN, 0);
+        ub.box(GeoBuilder.trs(0, 0, -0.30, 0, 0, 0, 0.145, 0.145, 0.04), JERSEY_WHITE, 0);
+        // Bare skin upper arm
+        ub.box(GeoBuilder.trs(0, 0, -0.64, 0, 0, 0, 0.115, 0.11, 0.64), RIDER_SKIN, 0);
+        // Elbow joint bulge
+        ub.box(GeoBuilder.trs(0, 0, -0.98, 0, 0, 0, 0.12, 0.115, 0.10), RIDER_SKIN, 0);
+        upperArm.addChild(ub.toEntity(app, `${sideName}UpperArmMesh`));
+
+        // 2. Forearm (origin at elbow, unit length along local -Z to hand on handlebar grip)
+        const forearm = new Entity(`${sideName}Forearm`);
+        torso.addChild(forearm);
+
+        const fb = new GeoBuilder();
+        // Forearm bare skin
+        fb.box(GeoBuilder.trs(0, 0, -0.42, 0, 0, 0, 0.11, 0.10, 0.76), RIDER_SKIN, 0);
+        // Wrist
+        fb.box(GeoBuilder.trs(0, 0.01, -0.86, 0, 0, 0, 0.10, 0.085, 0.09), RIDER_SKIN, 0);
+        // Knuckles on top of handlebar (skin tone visible from chase camera)
+        fb.box(GeoBuilder.trs(0, 0.035, -0.96, 0, 0, 0, 0.12, 0.07, 0.10), RIDER_SKIN, 0);
+        // Cycling glove pad on top
+        fb.box(GeoBuilder.trs(0, 0.045, -1.00, 0, 0, 0, 0.125, 0.04, 0.08), [28, 105, 56], 0);
+        // Fingers curled under grip
+        fb.box(GeoBuilder.trs(0, -0.025, -1.01, 0, 0, 0, 0.115, 0.05, 0.07), RIDER_SKIN, 0);
+        // Thumb wrapped around inner grip
+        fb.box(GeoBuilder.trs(-sx * 0.045, 0.01, -0.97, 0, 0, 0, 0.05, 0.05, 0.07), RIDER_SKIN, 0);
+        forearm.addChild(fb.toEntity(app, `${sideName}ForearmMesh`));
+
+        arms.push({ shoulder, upperArm, forearm, sx });
     }
 
     // Legs
@@ -192,10 +291,17 @@ export function createRiderAvatar(app) {
 
         const lb = new GeoBuilder();
         // Unit length along local -Z (0 to -1) so lookAt and scale.z stretch it perfectly to pedals
-        lb.box(GeoBuilder.trs(0, 0, -0.5, 0, 0, 0, 0.12, 0.12, 1), skin, 0);
-        lb.box(GeoBuilder.trs(0, 0, -0.12, 0, 0, 0, 0.15, 0.15, 0.24), [30, 40, 80], 0);
-        lb.box(GeoBuilder.trs(0, 0, -0.93, 0, 0, 0, 0.13, 0.13, 0.1), [245, 245, 245], 0); // sock
-        lb.box(GeoBuilder.trs(0, -0.04, -0.96, 0, 0, 0, 0.13, 0.08, 0.22), [240, 240, 240], 0); // shoe
+        lb.box(GeoBuilder.trs(0, 0, -0.5, 0, 0, 0, 0.12, 0.12, 1), RIDER_SKIN, 0);
+        // Dark blue shorts covering upper thigh
+        lb.box(GeoBuilder.trs(0, 0, -0.14, 0, 0, 0, 0.155, 0.155, 0.28), SHORTS_BLUE, 0);
+        lb.box(GeoBuilder.trs(0, 0, -0.29, 0, 0, 0, 0.16, 0.16, 0.03), SHORTS_DARK, 0);
+        // Bare skin calves exposed between z = -0.31 and -0.85
+        // Black socks band around lower calf / ankle
+        lb.box(GeoBuilder.trs(0, 0, -0.90, 0, 0, 0, 0.13, 0.13, 0.10), SOCKS_BLACK, 0);
+        // White sneakers with dark rubber sole
+        lb.box(GeoBuilder.trs(0, -0.04, -0.96, 0, 0, 0, 0.13, 0.08, 0.22), SNEAKERS_WHITE, 0);
+        lb.box(GeoBuilder.trs(0, -0.08, -0.96, 0, 0, 0, 0.135, 0.02, 0.23), SNEAKERS_SOLE, 0);
+        lb.box(GeoBuilder.trs(0, -0.02, -1.01, 0, 0, 0, 0.12, 0.05, 0.08), SNEAKERS_WHITE, 0);
         legRoot.addChild(lb.toEntity(app, 'LegMesh'));
 
         legs.push({ entity: legRoot, side });
@@ -207,8 +313,7 @@ export function createRiderAvatar(app) {
         torso,
         headMount,
         headPlaceholder,
-        armL: arms[0],
-        armR: arms[1],
+        arms,
         legs
     };
 }
@@ -232,6 +337,9 @@ export function createBicycleKid(app) {
         crank: bike.crank,
         pedals: bike.pedals,
         kickstand: bike.kickstand,
+        gripL: bike.gripL,
+        gripR: bike.gripR,
+        arms: avatar.arms,
         legs: avatar.legs
     };
 }

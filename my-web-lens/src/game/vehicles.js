@@ -9,8 +9,6 @@ import { GAME, VEHICLE_CONFIG, BIKE } from './constants.js';
 import { mulberry32, pick } from '../graphics/palette.js';
 
 const DANFO_SHOUTS = [
-    'OWA O! You wan crush my Danfo?!',
-    'Werey rider! Enter under tire make I see!',
     'Your brake fail?! Watch front!',
     'Commot! Danfo driver no get joy today!',
     'Ah ah! You wan buy my bumper?!'
@@ -18,14 +16,14 @@ const DANFO_SHOUTS = [
 
 const KEKE_SHOUTS = [
     'Keke Marwa no be toy o!',
-    'Brother see front! You wan wound me?!',
-    'Ah ah rider, mind your steering!',
+    'Brother see front! No wound yourself?!',
+    'Ah ah bicycle, mind your steering!',
     'Look road my friend! Keke no be trailer!'
 ];
 
 const OKADA_SHOUTS = [
-    'Okada rider: Oga shift! You craze?!',
-    'Commot for road! You wan cause accident?!',
+    'Oga shift!',
+    'Commot for road, jor!',
     'Brother watch your lane!',
     'Wetin dey do this bicycle boy?!'
 ];
@@ -33,7 +31,7 @@ const OKADA_SHOUTS = [
 const CAR_SHOUTS = [
     'Peep peep! My bumper! Mind yourself!',
     'Hey! Do you have eyes on your head?!',
-    'Ah ah! Watch where you are pedaling!',
+    'Ah ah! Watch where you dey go!',
     'Look front oga! You wan scratch my motor?!'
 ];
 
