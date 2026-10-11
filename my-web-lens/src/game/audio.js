@@ -107,13 +107,6 @@ export class AudioFX {
         this._noise(t, 0.2, 600, 0.3);
     }
 
-    vehicleHorn() {
-        if (!this.ctx) return;
-        const t = this.ctx.currentTime;
-        this._tone(420, t, 0.22, 'square', 0.18);
-        this._tone(510, t, 0.22, 'square', 0.16);
-    }
-
     vehicleCrash() {
         if (!this.ctx) return;
         const t = this.ctx.currentTime;

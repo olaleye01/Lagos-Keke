@@ -58,14 +58,14 @@ export const GAME = {
 
 export const VEHICLE_CONFIG = {
     FLEET: [
-        { type: 'danfo', speed: 7.6, lane: 'outer', offset01: 0.05 },
-        { type: 'keke', speed: 6.2, lane: 'outer', offset01: 0.30 },
-        { type: 'car', speed: 8.4, lane: 'outer', offset01: 0.55 },
-        { type: 'okada', speed: 9.0, lane: 'outer', offset01: 0.80 },
-        { type: 'okada', speed: 9.0, lane: 'inner', offset01: 0.15 },
-        { type: 'danfo', speed: 7.4, lane: 'inner', offset01: 0.40 },
-        { type: 'keke', speed: 6.4, lane: 'inner', offset01: 0.65 },
-        { type: 'car', speed: 8.2, lane: 'inner', offset01: 0.90 }
+        { type: 'danfo', speed: 7.6, lane: 'outer', offset01: 0.08 },
+        { type: 'keke', speed: 6.2, lane: 'outer', offset01: 0.35 },
+        { type: 'car', speed: 8.4, lane: 'outer', offset01: 0.68 },
+        { type: 'okada', speed: 9.0, lane: 'outer', offset01: 0.90 },
+        { type: 'okada', speed: 9.0, lane: 'inner', offset01: 0.12 },
+        { type: 'danfo', speed: 7.4, lane: 'inner', offset01: 0.35 },
+        { type: 'keke', speed: 6.4, lane: 'inner', offset01: 0.68 },
+        { type: 'car', speed: 8.2, lane: 'inner', offset01: 0.88 }
     ]
 };
 

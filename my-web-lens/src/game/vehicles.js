@@ -344,12 +344,6 @@ export class VehicleManager {
                     if (distAhead > 0.5 && distAhead < 7.0 && distLat < 1.9) {
                         targetSpeed = 0;
                         v.yieldTimer = 1.0;
-
-                        // Tap vehicle horn if approaching fast (only during active race)
-                        if (checkPlayerCollision && v.speed > 2.5 && v.honkTimer <= 0) {
-                            v.honkTimer = 3.5;
-                            this.audio.vehicleHorn();
-                        }
                         break;
                     }
                 }

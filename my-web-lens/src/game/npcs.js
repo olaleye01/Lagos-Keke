@@ -66,7 +66,7 @@ export class NPCManager {
         for (const npc of this.npcs) {
             npc.progress = 0;
             npc.crossing = false;
-            npc.delayTimer = this.rand() * 3;
+            npc.delayTimer = 5.0 + this.rand() * 4.0;
             npc.cooldown = 0;
             npc.scared = 0;
             npc.x = npc.startPt.x;

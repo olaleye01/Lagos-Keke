@@ -279,21 +279,42 @@ function getLastCheckpointPose() {
     return { x: lastCP.x, z: lastCP.z, yaw };
 }
 
+// --- Dynamic Camera Position Helpers & Presets ---
+const camPos = new Vec3();
+const camTarget = new Vec3();
+let currentCamPos = new Vec3();
+let currentCamLook = new Vec3();
+
+// TOP_CAM: High overhead panoramic bird's-eye view showing a wide portion of the Lagos city map from above
+const TOP_CAM = {
+    dist: 14.5,
+    height: 13.5,
+    lookAhead: -1.2,
+    lookY: 0.5
+};
+
+// NORMAL_CAM: Elevated top-down arcade racing camera giving expansive view of the map, turns, traffic, and hazards
+const NORMAL_CAM = {
+    dist: 6.2,
+    height: 6.8,
+    lookAhead: 3.5,
+    lookY: 0.5
+};
+
 function respawnPlayerAtLastCheckpoint(reason = 'crash') {
     const pose = getLastCheckpointPose();
     player.respawnAt(pose);
 
-    // Snap camera smoothly right behind respawned player
-    const followDist = 4.2;
-    const camHeight = 2.1;
+    // Snap camera smoothly right behind respawned player with elevated top-down view
+    const followDist = NORMAL_CAM.dist;
+    const camHeight = NORMAL_CAM.height;
     currentCamPos.set(player.x - player.forwardX * followDist, camHeight, player.z - player.forwardZ * followDist);
-    currentCamLook.set(player.x + player.forwardX * 2.0, 1.35, player.z + player.forwardZ * 2.0);
+    currentCamLook.set(player.x + player.forwardX * NORMAL_CAM.lookAhead, NORMAL_CAM.lookY, player.z + player.forwardZ * NORMAL_CAM.lookAhead);
     cameraEntity.setPosition(currentCamPos);
     cameraEntity.lookAt(currentCamLook);
 }
 
 function startCountdown() {
-    const isRestart = gameState === STATE.GAMEOVER || gameState === STATE.VICTORY;
     gameState = STATE.COUNTDOWN;
     countdownTimer = 3;
     timeLeft = GAME.TIME_LIMIT;
@@ -301,11 +322,10 @@ function startCountdown() {
     currentCPIndex = 0;
     lastTickSecond = -1;
 
+    // Reset player, NPCs, and vehicles on every race start to guarantee zero early collisions
     player.reset();
-    if (isRestart) {
-        npcs.reset();
-        vehicles.reset();
-    }
+    npcs.reset();
+    vehicles.reset();
     updateBeaconPosition();
 
     titleScreen.classList.add('hidden');
@@ -335,8 +355,8 @@ function startCountdown() {
         player.x = 0;
         player.z = 12.0;
         player.yaw = 0; // facing North directly towards South plank bridge at z=7.8
-        currentCamPos.set(0, 2.25, 12.0 + 4.2);
-        currentCamLook.set(0, 1.20, 12.0 - 2.0);
+        currentCamPos.set(0, 6.5, 12.0 + 6.0);
+        currentCamLook.set(0, 0.5, 12.0 - 3.0);
     }
 
     cameraEntity.setPosition(currentCamPos);
@@ -347,6 +367,7 @@ function startGame() {
     gameState = STATE.PLAYING;
     countdownScreen.classList.add('hidden');
     input.enabled = true;
+    player.invulnerable = 2.0; // 2.0s protection against early collisions at race start
     showToast('OYA GO! Beat the clock!', 'good', 2000);
 }
 
@@ -393,12 +414,6 @@ btnRetry.addEventListener('click', () => {
     startCountdown();
 });
 
-// --- Dynamic Camera Position Helpers ---
-const camPos = new Vec3();
-const camTarget = new Vec3();
-let currentCamPos = new Vec3();
-let currentCamLook = new Vec3();
-
 // Sound toggle button on welcome screen
 const btnSoundToggle = document.getElementById('btn-sound-toggle');
 const soundIconOn = document.getElementById('sound-icon-on');
@@ -416,22 +431,6 @@ if (btnSoundToggle) {
         }
     });
 }
-
-// Dynamic Camera Presets:
-// TOP_CAM: Elevated view showing the bicycle in the center of the screen, the wide main road, and bustling traffic
-const TOP_CAM = {
-    dist: 6.2,
-    height: 3.8,
-    lookAhead: -0.4,
-    lookY: 0.6
-};
-// NORMAL_CAM: Close third-person chase camera for racing
-const NORMAL_CAM = {
-    dist: 2.85,
-    height: 1.95,
-    lookAhead: 1.8,
-    lookY: 1.15
-};
 
 let titleSwayTime = 0;
 
@@ -596,21 +595,22 @@ app.on('update', dt => {
         audio.setRolling(0, 'road');
     }
 
-    // 3. Dynamic Third-Person Camera during Active Gameplay
+    // 3. Elevated Top-Down Dynamic Arcade Camera during Active Gameplay
     if (gameState === STATE.PLAYING) {
         const forwardX = player.forwardX;
         const forwardZ = player.forwardZ;
+        const speedRatio = player.speed / (player.maxSpeed || 1);
 
-        // Desired camera position behind the rider (framing matching reference screenshot)
-        const followDist = 2.85 + (player.speed / (player.maxSpeed || 1)) * 0.45;
-        const camHeight = 1.95 + (player.speed / (player.maxSpeed || 1)) * 0.15;
+        // Elevated top-down view showing a good portion of the map from above
+        const followDist = NORMAL_CAM.dist + speedRatio * 0.8;
+        const camHeight = NORMAL_CAM.height + speedRatio * 0.6;
         const desiredX = player.x - forwardX * followDist;
         const desiredZ = player.z - forwardZ * followDist;
         let desiredY = camHeight;
 
-        // Camera collision check: if camera is inside a wall/fence, raise it or pull closer
+        // Camera collision check: if camera would clip inside a high building, raise it above roof
         if (map.blocksCamera(desiredX, desiredY, desiredZ)) {
-            desiredY += 1.8;
+            desiredY += 2.2;
         }
 
         // Camera shake from potholes or bumps
@@ -628,10 +628,10 @@ app.on('update', dt => {
         currentCamPos.y = math.lerp(currentCamPos.y, desiredY + shakeY, 1 - Math.exp(-camLerpSpeed * dt));
         currentCamPos.z = math.lerp(currentCamPos.z, desiredZ, 1 - Math.exp(-camLerpSpeed * dt));
 
-        // Look slightly ahead of the bicycle
-        const lookDistAhead = 1.8;
+        // Look ahead along the road
+        const lookDistAhead = NORMAL_CAM.lookAhead + speedRatio * 0.6;
         const targetLookX = player.x + forwardX * lookDistAhead;
-        const targetLookY = 1.15;
+        const targetLookY = NORMAL_CAM.lookY;
         const targetLookZ = player.z + forwardZ * lookDistAhead;
 
         currentCamLook.x = math.lerp(currentCamLook.x, targetLookX, 1 - Math.exp(-12 * dt));
@@ -642,8 +642,7 @@ app.on('update', dt => {
         cameraEntity.lookAt(currentCamLook);
 
         // Dynamic Camera FOV for speed rush sensation
-        const speedRatio = player.speed / (player.maxSpeed || 1);
-        const targetFov = 52 + speedRatio * (player.isSprinting ? 9 : 4);
+        const targetFov = 54 + speedRatio * (player.isSprinting ? 8 : 4);
         cameraEntity.camera.fov = math.lerp(cameraEntity.camera.fov, targetFov, 1 - Math.exp(-6 * dt));
     }
 
