@@ -95,7 +95,7 @@ export const HAZARDS = {
 };
 
 /**
- * 9 distant checkpoints across opposite ends of Lagos (67m - 98m per leg).
+ * 9 distant checkpoints across opposite ends of the Hood (67m - 98m per leg).
  * Fits within the 2-minute (120s) Snapchat gameplay limit.
  */
 export const CHECKPOINTS = [

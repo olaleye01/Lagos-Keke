@@ -14,7 +14,7 @@
   --arcade-yellow: #fecb16;      /* Bright saturated arcade yellow */
   --arcade-yellow-deep: #e59d0b; /* Deep gold highlight */
   --laterite-mud: #b45309;       /* Laterite orange for mud alleys */
-  --road-tarmac: #384252;        /* Slate dark for tarmac road */
+  --road-tarmac: #2a2c30;        /* Asphalt dark for tarmac road */
   --danger-red: #ea3838;         /* Danger / alert red */
   --success-green: #22c55e;      /* Success / good green */
   
@@ -1187,15 +1187,6 @@ html, body {
   background: #f4f4f5;
 }
 
-.pause-tip-note {
-  font-family: var(--font-body);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: #a1a1aa;
-  margin: 0;
-  text-transform: uppercase;
-}
 
 /* ==========================================================================
    LOADING SCREEN ("Gearing Up" - Rolling Gear Animation & Welcome Transition)
@@ -1362,7 +1353,7 @@ html, body {
   position: relative;
   width: 220px;
   height: 13px;
-  background: #384252; /* Road tarmac color */
+  background: #2a2c30; /* Road tarmac color */
   border: 2.5px solid var(--outline-dark);
   border-radius: 9px;
   box-shadow: 0 3px 0 var(--outline-deep);

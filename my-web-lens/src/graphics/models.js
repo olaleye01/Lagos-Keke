@@ -19,7 +19,7 @@ const TYRE = [26, 26, 28];
 const FRAME = [228, 40, 44];
 const METAL = [170, 172, 178];
 
-// Dedicated character design palette for the rider (matching Lagos reference image)
+// Dedicated character design palette for the rider (matching Hood reference image)
 const RIDER_SKIN = [142, 92, 60];
 const JERSEY_GREEN = [20, 168, 80];
 const JERSEY_WHITE = [248, 248, 246];
@@ -345,7 +345,7 @@ export function createBicycleKid(app) {
 }
 
 /**
- * Lagos pedestrian with a few random outfits (gele headwrap, hawker tray, cap).
+ * Hood pedestrian with a few random outfits (gele headwrap, hawker tray, cap).
  * Origin on the ground, facing -Z. Legs swing from the hip.
  */
 export function createPedestrian(app, rand) {
@@ -476,7 +476,7 @@ export function createParticlePool(app, count) {
 }
 
 /**
- * Iconic Lagos Danfo (Yellow commercial minibus with twin black horizontal stripes).
+ * Iconic Hood Danfo (Yellow commercial minibus with twin black horizontal stripes).
  * Facing -Z, origin on ground.
  */
 export function createDanfo(app, rand) {
@@ -493,7 +493,7 @@ export function createDanfo(app, rand) {
     // Main yellow bus body tub
     b.boxAt(0, 0.72, 0, 1.82, 0.78, 4.0, bodyCol, 0, 0.02);
 
-    // Twin black Lagos stripes on both sides
+    // Twin black Hood stripes on both sides
     for (const side of [-0.92, 0.92]) {
         b.boxAt(side, 0.74, 0, 0.02, 0.1, 3.8, stripeCol, 0, 0);
         b.boxAt(side, 0.54, 0, 0.02, 0.1, 3.8, stripeCol, 0, 0);
@@ -540,7 +540,7 @@ export function createDanfo(app, rand) {
 }
 
 /**
- * Lagos Keke Marwa / NAPEP (Yellow commercial passenger tricycle).
+ * Hood Keke Marwa / NAPEP (Yellow commercial passenger tricycle).
  * Facing -Z, origin on ground.
  */
 export function createKeke(app, rand) {
@@ -594,7 +594,7 @@ export function createKeke(app, rand) {
 }
 
 /**
- * Lagos Okada (Commercial motorcycle with seated driver).
+ * Hood Okada (Commercial motorcycle with seated driver).
  * Facing -Z, origin on ground.
  */
 export function createOkada(app, rand) {
@@ -638,7 +638,7 @@ export function createOkada(app, rand) {
 }
 
 /**
- * Lagos Sedan / Private Car (e.g. Toyota Corolla).
+ * Hood Sedan / Private Car (e.g. Toyota Corolla).
  * Facing -Z, origin on ground.
  */
 export function createCar(app, rand) {

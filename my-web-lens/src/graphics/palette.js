@@ -1,9 +1,9 @@
-// Low-poly Lagos palette (sRGB 0-255). Vertex colours are converted to linear in the shader
+// Low-poly Hood palette (sRGB 0-255). Vertex colours are converted to linear in the shader
 // (`vertexColorGamma`), so these can be authored as they look on screen.
 
 export const PALETTE = {
-    tarmac: [72, 74, 80],
-    tarmacDark: [58, 60, 66],
+    tarmac: [42, 44, 48],
+    tarmacDark: [42, 44, 48],
     roadLine: [246, 206, 52],
     curbYellow: [244, 196, 40],
     curbBlack: [34, 34, 36],
@@ -29,7 +29,7 @@ export const PALETTE = {
     palm: [58, 140, 60],
     palmDark: [40, 110, 48],
     pole: [96, 76, 56],
-    potholeRim: [44, 44, 46],
+    potholeRim: [30, 30, 34],
     potholeWater: [86, 70, 56],
     gutterConcrete: [182, 178, 170],
     gutterConcreteDark: [60, 58, 54],
@@ -113,7 +113,7 @@ export const PALETTE = {
     kekeRoof: [30, 30, 32],
     carColors: [
         [210, 215, 222], // silver metallic
-        [42, 92, 168],   // lagos blue
+        [42, 92, 168],   // hood blue
         [240, 240, 240], // white
         [175, 40, 40],   // wine red
         [45, 45, 50]     // graphite

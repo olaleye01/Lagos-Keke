@@ -3,7 +3,7 @@ import { createPedestrian } from '../graphics/models.js';
 import { HAZARDS } from './constants.js';
 import { mulberry32, pick } from '../graphics/palette.js';
 
-const LAGOS_SHOUTS = [
+const HOOD_SHOUTS = [
     'Watch road o!',
     'You wan jam pesin?!',
     'Oga look front!',
@@ -151,7 +151,7 @@ export class NPCManager {
                     npc.scared = 2.0;
                     player.knock(npc.x, npc.z);
                     this.audio.oops();
-                    bumpedToast = pick(this.rand, LAGOS_SHOUTS);
+                    bumpedToast = pick(this.rand, HOOD_SHOUTS);
                 }
             }
         }

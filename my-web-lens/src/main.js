@@ -9,7 +9,7 @@ import {
     math
 } from 'playcanvas';
 
-import { LagosMap } from './game/map.js';
+import { HoodMap } from './game/map.js';
 import { Player } from './game/player.js';
 import { NPCManager } from './game/npcs.js';
 import { VehicleManager } from './game/vehicles.js';
@@ -110,7 +110,7 @@ app.start();
 // --- Scene Environment & Lighting ---
 app.scene.ambientLight = new Color(0.38, 0.34, 0.30);
 
-// Warm Lagos sunlight
+// Warm Hood sunlight
 const sun = new Entity('Sun');
 sun.addComponent('light', {
     type: 'directional',
@@ -139,7 +139,7 @@ app.root.addChild(fillLight);
 // Camera Setup
 const cameraEntity = new Entity('MainCamera');
 cameraEntity.addComponent('camera', {
-    clearColor: new Color(0.96, 0.78, 0.62), // Lagos golden haze / warm sky
+    clearColor: new Color(0.96, 0.78, 0.62), // Hood golden haze / warm sky
     fov: 52,
     nearClip: 0.2,
     farClip: 280,
@@ -149,7 +149,7 @@ app.root.addChild(cameraEntity);
 
 // --- Game Subsystems ---
 const audio = new AudioFX();
-const map = new LagosMap(app);
+const map = new HoodMap(app);
 const player = new Player(app, map, audio);
 const npcs = new NPCManager(app, map, audio);
 const vehicles = new VehicleManager(app, map, audio);
@@ -297,7 +297,7 @@ const camTarget = new Vec3();
 let currentCamPos = new Vec3();
 let currentCamLook = new Vec3();
 
-// TOP_CAM: High overhead panoramic bird's-eye view showing a wide portion of the Lagos city map from above
+// TOP_CAM: High overhead panoramic bird's-eye view showing a wide portion of the Hood map from above
 const TOP_CAM = {
     dist: 14.5,
     height: 13.5,
@@ -407,7 +407,7 @@ function endGame(won) {
 
     if (won) {
         audio.win();
-        endTitle.textContent = 'ALL 9 STOPS DELIVERED!';
+        endTitle.textContent = 'ALL CHECKPOINTS CLEARED!';
         endTitle.classList.remove('lose');
         const mudRatio = player.stats.mudTime / (player.stats.mudTime + player.stats.roadTime || 1);
         if (mudRatio > 0.40) {
@@ -415,13 +415,13 @@ function endGame(won) {
         } else if (player.stats.potholes === 0) {
             endRank.textContent = 'Smooth Sailor';
         } else {
-            endRank.textContent = 'Master Dispatch Rider';
+            endRank.textContent = 'Master Street Racer';
         }
     } else {
         audio.lose();
         endTitle.textContent = "E DON CAST!";
         endTitle.classList.add('lose');
-        endRank.textContent = `Reached ${currentCPIndex}/${CHECKPOINTS.length} Stops – Don't Give Up!`;
+        endRank.textContent = `Reached ${currentCPIndex}/${CHECKPOINTS.length} Checkpoints – Don't Give Up!`;
     }
 
     document.getElementById('stat-cps').textContent = `${won ? CHECKPOINTS.length : currentCPIndex}/${CHECKPOINTS.length}`;
@@ -954,7 +954,7 @@ async function initLoadingSequence() {
 
     // 2. Yield briefly for procedural terrain, shops & props creation
     await new Promise(resolve => setTimeout(resolve, 100));
-    updateLoadingProgress(75, 'Assembling Lagos streets & traffic');
+    updateLoadingProgress(75, 'Assembling Hood streets & traffic');
 
     // 3. Wait for WebGL GPU pipeline & PlayCanvas initial render passes
     await new Promise(resolve => {

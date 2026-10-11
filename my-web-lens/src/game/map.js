@@ -17,7 +17,7 @@ const shade = (col, k) => [col[0] * k, col[1] * k, col[2] * k];
 /**
  * Deep open drain ringing the central courtyard (all distances measured outward from the map centre).
  * The rider is ~1.9 m tall on a ~1.8 m long bike, so a 3 m wide / 1.6 m deep channel reads as a
- * proper Lagos storm drain without swallowing the whole courtyard.
+ * proper Hood storm drain without swallowing the whole courtyard.
  */
 export const DRAIN = {
     S: 9.0,             // courtyard boundary (18m square)
@@ -49,7 +49,7 @@ export const ZEBRA_CROSSINGS = new Set([
 /**
  * Owns the static neighbourhood: render geometry, collision, surface lookup, hazards and the minimap.
  */
-export class LagosMap {
+export class HoodMap {
     constructor(app) {
         this.app = app;
         this.rand = mulberry32(1337);
@@ -144,13 +144,10 @@ export class LagosMap {
     _buildRoad(b, r, c, x, z) {
         const x0 = x - HALF_CELL;
         const z0 = z - HALF_CELL;
-        // paved tarmac in 1.5 m tiles with slight variation
-        const tile = CELL / 4;
-        for (let i = 0; i < 4; i++) {
-            for (let j = 0; j < 4; j++) {
-                b.flat(x0 + i * tile, z0 + j * tile, x0 + (i + 1) * tile, z0 + (j + 1) * tile, 0, (i + j) % 2 ? PALETTE.tarmac : PALETTE.tarmacDark, 0.05);
-            }
-        }
+        const x1 = x + HALF_CELL;
+        const z1 = z + HALF_CELL;
+        // Uniform solid black asphalt main road surface
+        b.flat(x0, z0, x1, z1, 0, PALETTE.tarmac, 0);
         const axis = this._roadAxis(r, c);
         if (ZEBRA_CROSSINGS.has(`${r},${c}`)) {
             // White pedestrian zebra crossing stripes
@@ -191,7 +188,7 @@ export class LagosMap {
                 b.flat(x - 2.0, z - 0.08, x - 0.8, z + 0.08, 0.02, PALETTE.roadLine);
             }
         }
-        // black-and-yellow Lagos kerbs wherever the road meets a house or fence (never across roads or mud alleys)
+        // black-and-yellow Hood kerbs wherever the road meets a house or fence (never across roads or mud alleys)
         for (const key of Object.keys(SIDES)) {
             const s = SIDES[key];
             const n = cellAt(r + s.dr, c + s.dc);
@@ -297,7 +294,7 @@ export class LagosMap {
     }
 
     /**
-     * Builds a compact, charming roadside Lagos kiosk shop directly behind the rider's initial spawn point.
+     * Builds a compact, charming roadside Hood kiosk shop directly behind the rider's initial spawn point.
      * Replaces the oversized two-storey residential block with a low-profile single-storey shop.
      */
     _buildSpawnRearShop(b, r, c, x, z) {
@@ -330,7 +327,7 @@ export class LagosMap {
         // Concrete foundation curb
         b.boxAt(bx, 0.1, bz, bWidth + 0.15, 0.2, bDepth + 0.15, [145, 140, 132], 0, 0.04);
 
-        // Vibrant sunny Lagos yellow stucco shop walls
+        // Vibrant sunny Hood yellow stucco shop walls
         const wallCol = [238, 185, 68]; // warm golden yellow
         b.boxAt(bx, bh / 2, bz, bWidth, bh, bDepth, wallCol, 0, 0.04);
 
@@ -419,7 +416,7 @@ export class LagosMap {
             const nx = s.nx;
             const nz = s.nz;
 
-            // 1. Street-facing Lagos building at the rear of the cell (away from road)
+            // 1. Street-facing Hood building at the rear of the cell (away from road)
             const bDepth = 3.6;
             const bWidth = 5.8;
             const bx = x - nx * 1.2;
@@ -1206,7 +1203,7 @@ export class LagosMap {
         canvas.height = size;
         const ctx = canvas.getContext('2d');
         const px = size / GRID;
-        const colors = { R: '#5a5c63', M: '#b0623a', '.': '#c07a4a', T: '#c07a4a', B: '#2a1d14', '#': '#38281d' };
+        const colors = { R: '#2a2c30', M: '#b0623a', '.': '#c07a4a', T: '#c07a4a', B: '#2a1d14', '#': '#38281d' };
         for (let r = 0; r < GRID; r++) {
             for (let c = 0; c < GRID; c++) {
                 const ch = MAP[r][c];
