@@ -16,6 +16,7 @@ import { VehicleManager } from './game/vehicles.js';
 import { Input } from './game/input.js';
 import { AudioFX } from './game/audio.js';
 import { createCheckpointBeacon } from './graphics/models.js';
+import { RacingLine } from './game/racingLine.js';
 import { GAME, CHECKPOINTS, BIKE } from './game/constants.js';
 
 // --- DOM References ---
@@ -163,6 +164,7 @@ const npcs = new NPCManager(app, map, audio);
 const vehicles = new VehicleManager(app, map, audio);
 const beacon = createCheckpointBeacon(app);
 app.root.addChild(beacon.root);
+const racingLine = new RacingLine(app, map);
 
 // Expose runtime debug handle
 window.gameDebug = { app, map, player, camera: cameraEntity };
@@ -339,10 +341,11 @@ function startCountdown() {
     currentCPIndex = 0;
     lastTickSecond = -1;
 
-    // Reset player, NPCs, and vehicles on every race start to guarantee zero early collisions
+    // Reset player, NPCs, vehicles, and racing line on every race start to guarantee zero early collisions
     player.reset();
     npcs.reset();
     vehicles.reset();
+    racingLine.reset();
     updateBeaconPosition();
 
     if (dashFx) dashFx.classList.remove('active');
@@ -402,6 +405,7 @@ function endGame(won) {
     previousStateBeforePause = null;
     input.enabled = false;
     audio.setRolling(0, 'road');
+    racingLine.reset();
     if (dashFx) dashFx.classList.remove('active');
     if (btnSprint) btnSprint.classList.remove('dashing');
     if (respawnFx) respawnFx.classList.remove('flickering');
@@ -722,6 +726,10 @@ app.on('update', dt => {
         audio.setRolling(0, 'road');
     }
 
+    // Dynamic 3D Racing Line Guide towards active checkpoint
+    const activeCP = map.checkpoints[currentCPIndex];
+    racingLine.update(dt, player, activeCP, isRiding);
+
     // 3. Elevated Top-Down Dynamic Arcade Camera during Active Gameplay
     if (gameState === STATE.PLAYING) {
         const forwardX = player.forwardX;
@@ -909,6 +917,24 @@ function renderMinimap(activeCP) {
             minimapCtx.stroke();
         }
     });
+
+    // 2b. Draw Dynamic Racing Line Guide on Minimap
+    if (gameState === STATE.PLAYING && racingLine.pathPoints && racingLine.pathPoints.length > 1) {
+        minimapCtx.save();
+        minimapCtx.beginPath();
+        minimapCtx.setLineDash([3, 3]);
+        minimapCtx.lineWidth = 1.8;
+        minimapCtx.strokeStyle = 'rgba(246, 206, 52, 0.9)';
+        const p0 = map.toMinimap(player.x, player.z, size);
+        minimapCtx.moveTo(p0.mx, p0.my);
+        for (let i = 1; i < racingLine.pathPoints.length; i++) {
+            const pt = racingLine.pathPoints[i];
+            const mpt = map.toMinimap(pt.x, pt.z, size);
+            minimapCtx.lineTo(mpt.mx, mpt.my);
+        }
+        minimapCtx.stroke();
+        minimapCtx.restore();
+    }
 
     // 3. Draw Vehicle Blips on the Minimap
     vehicles.vehicles.forEach(v => {
