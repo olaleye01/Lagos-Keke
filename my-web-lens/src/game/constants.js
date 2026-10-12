@@ -57,6 +57,11 @@ export const GAME = {
 };
 
 export const VEHICLE_CONFIG = {
+    // Welcome screen initial fleet offsets: positioned near the south camera view
+    // so vehicles start passing across the screen almost immediately (within 1.5s - 2.0s).
+    WELCOME_OFFSETS: [0.590, 0.535, 0.470, 0.405, 0.575, 0.515, 0.450, 0.380],
+
+    // Fair race start offsets: distributed around the perimeter track to prevent early spawn collisions
     FLEET: [
         { type: 'danfo', speed: 7.6, lane: 'outer', offset01: 0.08 },
         { type: 'keke', speed: 6.2, lane: 'outer', offset01: 0.35 },

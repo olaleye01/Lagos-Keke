@@ -200,6 +200,7 @@ export class VehicleManager {
 
     _initFleet() {
         const fleetConfig = VEHICLE_CONFIG.FLEET;
+        const welcomeOffsets = VEHICLE_CONFIG.WELCOME_OFFSETS;
         for (let i = 0; i < fleetConfig.length; i++) {
             const conf = fleetConfig[i];
             const track = conf.lane === 'outer' ? this.outerTrack : this.innerTrack;
@@ -225,7 +226,9 @@ export class VehicleManager {
 
             this.app.root.addChild(modelData.root);
 
-            const sStart = conf.offset01 * track.totalLen;
+            // On initial startup (Welcome Screen): spawn close to South Road so vehicles pass almost immediately
+            const initOffset = (welcomeOffsets && welcomeOffsets[i] !== undefined) ? welcomeOffsets[i] : conf.offset01;
+            const sStart = initOffset * track.totalLen;
             const pose = track.evaluate(sStart);
 
             const vehicle = {
@@ -259,6 +262,28 @@ export class VehicleManager {
             const v = this.vehicles[i];
             const conf = fleetConfig[i];
             v.s = conf.offset01 * v.track.totalLen;
+            v.speed = v.baseSpeed;
+            v.cooldown = 0;
+            v.honkTimer = 0;
+            v.yieldTimer = 0;
+            const pose = v.track.evaluate(v.s);
+            v.x = pose.x;
+            v.z = pose.z;
+            v.yawDeg = pose.yawDeg;
+            v.yawRad = pose.yawRad;
+            v.model.setPosition(v.x, 0, v.z);
+            v.model.setEulerAngles(0, v.yawDeg, 0);
+        }
+    }
+
+    resetToWelcome() {
+        const fleetConfig = VEHICLE_CONFIG.FLEET;
+        const welcomeOffsets = VEHICLE_CONFIG.WELCOME_OFFSETS;
+        for (let i = 0; i < this.vehicles.length; i++) {
+            const v = this.vehicles[i];
+            const conf = fleetConfig[i];
+            const offset = (welcomeOffsets && welcomeOffsets[i] !== undefined) ? welcomeOffsets[i] : conf.offset01;
+            v.s = offset * v.track.totalLen;
             v.speed = v.baseSpeed;
             v.cooldown = 0;
             v.honkTimer = 0;
