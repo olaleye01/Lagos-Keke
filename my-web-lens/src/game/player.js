@@ -43,6 +43,9 @@ export class Player {
         this.isSprinting = false;
         this._boostExhausted = false;
         this.invulnerable = 0;
+        this.flickerTimer = 0;
+        if (this.model && this.model.lean) this.model.lean.enabled = true;
+        if (this.model && this.model.root) this.model.root.enabled = true;
 
         // Animation Timers & States
         this.celebrateTimer = 0;
@@ -105,6 +108,7 @@ export class Player {
         this.wobble = Math.max(0, this.wobble - dt);
         this.celebrateTimer = Math.max(0, this.celebrateTimer - dt);
         this.invulnerable = Math.max(0, this.invulnerable - dt);
+        this.flickerTimer = Math.max(0, (this.flickerTimer || 0) - dt);
 
         // Sprint & Stamina (Stop dash and boost effect once boost is less than 5%)
         const minBoostStamina = BIKE.MAX_STAMINA * ((BIKE.MIN_BOOST_STAMINA_PCT || 5) / 100);
@@ -263,8 +267,14 @@ export class Player {
         this.stun = 0.25;
         this.shake = 0.55;
         this.invulnerable = 2.0; // protection against immediate vehicle re-collision
-        this._burst(this.x, this.z, 20, 2);
+        this.flickerTimer = 2.0; // arcade respawn flicker effect
+        this._burst(this.x, this.z, 24, 2);
         this._sync(0);
+    }
+
+    triggerFlicker(duration = 2.0) {
+        this.flickerTimer = duration;
+        this.invulnerable = Math.max(this.invulnerable, duration);
     }
 
     _emit(x, y, z, kind) {
@@ -437,6 +447,14 @@ export class Player {
             leg.entity.lookAt(target, _up);
             leg.entity.setLocalScale(1, 1, d);
         });
+
+        // Arcade respawn flicker: alternate visibility rapidly (12 Hz) when flickerTimer > 0
+        if (this.flickerTimer > 0) {
+            const blinkCycle = Math.floor(this.flickerTimer * 12) % 2 === 0;
+            lean.enabled = blinkCycle;
+        } else {
+            lean.enabled = true;
+        }
     }
 }
 

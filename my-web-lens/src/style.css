@@ -282,6 +282,45 @@ html, body {
   border-color: #fef08a;
 }
 
+/* ==========================================================================
+   CHECKPOINT RESPAWN FLICKER EFFECT (Vehicle Collision Recovery)
+   ========================================================================== */
+
+.respawn-fx-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 24;
+  opacity: 0;
+  visibility: hidden;
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(245, 158, 11, 0.3) 45%,
+    rgba(239, 68, 68, 0.55) 85%,
+    rgba(185, 28, 28, 0.75) 100%
+  );
+  box-shadow: inset 0 0 90px rgba(239, 68, 68, 0.65);
+  mix-blend-mode: screen;
+}
+
+.respawn-fx-overlay.flickering {
+  visibility: visible;
+  animation: screenRespawnFlicker 0.85s cubic-bezier(0.2, 0.85, 0.25, 1) forwards;
+}
+
+@keyframes screenRespawnFlicker {
+  0%   { opacity: 0.95; }
+  10%  { opacity: 0.10; }
+  22%  { opacity: 0.80; }
+  35%  { opacity: 0.15; }
+  48%  { opacity: 0.65; }
+  62%  { opacity: 0.10; }
+  75%  { opacity: 0.40; }
+  90%  { opacity: 0.05; }
+  100% { opacity: 0; visibility: hidden; }
+}
+
 .hidden {
   display: none !important;
 }

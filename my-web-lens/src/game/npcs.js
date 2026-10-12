@@ -143,8 +143,8 @@ export class NPCManager {
 
             npc.model.root.setPosition(npc.x, 0, npc.z);
 
-            // Collision check with player (only when actively riding)
-            if (checkPlayerCollision && active && npc.cooldown <= 0) {
+            // Collision check with player (only when actively riding and not invulnerable)
+            if (checkPlayerCollision && active && npc.cooldown <= 0 && (!player.invulnerable || player.invulnerable <= 0)) {
                 const dist = Math.hypot(player.x - npc.x, player.z - npc.z);
                 if (dist < HAZARDS.NPC_RADIUS + 0.55) {
                     npc.cooldown = 2.0;

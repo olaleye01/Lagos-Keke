@@ -124,6 +124,12 @@ export class AudioFX {
         [523, 659, 784, 1046].forEach((f, i) => this._tone(f, t + i * 0.07, 0.25, 'triangle', 0.25));
     }
 
+    respawn() {
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        [392, 523, 659, 784].forEach((f, i) => this._tone(f, t + i * 0.06, 0.16, 'sine', 0.22));
+    }
+
     tick(urgent = false) {
         if (!this.ctx) return;
         this._tone(urgent ? 1200 : 900, this.ctx.currentTime, 0.08, 'square', 0.08);

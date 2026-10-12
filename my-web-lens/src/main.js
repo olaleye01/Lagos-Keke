@@ -50,6 +50,14 @@ const staminaValEl = document.getElementById('stamina-val');
 const speedLinesCanvas = document.getElementById('speed-lines');
 const speedLinesCtx = speedLinesCanvas ? speedLinesCanvas.getContext('2d') : null;
 const dashFx = document.getElementById('dash-fx');
+const respawnFx = document.getElementById('respawn-fx');
+
+function triggerRespawnScreenFlicker() {
+    if (!respawnFx) return;
+    respawnFx.classList.remove('flickering');
+    void respawnFx.offsetWidth;
+    respawnFx.classList.add('flickering');
+}
 
 const btnStart = document.getElementById('btn-start');
 const btnRetry = document.getElementById('btn-retry');
@@ -316,6 +324,10 @@ function respawnPlayerAtLastCheckpoint(reason = 'crash') {
     currentCamLook.set(player.x + player.forwardX * NORMAL_CAM.lookAhead, NORMAL_CAM.lookY, player.z + player.forwardZ * NORMAL_CAM.lookAhead);
     cameraEntity.setPosition(currentCamPos);
     cameraEntity.lookAt(currentCamLook);
+
+    // Trigger visual screen flicker overlay and arcade respawn chime
+    if (audio && audio.respawn) audio.respawn();
+    triggerRespawnScreenFlicker();
 }
 
 function startCountdown() {
@@ -335,6 +347,7 @@ function startCountdown() {
 
     if (dashFx) dashFx.classList.remove('active');
     if (btnSprint) btnSprint.classList.remove('dashing');
+    if (respawnFx) respawnFx.classList.remove('flickering');
 
     const pauseScreen = document.getElementById('pause-screen');
     if (pauseScreen) pauseScreen.classList.add('hidden');
@@ -391,6 +404,7 @@ function endGame(won) {
     audio.setRolling(0, 'road');
     if (dashFx) dashFx.classList.remove('active');
     if (btnSprint) btnSprint.classList.remove('dashing');
+    if (respawnFx) respawnFx.classList.remove('flickering');
 
     const pauseScreen = document.getElementById('pause-screen');
     if (pauseScreen) pauseScreen.classList.add('hidden');
@@ -403,11 +417,11 @@ function endGame(won) {
         endTitle.classList.remove('lose');
         const mudRatio = player.stats.mudTime / (player.stats.mudTime + player.stats.roadTime || 1);
         if (mudRatio > 0.40) {
-            endRank.textContent = 'Mud Alley Legend';
+            endRank.textContent = 'Agba Rider';
         } else if (player.stats.potholes === 0) {
-            endRank.textContent = 'Smooth Sailor';
+            endRank.textContent = 'Boss Rider';
         } else {
-            endRank.textContent = 'Master Street Racer';
+            endRank.textContent = 'Pro Rider';
         }
     } else {
         audio.lose();
