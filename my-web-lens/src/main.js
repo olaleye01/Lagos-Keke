@@ -117,8 +117,8 @@ sun.addComponent('light', {
     color: new Color(1.0, 0.94, 0.82),
     intensity: 1.45,
     castShadows: true,
-    shadowDistance: 60,
-    shadowResolution: 2048,
+    shadowDistance: 46,
+    shadowResolution: 1024,
     shadowBias: 0.02,
     normalOffsetBias: 0.02
 });
@@ -197,7 +197,9 @@ function renderSpeedLines(dt, playerSpeed, isSprinting) {
     const intensity = isSprinting ? 1.0 : (sprintRatio - 0.65) / 0.35;
     const maxR = Math.hypot(cx, cy);
 
-    speedLinesCtx.lineWidth = isSprinting ? 3.0 : 1.8;
+    speedLinesCtx.lineWidth = isSprinting ? 2.8 : 1.6;
+    speedLinesCtx.strokeStyle = isSprinting ? 'rgba(255, 230, 80, 0.75)' : `rgba(255, 255, 255, ${(0.38 * intensity).toFixed(2)})`;
+    speedLinesCtx.beginPath();
     for (const s of streaks) {
         s.radius += s.speed * dt * (isSprinting ? 2.6 : 1.3);
         if (s.radius > 1.25) {
@@ -211,21 +213,10 @@ function renderSpeedLines(dt, playerSpeed, isSprinting) {
         const x2 = cx + Math.cos(s.angle) * r2;
         const y2 = cy + Math.sin(s.angle) * r2;
 
-        const grad = speedLinesCtx.createLinearGradient(x1, y1, x2, y2);
-        if (isSprinting) {
-            grad.addColorStop(0, 'rgba(255, 140, 0, 0)');
-            grad.addColorStop(0.35, 'rgba(255, 210, 50, 0.5)');
-            grad.addColorStop(1, 'rgba(255, 255, 255, 0.95)');
-        } else {
-            grad.addColorStop(0, 'rgba(255, 235, 120, 0)');
-            grad.addColorStop(1, `rgba(255, 255, 255, ${(0.42 * intensity).toFixed(2)})`);
-        }
-        speedLinesCtx.strokeStyle = grad;
-        speedLinesCtx.beginPath();
         speedLinesCtx.moveTo(x1, y1);
         speedLinesCtx.lineTo(x2, y2);
-        speedLinesCtx.stroke();
     }
+    speedLinesCtx.stroke();
 }
 
 // --- Game State Variables ---
@@ -296,6 +287,7 @@ const camPos = new Vec3();
 const camTarget = new Vec3();
 let currentCamPos = new Vec3();
 let currentCamLook = new Vec3();
+let cameraObstructionY = 0;
 
 // TOP_CAM: High overhead panoramic bird's-eye view showing a wide portion of the Hood map from above
 const TOP_CAM = {
@@ -722,10 +714,10 @@ app.on('update', dt => {
         const desiredZ = player.z - forwardZ * followDist;
         let desiredY = camHeight;
 
-        // Camera collision check: if camera would clip inside a high building, raise it above roof
-        if (map.blocksCamera(desiredX, desiredY, desiredZ)) {
-            desiredY += 2.2;
-        }
+        // Camera collision check: smoothly elevate camera above roofs rather than snapping
+        const targetObstructionY = map.blocksCamera(desiredX, desiredY, desiredZ) ? 2.2 : 0;
+        cameraObstructionY = math.lerp(cameraObstructionY, targetObstructionY, 1 - Math.exp(-6 * dt));
+        desiredY += cameraObstructionY;
 
         // Camera shake from potholes or bumps
         let shakeX = 0;

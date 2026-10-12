@@ -995,10 +995,10 @@ export class HoodMap {
             return { x, z };
         };
 
-        // 1. Dense middle-ground neighborhood (76m to 150m)
-        for (let i = 0; i < 180; i++) {
-            const a = (i / 180) * Math.PI * 2 + (rand() - 0.5) * 0.15;
-            const d = minCenterDist + 4 + rand() * 75;
+        // 1. Dense middle-ground neighborhood (76m to 140m) - optimized density
+        for (let i = 0; i < 60; i++) {
+            const a = (i / 60) * Math.PI * 2 + (rand() - 0.5) * 0.15;
+            const d = minCenterDist + 4 + rand() * 65;
             const { x, z } = ensureClearance(Math.cos(a) * d, Math.sin(a) * d, minCenterDist);
 
             if (rand() < 0.72) {
@@ -1015,8 +1015,8 @@ export class HoodMap {
                 b.pyramid(GeoBuilder.trs(x, h, z, 0, yaw, 0, sx + 0.6, 1.4, sz + 0.6), pick(rand, [PALETTE.roofRust, PALETTE.roofRust2, PALETTE.roofZinc]));
 
                 // GeePee water tanks
-                if (rand() < 0.55) {
-                    b.cylinder(GeoBuilder.trs(x + (rand() - 0.5) * 2, h + 0.5, z + (rand() - 0.5) * 2, 0, 0, 0, 0.6, 1.2, 0.6), 8, PALETTE.tank, 0.9, 0.05);
+                if (rand() < 0.45) {
+                    b.cylinder(GeoBuilder.trs(x + (rand() - 0.5) * 2, h + 0.5, z + (rand() - 0.5) * 2, 0, 0, 0, 0.6, 1.2, 0.6), 6, PALETTE.tank, 0.9, 0.05);
                 }
             } else {
                 // Palm tree / tropical cluster
@@ -1025,36 +1025,36 @@ export class HoodMap {
         }
 
         // 2. High telecom masts & large roadside billboards in the neighborhood
-        for (let j = 0; j < 8; j++) {
-            const a = (j / 8) * Math.PI * 2 + rand() * 0.3;
-            const d = minCenterDist + 18 + rand() * 55;
+        for (let j = 0; j < 6; j++) {
+            const a = (j / 6) * Math.PI * 2 + rand() * 0.3;
+            const d = minCenterDist + 18 + rand() * 50;
             const { x, z } = ensureClearance(Math.cos(a) * d, Math.sin(a) * d, minCenterDist + 15);
 
             if (j % 2 === 0) {
                 // Telecom lattice mast (32m tall with red warning beacon)
-                const mastH = 32 + rand() * 8;
+                const mastH = 30 + rand() * 6;
                 b.cylinder(GeoBuilder.trs(x, 0, z, 0, 0, 0, 0.45, mastH, 0.15), 4, [160, 160, 165], 0.3, 0);
                 b.boxAt(x, mastH, z, 0.6, 0.6, 0.6, [240, 40, 40], 0, 0); // red light
             } else {
                 // Giant roadside billboard
                 const billW = 9.0;
                 const billH = 4.5;
-                const postH = 10.0;
+                const postH = 9.0;
                 const billCol = pick(rand, [[246, 206, 52], [220, 50, 45], [40, 145, 75]]); // MTN yellow, Airtel red, Glo green
-                b.cylinder(GeoBuilder.trs(x - 2.5, 0, z, 0, 0, 0, 0.25, postH, 0.25), 6, [70, 70, 75], 1, 0);
-                b.cylinder(GeoBuilder.trs(x + 2.5, 0, z, 0, 0, 0, 0.25, postH, 0.25), 6, [70, 70, 75], 1, 0);
+                b.cylinder(GeoBuilder.trs(x - 2.5, 0, z, 0, 0, 0, 0.25, postH, 0.25), 5, [70, 70, 75], 1, 0);
+                b.cylinder(GeoBuilder.trs(x + 2.5, 0, z, 0, 0, 0, 0.25, postH, 0.25), 5, [70, 70, 75], 1, 0);
                 b.boxAt(x, postH + billH / 2, z, billW, billH, 0.3, billCol, (a * 180) / Math.PI, 0);
             }
         }
 
-        // 3. Distant skyline background (150m to 260m)
-        for (let k = 0; k < 120; k++) {
-            const a = rand() * Math.PI * 2;
-            const d = 150 + rand() * 110;
-            const { x, z } = ensureClearance(Math.cos(a) * d, Math.sin(a) * d, minCenterDist + 45);
+        // 3. Distant skyline background (140m to 210m)
+        for (let k = 0; k < 36; k++) {
+            const a = (k / 36) * Math.PI * 2 + (rand() - 0.5) * 0.1;
+            const d = 140 + rand() * 70;
+            const { x, z } = ensureClearance(Math.cos(a) * d, Math.sin(a) * d, minCenterDist + 35);
             const sx = 8 + rand() * 6;
             const sz = 8 + rand() * 6;
-            const h = 8 + rand() * 8;
+            const h = 7 + rand() * 7;
             b.boxAt(x, h / 2, z, sx, h, sz, pick(rand, PALETTE.walls), rand() * 90, 0.05);
             b.pyramid(GeoBuilder.trs(x, h, z, 0, 0, 0, sx + 0.8, 1.8, sz + 0.8), PALETTE.roofRust);
         }
