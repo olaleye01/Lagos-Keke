@@ -117,10 +117,10 @@ sun.addComponent('light', {
     color: new Color(1.0, 0.94, 0.82),
     intensity: 1.45,
     castShadows: true,
-    shadowDistance: 46,
-    shadowResolution: 1024,
-    shadowBias: 0.02,
-    normalOffsetBias: 0.02
+    shadowDistance: 60,
+    shadowResolution: 2048,
+    shadowBias: 0.12,
+    normalOffsetBias: 0.05
 });
 sun.setEulerAngles(48, 135, 0); // shining along -Y
 app.root.addChild(sun);
