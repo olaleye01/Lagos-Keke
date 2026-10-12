@@ -677,7 +677,14 @@ app.on('update', dt => {
         showToast('Wahala! Pothole!', 'bad', 1400);
     }
     if (isRiding && playerEvents.gutter) {
-        showToast('Wahala! you don enter gutter!', 'bad', 1600);
+        showToast('Wahala! you don enter gutter!', 'bad', 1800);
+        // Smoothly orient camera behind the repositioned rider facing towards the plank bridge
+        const followDist = NORMAL_CAM.dist;
+        const camHeight = NORMAL_CAM.height;
+        currentCamPos.set(player.x - player.forwardX * followDist, camHeight, player.z - player.forwardZ * followDist);
+        currentCamLook.set(player.x + player.forwardX * NORMAL_CAM.lookAhead, NORMAL_CAM.lookY, player.z + player.forwardZ * NORMAL_CAM.lookAhead);
+        cameraEntity.setPosition(currentCamPos);
+        cameraEntity.lookAt(currentCamLook);
     }
 
     const npcToast = npcs.update(dt, player, isWorldActive, vehicles, isRiding);

@@ -196,14 +196,27 @@ export class Player {
 
         // Open Gutter hazard check (entering the open trench instead of safely crossing on the wooden plank bridge)
         this.gutterCooldown = Math.max(0, (this.gutterCooldown || 0) - dt);
-        if (this.gutterCooldown <= 0 && this.speed > 1.2 && this.map.isInOpenGutter && this.map.isInOpenGutter(this.x, this.z, BIKE.RADIUS * 0.45)) {
+        if (this.gutterCooldown <= 0 && this.speed > 0.8 && this.map.isInOpenGutter && this.map.isInOpenGutter(this.x, this.z, BIKE.RADIUS * 0.45)) {
             this.gutterCooldown = 1.6;
-            this.speed = Math.max(2.0, this.speed * 0.52);
-            this.wobble = 1.0;
-            this.shake = 0.65;
             this.audio.pothole();
-            this._burst(this.x, this.z, 16, 2);
+            this._burst(this.x, this.z, 20, 2);
             events.gutter = true;
+
+            // Reposition the rider a few meters back facing directly towards the nearest wooden plank bridge
+            if (this.map.getGutterRepositionPose) {
+                const pose = this.map.getGutterRepositionPose(this.x, this.z, this.forwardX, this.forwardZ);
+                this.x = pose.x;
+                this.z = pose.z;
+                this.yaw = pose.yaw;
+                this.speed = 0;
+                this.steer = 0;
+                this.wobble = 0.85;
+                this.shake = 0.65;
+                this.stun = 0.45;
+                this.invulnerable = 1.2;
+                this._burst(this.x, this.z, 16, 2);
+                this._sync(0);
+            }
         }
 
         // Mud spray particles

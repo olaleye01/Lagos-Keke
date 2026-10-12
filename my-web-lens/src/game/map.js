@@ -1103,6 +1103,83 @@ export class HoodMap {
     }
 
     /**
+     * Finds the nearest wooden plank bridge crossing point to (x, z).
+     * @param {number} x
+     * @param {number} z
+     * @returns {{x: number, z: number, name: string}}
+     */
+    getNearestPlankBridge(x, z) {
+        const mid = DRAIN.MID; // 7.8m
+        const bridges = [
+            { x: 0, z: -mid, name: 'North Plank' },
+            { x: 0, z: mid, name: 'South Plank' },
+            { x: -mid, z: 0, name: 'West Plank' },
+            { x: mid, z: 0, name: 'East Plank' }
+        ];
+        let best = bridges[0];
+        let minDist = Infinity;
+        for (const b of bridges) {
+            const d = Math.hypot(x - b.x, z - b.z);
+            if (d < minDist) {
+                minDist = d;
+                best = b;
+            }
+        }
+        return best;
+    }
+
+    /**
+     * Calculates a safe reposition pose a few meters back from the gutter,
+     * resting on solid ground and oriented directly facing the nearest plank.
+     * @param {number} x
+     * @param {number} z
+     * @param {number} forwardX
+     * @param {number} forwardZ
+     * @returns {{x: number, z: number, yaw: number}}
+     */
+    getGutterRepositionPose(x, z, forwardX, forwardZ) {
+        const nearest = this.getNearestPlankBridge(x, z);
+        const distCenter = Math.hypot(x, z);
+        const RI = DRAIN.RI; // 6.6m
+        const RO = DRAIN.RO; // 9.0m
+
+        // Step back ~3.2m along incoming motion
+        let repoX = x - forwardX * 3.2;
+        let repoZ = z - forwardZ * 3.2;
+
+        // If rider was approaching from outside the courtyard, ensure they are placed safely outside outer rim
+        if (distCenter >= DRAIN.MID) {
+            const curDist = Math.hypot(repoX, repoZ);
+            if (curDist < RO + 1.6) {
+                const sc = (RO + 2.2) / Math.max(0.1, curDist);
+                repoX *= sc;
+                repoZ *= sc;
+            }
+        } else {
+            // If rider was approaching from inside the courtyard, ensure placed safely inside inner rim
+            const curDist = Math.hypot(repoX, repoZ);
+            if (curDist > RI - 1.4) {
+                const sc = (RI - 2.0) / Math.max(0.1, curDist);
+                repoX *= sc;
+                repoZ *= sc;
+            }
+        }
+
+        // Avoid solid buildings / stalls
+        const pos = { x: repoX, z: repoZ };
+        this.resolveCircle(pos, 0.6);
+        repoX = pos.x;
+        repoZ = pos.z;
+
+        // Orient directly facing the nearest plank bridge
+        const dx = nearest.x - repoX;
+        const dz = nearest.z - repoZ;
+        const yaw = Math.atan2(-dx, -dz);
+
+        return { x: repoX, z: repoZ, yaw };
+    }
+
+    /**
      * Push a circle out of all nearby solids. Mutates `pos` ({x, z}).
      * @returns {{hit: boolean, nx: number, nz: number}}
      */
