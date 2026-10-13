@@ -453,31 +453,51 @@ function endGame(won) {
 
     const endRankDesc = document.getElementById('end-rank-desc');
 
+    let starCount = 1;
+
     if (won) {
         audio.win();
         endTitle.textContent = 'ALL CHECKPOINTS CLEARED!';
         endTitle.classList.remove('lose');
 
-        // Option 1: Hierarchical Mastery Tiers
+        // Star Ratings & Hierarchical Mastery Tiers
         if (gutterFalls === 0 && vehicleHits === 0 && npcHits === 0 && potholes <= 1) {
+            starCount = 5;
             endRank.textContent = 'Agba Rider';
             if (endRankDesc) endRankDesc.textContent = 'Flawless run! Zero crashes, zero gutter falls, pure street mastery.';
         } else if (gutterFalls === 0 && vehicleHits === 0 && (npcHits + potholes) <= 3) {
+            starCount = 4;
             endRank.textContent = 'Boss Rider';
             if (endRankDesc) endRankDesc.textContent = 'Street Boss! Kept clear of Danfos and stayed out of the gutter.';
         } else if (gutterFalls <= 1 && vehicleHits <= 2) {
+            starCount = 3;
             endRank.textContent = 'Pro Rider';
             if (endRankDesc) endRankDesc.textContent = 'Street Veteran! Took a few Lagos knocks, but powered through.';
         } else {
+            starCount = 2;
             endRank.textContent = 'Rough Rider';
             if (endRankDesc) endRankDesc.textContent = 'Rough & Tough! Battered and gutter-soaked, but made it across!';
         }
     } else {
         audio.lose();
+        starCount = 1;
         endTitle.textContent = 'TRY AGAIN!';
         endTitle.classList.add('lose');
         endRank.textContent = `Reached ${currentCPIndex}/${CHECKPOINTS.length} Checkpoints`;
         if (endRankDesc) endRankDesc.textContent = "Time ran out before clearing the streets. Don't give up!";
+    }
+
+    // Update 5-Star UI
+    const starWraps = document.querySelectorAll('.end-star-wrap');
+    starWraps.forEach((starWrap, i) => {
+        const isFilled = i < starCount;
+        starWrap.classList.toggle('filled', isFilled);
+        starWrap.classList.toggle('empty', !isFilled);
+    });
+
+    const endStarsEl = document.getElementById('end-stars');
+    if (endStarsEl) {
+        endStarsEl.setAttribute('aria-label', `Rating: ${starCount} of 5 Stars`);
     }
 
     const statCpsEl = document.getElementById('stat-cps');

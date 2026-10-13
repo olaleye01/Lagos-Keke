@@ -1926,6 +1926,75 @@ html, body {
   color: #dc2626;
 }
 
+/* 5-Star Rating Row */
+.end-stars-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(6px, 1.8vw, 10px);
+  margin: 4px 0 10px;
+}
+
+.end-star-wrap {
+  width: clamp(28px, 7.5vw, 34px);
+  height: clamp(28px, 7.5vw, 34px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.25), filter 0.2s ease;
+}
+
+.end-star-wrap[data-star="3"] {
+  width: clamp(33px, 8.8vw, 40px);
+  height: clamp(33px, 8.8vw, 40px);
+}
+
+.end-star-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Filled Star: Golden Arcade Yellow with 3D shadow & sticker stroke */
+.end-star-wrap.filled {
+  transform: scale(1);
+  filter: drop-shadow(0 2.5px 0 #ca8a04) drop-shadow(0 4px 6px rgba(234, 179, 8, 0.4));
+  animation: starPopIn 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.35) backwards;
+}
+
+.end-star-wrap.filled .end-star-svg path {
+  fill: #fde047;
+  stroke: var(--outline-dark);
+  stroke-width: 2.2px;
+  stroke-linejoin: round;
+}
+
+/* Empty Star: Muted Gray/Cream with subtle border */
+.end-star-wrap.empty {
+  transform: scale(0.85);
+  opacity: 0.45;
+  filter: drop-shadow(0 1.5px 0 #cbd5e1);
+}
+
+.end-star-wrap.empty .end-star-svg path {
+  fill: #e2e8f0;
+  stroke: #71717a;
+  stroke-width: 2px;
+  stroke-linejoin: round;
+}
+
+@keyframes starPopIn {
+  0% { transform: scale(0.25) rotate(-25deg); opacity: 0; }
+  70% { transform: scale(1.22) rotate(4deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.end-star-wrap:nth-child(1) { animation-delay: 0.05s; }
+.end-star-wrap:nth-child(2) { animation-delay: 0.12s; }
+.end-star-wrap:nth-child(3) { animation-delay: 0.19s; }
+.end-star-wrap:nth-child(4) { animation-delay: 0.26s; }
+.end-star-wrap:nth-child(5) { animation-delay: 0.33s; }
+
 .end-rank-pill {
   display: inline-flex;
   align-items: center;
