@@ -56,7 +56,7 @@ export class Player {
         this.idlePhase = 0;
         this.standFactor = 0;
 
-        this.stats = { potholes: 0, npcHits: 0, vehicleHits: 0, mudTime: 0, roadTime: 0 };
+        this.stats = { potholes: 0, npcHits: 0, vehicleHits: 0, gutterFalls: 0, mudTime: 0, roadTime: 0 };
         this.gutterCooldown = 0;
         if (this.map && this.map.ramps) {
             this.map.ramps.forEach(r => (r.cooldown = 0));
@@ -302,6 +302,7 @@ export class Player {
             this.audio.pothole();
             this._burst(this.x, this.z, 20, 2);
             events.gutter = true;
+            this.stats.gutterFalls = (this.stats.gutterFalls || 0) + 1;
 
             // Reposition the rider safely
             if (this.map.getGutterRepositionPose) {

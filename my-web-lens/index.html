@@ -534,35 +534,68 @@
       </div>
     </section>
 
-    <!-- End screen with 3D Trophy Illustration -->
-    <section id="end-screen" class="overlay hidden">
-      <div class="end-card sticker-card">
-        <!-- 3D Style Cartoon Golden Trophy -->
-        <svg class="sticker-trophy" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <!-- Pedestal -->
-          <rect x="32" y="80" width="36" height="14" rx="5" fill="#361f0f" stroke="#160c05" stroke-width="3.2" />
-          <rect x="38" y="71" width="24" height="10" rx="3.5" fill="#92400e" stroke="#160c05" stroke-width="2.5" />
-          <path d="M 44 71 L 44 58 L 56 58 L 56 71 Z" fill="#d97706" stroke="#160c05" stroke-width="2.5" />
-          <!-- Handles -->
-          <path d="M 28 30 C 12 32, 12 52, 28 54 L 33 52 C 20 50, 20 34, 33 32 Z" fill="#f59e0b" stroke="#160c05" stroke-width="3" />
-          <path d="M 72 30 C 88 32, 88 52, 72 54 L 67 52 C 80 50, 80 34, 67 32 Z" fill="#f59e0b" stroke="#160c05" stroke-width="3" />
-          <!-- Main Gold Cup -->
-          <path d="M 28 20 C 28 52, 40 60, 50 60 C 60 60, 72 52, 72 20 Z" fill="#f59e0b" stroke="#160c05" stroke-width="3.5" />
-          <ellipse cx="50" cy="20" rx="22" ry="6" fill="#fcd34d" stroke="#160c05" stroke-width="3" />
-          <!-- Gold Star -->
-          <polygon points="50,30 53,37 60,38 55,43 57,50 50,46 43,50 45,43 40,38 47,37" fill="#fef08a" stroke="#160c05" stroke-width="1.8" />
-          <!-- 3D Sheen Highlight -->
-          <path d="M 33 24 C 33 44, 40 52, 45 54 C 39 50, 35 42, 35 24 Z" fill="#ffffff" opacity="0.65" />
-        </svg>
-        <h2 id="end-title">VICTORY!</h2>
-        <p id="end-rank" class="rank">Street Racer</p>
-        <dl class="stats">
-          <div class="stat-pill"><dt>Checkpoints</dt><dd id="stat-cps">9/9</dd></div>
-          <div class="stat-pill"><dt>Potholes hit</dt><dd id="stat-potholes">0</dd></div>
-          <div class="stat-pill"><dt>Pedestrian bumps</dt><dd id="stat-npcs">0</dd></div>
-          <div class="stat-pill"><dt>Traffic crashes</dt><dd id="stat-vehicles">0</dd></div>
-        </dl>
-        <button id="btn-retry" class="cta">RIDE AGAIN</button>
+    <!-- End screen with 3D Trophy Illustration matching welcome & pause card system -->
+    <section id="end-screen" class="overlay hidden" aria-modal="true" role="dialog" aria-label="Race Results">
+      <div class="end-card">
+        <!-- 3D Style Cartoon Golden Trophy Emblem Badge -->
+        <div class="end-badge-wrap">
+          <svg class="end-trophy-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <!-- Pedestal -->
+            <rect x="32" y="80" width="36" height="14" rx="5" fill="#361f0f" stroke="#160c05" stroke-width="3.2" />
+            <rect x="38" y="71" width="24" height="10" rx="3.5" fill="#92400e" stroke="#160c05" stroke-width="2.5" />
+            <path d="M 44 71 L 44 58 L 56 58 L 56 71 Z" fill="#d97706" stroke="#160c05" stroke-width="2.5" />
+            <!-- Handles -->
+            <path d="M 28 30 C 12 32, 12 52, 28 54 L 33 52 C 20 50, 20 34, 33 32 Z" fill="#f59e0b" stroke="#160c05" stroke-width="3" />
+            <path d="M 72 30 C 88 32, 88 52, 72 54 L 67 52 C 80 50, 80 34, 67 32 Z" fill="#f59e0b" stroke="#160c05" stroke-width="3" />
+            <!-- Main Gold Cup -->
+            <path d="M 28 20 C 28 52, 40 60, 50 60 C 60 60, 72 52, 72 20 Z" fill="#f59e0b" stroke="#160c05" stroke-width="3.5" />
+            <ellipse cx="50" cy="20" rx="22" ry="6" fill="#fcd34d" stroke="#160c05" stroke-width="3" />
+            <!-- Gold Star -->
+            <polygon points="50,30 53,37 60,38 55,43 57,50 50,46 43,50 45,43 40,38 47,37" fill="#fef08a" stroke="#160c05" stroke-width="1.8" />
+            <!-- 3D Sheen Highlight -->
+            <path d="M 33 24 C 33 44, 40 52, 45 54 C 39 50, 35 42, 35 24 Z" fill="#ffffff" opacity="0.65" />
+          </svg>
+        </div>
+
+        <div class="end-header">
+          <h2 id="end-title" class="end-title">ALL CHECKPOINTS CLEARED!</h2>
+          <div class="end-rank-pill">
+            <span id="end-rank" class="end-rank-text">Boss Rider</span>
+          </div>
+          <p id="end-rank-desc" class="end-rank-desc">Zero vehicle crashes &amp; clean navigation!</p>
+        </div>
+
+        <!-- Inset White Stats Well Card (Exact match to welcome and pause cards) -->
+        <div class="end-stats-box">
+          <div class="end-stat-hero">
+            <span class="end-stat-label">CHECKPOINTS</span>
+            <span id="stat-cps" class="end-stat-hero-val">9/9</span>
+          </div>
+          <div class="end-stats-sep"></div>
+          <div class="end-stats-grid">
+            <div class="end-stat-item">
+              <span class="end-stat-label">GUTTERS</span>
+              <span id="stat-gutters" class="end-stat-val">0</span>
+            </div>
+            <div class="end-stat-item">
+              <span class="end-stat-label">TRAFFIC</span>
+              <span id="stat-vehicles" class="end-stat-val">0</span>
+            </div>
+            <div class="end-stat-item">
+              <span class="end-stat-label">PEDESTRIANS</span>
+              <span id="stat-npcs" class="end-stat-val">0</span>
+            </div>
+            <div class="end-stat-item">
+              <span class="end-stat-label">POTHOLES</span>
+              <span id="stat-potholes" class="end-stat-val">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Yellow CTA Button matching welcome and pause screen -->
+        <button id="btn-retry" class="welcome-cta-btn end-retry-btn">
+          <span class="welcome-cta-label">RIDE AGAIN</span>
+        </button>
       </div>
     </section>
   </main>

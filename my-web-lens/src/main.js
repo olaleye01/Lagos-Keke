@@ -446,30 +446,54 @@ function endGame(won) {
     document.querySelectorAll('.pause-icon').forEach(el => el.classList.remove('hidden'));
     document.querySelectorAll('.play-icon').forEach(el => el.classList.add('hidden'));
 
+    const potholes = player.stats.potholes || 0;
+    const vehicleHits = player.stats.vehicleHits || 0;
+    const npcHits = player.stats.npcHits || 0;
+    const gutterFalls = player.stats.gutterFalls || 0;
+
+    const endRankDesc = document.getElementById('end-rank-desc');
+
     if (won) {
         audio.win();
         endTitle.textContent = 'ALL CHECKPOINTS CLEARED!';
         endTitle.classList.remove('lose');
-        const mudRatio = player.stats.mudTime / (player.stats.mudTime + player.stats.roadTime || 1);
-        if (mudRatio > 0.40) {
+
+        // Option 1: Hierarchical Mastery Tiers
+        if (gutterFalls === 0 && vehicleHits === 0 && npcHits === 0 && potholes <= 1) {
             endRank.textContent = 'Agba Rider';
-        } else if (player.stats.potholes === 0) {
+            if (endRankDesc) endRankDesc.textContent = 'Flawless run! Zero crashes, zero gutter falls, pure street mastery.';
+        } else if (gutterFalls === 0 && vehicleHits === 0 && (npcHits + potholes) <= 3) {
             endRank.textContent = 'Boss Rider';
-        } else {
+            if (endRankDesc) endRankDesc.textContent = 'Street Boss! Kept clear of Danfos and stayed out of the gutter.';
+        } else if (gutterFalls <= 1 && vehicleHits <= 2) {
             endRank.textContent = 'Pro Rider';
+            if (endRankDesc) endRankDesc.textContent = 'Street Veteran! Took a few Lagos knocks, but powered through.';
+        } else {
+            endRank.textContent = 'Rough Rider';
+            if (endRankDesc) endRankDesc.textContent = 'Rough & Tough! Battered and gutter-soaked, but made it across!';
         }
     } else {
         audio.lose();
-        endTitle.textContent = "E DON CAST!";
+        endTitle.textContent = 'TRY AGAIN!';
         endTitle.classList.add('lose');
-        endRank.textContent = `Reached ${currentCPIndex}/${CHECKPOINTS.length} Checkpoints – Don't Give Up!`;
+        endRank.textContent = `Reached ${currentCPIndex}/${CHECKPOINTS.length} Checkpoints`;
+        if (endRankDesc) endRankDesc.textContent = "Time ran out before clearing the streets. Don't give up!";
     }
 
-    document.getElementById('stat-cps').textContent = `${won ? CHECKPOINTS.length : currentCPIndex}/${CHECKPOINTS.length}`;
-    document.getElementById('stat-potholes').textContent = player.stats.potholes;
-    document.getElementById('stat-npcs').textContent = player.stats.npcHits;
+    const statCpsEl = document.getElementById('stat-cps');
+    if (statCpsEl) statCpsEl.textContent = `${won ? CHECKPOINTS.length : currentCPIndex}/${CHECKPOINTS.length}`;
+
+    const statGuttersEl = document.getElementById('stat-gutters');
+    if (statGuttersEl) statGuttersEl.textContent = gutterFalls;
+
     const statVehiclesEl = document.getElementById('stat-vehicles');
-    if (statVehiclesEl) statVehiclesEl.textContent = player.stats.vehicleHits || 0;
+    if (statVehiclesEl) statVehiclesEl.textContent = vehicleHits;
+
+    const statNpcsEl = document.getElementById('stat-npcs');
+    if (statNpcsEl) statNpcsEl.textContent = npcHits;
+
+    const statPotholesEl = document.getElementById('stat-potholes');
+    if (statPotholesEl) statPotholesEl.textContent = potholes;
 
     endScreen.classList.remove('hidden');
 }
