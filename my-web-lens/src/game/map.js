@@ -1260,8 +1260,12 @@ export class HoodMap {
     }
 
     /**
-     * Calculates a safe reposition pose a few meters back from the gutter,
-     * resting on solid ground and oriented directly facing the nearest plank.
+     * Calculates a safe reposition pose when the player hits the gutter.
+     * Always respawns the rider on the OUTSIDE of the center courtyard near the nearest plank bridge,
+     * aligned with the street/bridge centerline on solid ground.
+     * Direction-Aware (Option 1):
+     *  - If the rider was moving outward (away from center courtyard), faces outward down the street.
+     *  - If the rider was moving inward (toward center courtyard), faces inward straight across the plank bridge.
      * @param {number} x
      * @param {number} z
      * @param {number} forwardX
@@ -1270,42 +1274,30 @@ export class HoodMap {
      */
     getGutterRepositionPose(x, z, forwardX, forwardZ) {
         const nearest = this.getNearestPlankBridge(x, z);
-        const distCenter = Math.hypot(x, z);
-        const RI = DRAIN.RI; // 6.6m
-        const RO = DRAIN.RO; // 9.0m
 
-        // Step back ~3.2m along incoming motion
-        let repoX = x - forwardX * 3.2;
-        let repoZ = z - forwardZ * 3.2;
+        // Outward unit vector from map center (0, 0) through this bridge
+        const outX = Math.sign(nearest.x);
+        const outZ = Math.sign(nearest.z);
 
-        // If rider was approaching from outside the courtyard, ensure they are placed safely outside outer rim
-        if (distCenter >= DRAIN.MID) {
-            const curDist = Math.hypot(repoX, repoZ);
-            if (curDist < RO + 1.6) {
-                const sc = (RO + 2.2) / Math.max(0.1, curDist);
-                repoX *= sc;
-                repoZ *= sc;
-            }
-        } else {
-            // If rider was approaching from inside the courtyard, ensure placed safely inside inner rim
-            const curDist = Math.hypot(repoX, repoZ);
-            if (curDist > RI - 1.4) {
-                const sc = (RI - 2.0) / Math.max(0.1, curDist);
-                repoX *= sc;
-                repoZ *= sc;
-            }
-        }
+        // Outside approach distance: 1.6m beyond outer trench bank (RO = 9.0m) on wide open street
+        const outerSpawnDist = 10.6;
+        let repoX = outX !== 0 ? outX * outerSpawnDist : 0;
+        let repoZ = outZ !== 0 ? outZ * outerSpawnDist : 0;
 
-        // Avoid solid buildings / stalls
+        // Check if incoming motion was moving outward (away from center)
+        const dotOutward = forwardX * outX + forwardZ * outZ;
+        const isMovingOutward = dotOutward > 0.05;
+
+        // Compute yaw: outward down the street or inward across the plank
+        const faceX = isMovingOutward ? outX : -outX;
+        const faceZ = isMovingOutward ? outZ : -outZ;
+        const yaw = Math.atan2(-faceX, -faceZ);
+
+        // Ensure collision safety against any nearby roadside props
         const pos = { x: repoX, z: repoZ };
         this.resolveCircle(pos, 0.6);
         repoX = pos.x;
         repoZ = pos.z;
-
-        // Orient directly facing the nearest plank bridge
-        const dx = nearest.x - repoX;
-        const dz = nearest.z - repoZ;
-        const yaw = Math.atan2(-dx, -dz);
 
         return { x: repoX, z: repoZ, yaw };
     }
