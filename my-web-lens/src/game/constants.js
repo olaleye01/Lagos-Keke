@@ -116,3 +116,54 @@ export const CHECKPOINTS = [
 ];
 
 export const START = { r: 19, c: 10, yaw: 0 };
+
+/**
+ * 4 Interactive Speed Ramps placed on the four interior muddy alley streets.
+ * Each ramp deterministically triggers a unique automatic bicycle stunt:
+ *  - Ramp 1: Front-wheel lift (smooth wheelie-style jump)
+ *  - Ramp 2: Forward somersault (complete front flip in the air)
+ *  - Ramp 3: Backward somersault (complete backflip in the air)
+ *  - Ramp 4: Stylish sideways spin (rotating rider and bicycle 360° in the air)
+ */
+export const SPEED_RAMPS = [
+    {
+        id: 1,
+        name: 'West Mud Alley Kicker',
+        street: 'West Alley (Col 5)',
+        x: -30.0,
+        z: 0.0,
+        axis: 'z',
+        stunt: 'wheelie',
+        label: 'WHEELIE JUMP'
+    },
+    {
+        id: 2,
+        name: 'North Mud Alley Kicker',
+        street: 'North Alley (Row 6)',
+        x: -14.0,
+        z: -24.0,
+        axis: 'x',
+        stunt: 'frontflip',
+        label: 'FRONT SOMERSAULT'
+    },
+    {
+        id: 3,
+        name: 'East Mud Alley Kicker',
+        street: 'East Alley (Col 15)',
+        x: 30.0,
+        z: 0.0,
+        axis: 'z',
+        stunt: 'backflip',
+        label: 'BACK SOMERSAULT'
+    },
+    {
+        id: 4,
+        name: 'South Mud Alley Kicker',
+        street: 'South Alley (Row 14)',
+        x: 14.0,
+        z: 24.0,
+        axis: 'x',
+        stunt: 'spin360',
+        label: '360° SIDEWAYS SPIN'
+    }
+];

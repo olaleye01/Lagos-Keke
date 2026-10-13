@@ -1,7 +1,7 @@
 import { Entity, Vec3 } from 'playcanvas';
 import { GeoBuilder } from '../graphics/builder.js';
 import { PALETTE, mulberry32, pick } from '../graphics/palette.js';
-import { CELL, GRID, MAP, CHECKPOINTS, START, HAZARDS, cellAt, cellCenter, worldToCell } from './constants.js';
+import { CELL, GRID, MAP, CHECKPOINTS, START, HAZARDS, SPEED_RAMPS, cellAt, cellCenter, worldToCell } from './constants.js';
 
 const HALF_CELL = CELL / 2;
 const SIDES = {
@@ -60,6 +60,7 @@ export class HoodMap {
         this.crossings = [];
         this.checkpoints = CHECKPOINTS.map(cp => ({ ...cp, ...cellCenter(cp.r, cp.c) }));
         this.start = { ...cellCenter(START.r, START.c), yaw: START.yaw };
+        this.ramps = SPEED_RAMPS.map(r => ({ ...r, cooldown: 0 }));
 
         // 3x3 spatial chunks so the camera frustum can cull most of the city
         this.chunks = Array.from({ length: 9 }, () => new GeoBuilder(this.rand));
@@ -75,6 +76,7 @@ export class HoodMap {
         this._placeCrossings();
         this._buildPoles();
         this._buildGuardrails();
+        this._buildSpeedRamps();
         this.drainSolids = [];
         this._buildCenterGutterAndPlanks();
 
@@ -728,6 +730,135 @@ export class HoodMap {
         this.root.addChild(b.toEntity(this.app, 'Guardrails'));
     }
 
+    _buildSpeedRamps() {
+        // 4 Low-Poly Mud Alley Speed Ramps with stepped wood kicker deck, caution hazard flanks,
+        // neon speed chevrons, steel coping lips, and illuminated corner beacons.
+        const b = new GeoBuilder(this.rand);
+        const H = 0.52; // height of the ramp apex (52 cm kicker lip)
+        const W = 3.4;  // width of ramp (spans the alley path comfortably)
+        const L = 4.2;  // total ramp length (2.1m slope on each side)
+        const flatLen = 0.9; // central flat plateau length
+
+        for (const ramp of this.ramps) {
+            const { x, z, axis } = ramp;
+            const isZ = axis === 'z';
+
+            // 1. Mud foundation berm (darker compact laterite mud slightly larger than ramp)
+            const bermL = L + 0.6;
+            const bermW = W + 0.5;
+            if (isZ) {
+                b.boxAt(x, 0.02, z, bermW, 0.04, bermL, PALETTE.mudDark, 0, 0);
+            } else {
+                b.boxAt(x, 0.02, z, bermL, 0.04, bermW, PALETTE.mudDark, 0, 0);
+            }
+
+            // 2. Central tabletop flat section
+            if (isZ) {
+                b.boxAt(x, H / 2, z, W, H, flatLen, PALETTE.plankWoodDark, 0, 0);
+                b.flat(x - W / 2, z - flatLen / 2, x + W / 2, z + flatLen / 2, H + 0.01, PALETTE.plankWoodLight);
+                // Steel coping lip bars at the two launch edges
+                b.boxAt(x, H + 0.02, z - flatLen / 2, W + 0.04, 0.04, 0.08, [205, 208, 215], 0, 0);
+                b.boxAt(x, H + 0.02, z + flatLen / 2, W + 0.04, 0.04, 0.08, [205, 208, 215], 0, 0);
+                // Tabletop yellow launch caution markings
+                b.flat(x - W / 2 + 0.1, z - 0.04, x + W / 2 - 0.1, z + 0.04, H + 0.015, PALETTE.roadLine);
+            } else {
+                b.boxAt(x, H / 2, z, flatLen, H, W, PALETTE.plankWoodDark, 0, 0);
+                b.flat(x - flatLen / 2, z - W / 2, x + flatLen / 2, z + W / 2, H + 0.01, PALETTE.plankWoodLight);
+                // Steel coping lip bars
+                b.boxAt(x - flatLen / 2, H + 0.02, z, 0.08, 0.04, W + 0.04, [205, 208, 215], 0, 0);
+                b.boxAt(x + flatLen / 2, H + 0.02, z, 0.08, 0.04, W + 0.04, [205, 208, 215], 0, 0);
+                // Tabletop yellow launch caution markings
+                b.flat(x - 0.04, z - W / 2 + 0.1, x + 0.04, z + W / 2 - 0.1, H + 0.015, PALETTE.roadLine);
+            }
+
+            // 3. Approach Slopes (stepped timber planks rising from ground to H)
+            const slopeLen = (L - flatLen) / 2; // 1.6m
+            const numPlanks = 6;
+            const plankLen = slopeLen / numPlanks; // approx 0.27m
+
+            for (let side = -1; side <= 1; side += 2) {
+                // side -1 is North/West slope, side +1 is South/East slope
+                for (let step = 0; step < numPlanks; step++) {
+                    const frac0 = step / numPlanks;
+                    const frac1 = (step + 1) / numPlanks;
+                    const y0 = 0.03 + (1 - frac0) * (H - 0.03);
+                    const y1 = 0.03 + (1 - frac1) * (H - 0.03);
+                    const yMid = (y0 + y1) / 2;
+                    const plankH = Math.max(0.06, yMid);
+
+                    const distFromCenter = flatLen / 2 + (step + 0.5) * plankLen;
+                    const pPos = side * distFromCenter;
+                    const plankColor = (step % 2 === 0) ? PALETTE.plankWood : PALETTE.plankWoodLight;
+
+                    if (isZ) {
+                        b.boxAt(x, plankH / 2, z + pPos, W, plankH, plankLen * 0.96, plankColor, 0, 0.02);
+                    } else {
+                        b.boxAt(x + pPos, plankH / 2, z, plankLen * 0.96, plankH, W, plankColor, 0, 0.02);
+                    }
+                }
+
+                // Directional Neon Speed Boost Chevron Arrows on the slope
+                // 2 chevrons per slope pointing towards center launch lip
+                for (let ch = 0; ch < 2; ch++) {
+                    const arrowDist = flatLen / 2 + (ch * 0.65 + 0.45);
+                    const arrowPos = side * arrowDist;
+                    const arrowFrac = (arrowDist - flatLen / 2) / slopeLen;
+                    const arrowY = 0.05 + (1 - arrowFrac) * (H - 0.03) + 0.02;
+                    const neonCyan = [35, 235, 185];
+
+                    if (isZ) {
+                        const tipZ = z + arrowPos - side * 0.18;
+                        const baseZ = z + arrowPos + side * 0.14;
+                        b.boxAt(x - 0.35, arrowY, (tipZ + baseZ) / 2, 0.2, 0.02, 0.28, neonCyan, 0, 0);
+                        b.boxAt(x + 0.35, arrowY, (tipZ + baseZ) / 2, 0.2, 0.02, 0.28, neonCyan, 0, 0);
+                        b.boxAt(x, arrowY, tipZ, 0.22, 0.02, 0.22, neonCyan, 0, 0);
+                    } else {
+                        const tipX = x + arrowPos - side * 0.18;
+                        const baseX = x + arrowPos + side * 0.14;
+                        b.boxAt((tipX + baseX) / 2, arrowY, z - 0.35, 0.28, 0.02, 0.2, neonCyan, 0, 0);
+                        b.boxAt((tipX + baseX) / 2, arrowY, z + 0.35, 0.28, 0.02, 0.2, neonCyan, 0, 0);
+                        b.boxAt(tipX, arrowY, z, 0.22, 0.02, 0.22, neonCyan, 0, 0);
+                    }
+                }
+            }
+
+            // 4. Side Flanks with diagonal black and yellow hazard caution stripes
+            const numStripes = 8;
+            const stripeW = L / numStripes;
+            for (let i = 0; i < numStripes; i++) {
+                const stripePos = -L / 2 + (i + 0.5) * stripeW;
+                const distFromC = Math.abs(stripePos);
+                const slopeFrac = Math.max(0, 1 - Math.max(0, distFromC - flatLen / 2) / ((L - flatLen) / 2));
+                const flankH = Math.max(0.08, slopeFrac * H);
+                const stripeCol = i % 2 === 0 ? PALETTE.curbYellow : PALETTE.curbBlack;
+
+                if (isZ) {
+                    b.boxAt(x - W / 2 - 0.04, flankH / 2, z + stripePos, 0.08, flankH, stripeW * 0.94, stripeCol, 0, 0);
+                    b.boxAt(x + W / 2 + 0.04, flankH / 2, z + stripePos, 0.08, flankH, stripeW * 0.94, stripeCol, 0, 0);
+                } else {
+                    b.boxAt(x + stripePos, flankH / 2, z - W / 2 - 0.04, stripeW * 0.94, flankH, 0.08, stripeCol, 0, 0);
+                    b.boxAt(x + stripePos, flankH / 2, z + W / 2 + 0.04, stripeW * 0.94, flankH, 0.08, stripeCol, 0, 0);
+                }
+            }
+
+            // 5. Four Corner Beacon Posts with bright marker caps
+            const cornerOffL = L / 2 + 0.05;
+            const cornerOffW = W / 2 + 0.05;
+            const postH = 0.68;
+            for (const dx of [-1, 1]) {
+                for (const dz of [-1, 1]) {
+                    const px = isZ ? x + dx * cornerOffW : x + dx * cornerOffL;
+                    const pz = isZ ? z + dz * cornerOffL : z + dz * cornerOffW;
+                    b.boxAt(px, postH / 2, pz, 0.1, postH, 0.1, PALETTE.pole, 0, 0);
+                    b.boxAt(px, postH + 0.06, pz, 0.14, 0.12, 0.14, [255, 215, 30], 0, 0);
+                    b.boxAt(px, postH + 0.13, pz, 0.08, 0.04, 0.08, [35, 235, 185], 0, 0);
+                }
+            }
+        }
+
+        this.root.addChild(b.toEntity(this.app, 'SpeedRamps'));
+    }
+
     _buildCenterGutterAndPlanks() {
         // Chunk 4 (center chunk) contains the central 4-way intersection (r=9..11, c=9..11)
         const b = this._chunk(10, 10);
@@ -1315,6 +1446,35 @@ export class HoodMap {
             ctx.arc(mx, my, px * 0.18, 0, Math.PI * 2);
             ctx.fill();
         }
+
+        // Draw Speed Ramps on Minimap Base with glowing boost chevron diamond icons
+        for (const ramp of this.ramps) {
+            const { mx, my } = this.toMinimap(ramp.x, ramp.z, size);
+            ctx.save();
+            ctx.translate(mx, my);
+            if (ramp.axis === 'x') ctx.rotate(Math.PI / 2);
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillRect(-px * 0.28, -px * 0.44, px * 0.56, px * 0.88);
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(-px * 0.22, -px * 0.38, px * 0.44, px * 0.76);
+            ctx.fillStyle = '#22d3ee';
+            // North chevron
+            ctx.beginPath();
+            ctx.moveTo(0, -px * 0.28);
+            ctx.lineTo(px * 0.16, -px * 0.08);
+            ctx.lineTo(-px * 0.16, -px * 0.08);
+            ctx.closePath();
+            ctx.fill();
+            // South chevron
+            ctx.beginPath();
+            ctx.moveTo(0, px * 0.28);
+            ctx.lineTo(px * 0.16, px * 0.08);
+            ctx.lineTo(-px * 0.16, px * 0.08);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
         return canvas;
     }
 

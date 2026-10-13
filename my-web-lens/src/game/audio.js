@@ -170,4 +170,31 @@ export class AudioFX {
         const t = this.ctx.currentTime;
         [392, 330, 262].forEach((f, i) => this._tone(f, t + i * 0.22, 0.4, 'sawtooth', 0.12));
     }
+
+    rampBoost() {
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        // Ascending power whoosh + launch punch
+        this._tone(240, t, 0.32, 'triangle', 0.35, 880);
+        this._tone(480, t + 0.05, 0.28, 'sine', 0.25, 1400);
+        this._noise(t, 0.35, 1600, 0.35, 'bandpass');
+        this._tone(120, t, 0.18, 'sine', 0.45, 60);
+    }
+
+    rampLand() {
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        // Deep solid landing impact + suspension squelch
+        this._tone(110, t, 0.22, 'sine', 0.55, 38);
+        this._noise(t, 0.25, 350, 0.45, 'lowpass');
+        this._noise(t + 0.03, 0.18, 1200, 0.2, 'bandpass');
+        this._tone(680, t + 0.04, 0.08, 'triangle', 0.15, 320);
+    }
+
+    stuntCheer() {
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime;
+        // Celebratory stunt fanfare chimes
+        [587, 740, 880, 1175].forEach((f, i) => this._tone(f, t + i * 0.06, 0.18, 'triangle', 0.22));
+    }
 }

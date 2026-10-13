@@ -388,6 +388,37 @@ function startCountdown() {
         currentCamLook.set(0, 0.5, 12.0 - 3.0);
     }
 
+    const rampParam = new URLSearchParams(window.location.search).get('ramp');
+    if (rampParam === '1') {
+        player.x = -30.0;
+        player.z = 8.0;
+        player.yaw = 0; // facing North towards z=0 (Ramp 1)
+        currentCamPos.set(-30.0, 6.5, 8.0 + 6.0);
+        currentCamLook.set(-30.0, 0.5, 8.0 - 3.0);
+    } else if (rampParam === '2') {
+        player.x = -22.0;
+        player.z = -24.0;
+        player.yaw = -Math.PI / 2; // facing East towards x=-14 (Ramp 2)
+        currentCamPos.set(-28.0, 6.5, -24.0);
+        currentCamLook.set(-19.0, 0.5, -24.0);
+    } else if (rampParam === '3') {
+        player.x = 30.0;
+        player.z = 8.0;
+        player.yaw = 0; // facing North towards z=0 (Ramp 3)
+        currentCamPos.set(30.0, 6.5, 8.0 + 6.0);
+        currentCamLook.set(30.0, 0.5, 8.0 - 3.0);
+    } else if (rampParam === '4') {
+        player.x = 6.0;
+        player.z = 24.0;
+        player.yaw = -Math.PI / 2; // facing East towards x=14 (Ramp 4)
+        currentCamPos.set(0.0, 6.5, 24.0);
+        currentCamLook.set(9.0, 0.5, 24.0);
+    }
+
+    if (rampParam || new URLSearchParams(window.location.search).get('gutter') === '1') {
+        player._sync(0);
+    }
+
     cameraEntity.setPosition(currentCamPos);
     cameraEntity.lookAt(currentCamLook);
 }
@@ -753,7 +784,7 @@ app.on('update', dt => {
         const camHeight = NORMAL_CAM.height + speedRatio * 0.6;
         const desiredX = player.x - forwardX * followDist;
         const desiredZ = player.z - forwardZ * followDist;
-        let desiredY = camHeight;
+        let desiredY = camHeight + (player.y || 0) * 0.55;
 
         // Camera collision check: smoothly elevate camera above roofs rather than snapping
         const targetObstructionY = map.blocksCamera(desiredX, desiredY, desiredZ) ? 2.2 : 0;
@@ -778,7 +809,7 @@ app.on('update', dt => {
         // Look ahead along the road
         const lookDistAhead = NORMAL_CAM.lookAhead + speedRatio * 0.6;
         const targetLookX = player.x + forwardX * lookDistAhead;
-        const targetLookY = NORMAL_CAM.lookY;
+        const targetLookY = NORMAL_CAM.lookY + (player.y || 0) * 0.45;
         const targetLookZ = player.z + forwardZ * lookDistAhead;
 
         currentCamLook.x = math.lerp(currentCamLook.x, targetLookX, 1 - Math.exp(-12 * dt));
@@ -791,16 +822,16 @@ app.on('update', dt => {
         // Dynamic Camera FOV for speed rush sensation (stops boost punch when boost < 5%)
         const minBoostPct = BIKE.MIN_BOOST_STAMINA_PCT || 5;
         const hasBoost = (player.stamina / BIKE.MAX_STAMINA) * 100 >= minBoostPct;
-        const isBoostActive = player.isSprinting && hasBoost;
+        const isBoostActive = (player.isSprinting && hasBoost) || player.isRampBoosting;
 
-        const targetFov = 54 + speedRatio * (isBoostActive ? 8 : 4);
+        const targetFov = 54 + speedRatio * (isBoostActive ? 9 : 4);
         cameraEntity.camera.fov = math.lerp(cameraEntity.camera.fov, targetFov, 1 - Math.exp(-6 * dt));
     }
 
     // 4. Speed lines rendering (stops boost speed lines when boost < 5%)
     const minBoostPct = BIKE.MIN_BOOST_STAMINA_PCT || 5;
     const hasBoost = (player.stamina / BIKE.MAX_STAMINA) * 100 >= minBoostPct;
-    const isBoostActive = player.isSprinting && hasBoost;
+    const isBoostActive = (player.isSprinting && hasBoost) || player.isRampBoosting;
     renderSpeedLines(dt, player.speed, isBoostActive);
 
     // 5. Animate Checkpoint Beacon
@@ -946,6 +977,25 @@ function renderMinimap(activeCP) {
         }
         minimapCtx.stroke();
         minimapCtx.restore();
+    }
+
+    // 2c. Draw Speed Ramps on Minimap with subtle pulse glow
+    if (map.ramps) {
+        const pulse = 1.0 + Math.sin(performance.now() * 0.006) * 0.15;
+        map.ramps.forEach(ramp => {
+            const { mx, my } = map.toMinimap(ramp.x, ramp.z, size);
+            minimapCtx.save();
+            minimapCtx.translate(mx, my);
+            minimapCtx.beginPath();
+            minimapCtx.arc(0, 0, 4.2 * pulse, 0, Math.PI * 2);
+            minimapCtx.fillStyle = 'rgba(34, 211, 238, 0.45)';
+            minimapCtx.fill();
+            minimapCtx.beginPath();
+            minimapCtx.arc(0, 0, 2.2, 0, Math.PI * 2);
+            minimapCtx.fillStyle = '#f59e0b';
+            minimapCtx.fill();
+            minimapCtx.restore();
+        });
     }
 
     // 3. Draw Vehicle Blips on the Minimap
