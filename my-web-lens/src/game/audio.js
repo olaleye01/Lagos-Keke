@@ -9,20 +9,37 @@ export class AudioFX {
         this.muted = false;
     }
 
-    /** Must be called from a user gesture (Start button). */
+    /** Must be called from a user gesture (Start button or screen tap). */
     unlock() {
-        if (this.ctx) {
-            if (this.ctx.state === 'suspended') this.ctx.resume();
-            return;
-        }
         const Ctx = window.AudioContext || window.webkitAudioContext;
         if (!Ctx) return;
-        this.ctx = new Ctx();
-        this.master = this.ctx.createGain();
-        this.master.gain.value = 0.7;
-        this.master.connect(this.ctx.destination);
-        this._startRolling();
+
+        if (!this.ctx) {
+            this.ctx = new Ctx();
+            this.master = this.ctx.createGain();
+            this.master.gain.value = this.muted ? 0 : 0.7;
+            this.master.connect(this.ctx.destination);
+            this._startRolling();
+        }
+
+        if (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted') {
+            this.ctx.resume().catch(() => {});
+        }
+
+        // Force iOS Safari / Android audio hardware to activate with a silent 1-sample buffer
+        try {
+            const buf = this.ctx.createBuffer(1, 1, 22050);
+            const src = this.ctx.createBufferSource();
+            src.buffer = buf;
+            src.connect(this.ctx.destination);
+            src.start(0);
+        } catch (e) {}
     }
+
+    // Safe no-ops
+    playMusic() {}
+    stopMusic() {}
+    setMusicVolume() {}
 
     _noiseBuffer(seconds = 1) {
         const len = Math.floor(this.ctx.sampleRate * seconds);
@@ -47,7 +64,7 @@ export class AudioFX {
 
     /** Tyre noise: smooth hiss on tarmac, low rumble in the mud. */
     setRolling(speed01, surface) {
-        if (!this.ctx) return;
+        if (!this.ctx || !this.rollGain || !this.rollFilter) return;
         const t = this.ctx.currentTime;
         const mud = surface === 'mud';
         this.rollGain.gain.setTargetAtTime(speed01 * (mud ? 0.22 : 0.1), t, 0.1);
@@ -56,6 +73,7 @@ export class AudioFX {
 
     _tone(freq, start, dur, type = 'sine', vol = 0.3, endFreq = null) {
         const ctx = this.ctx;
+        if (!ctx || !this.master) return;
         const osc = ctx.createOscillator();
         const g = ctx.createGain();
         osc.type = type;
@@ -71,6 +89,7 @@ export class AudioFX {
 
     _noise(start, dur, freq, vol = 0.4, type = 'lowpass') {
         const ctx = this.ctx;
+        if (!ctx || !this.master) return;
         const src = ctx.createBufferSource();
         src.buffer = this._noiseBuffer(dur + 0.1);
         const f = ctx.createBiquadFilter();

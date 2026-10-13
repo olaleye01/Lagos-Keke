@@ -224,14 +224,34 @@ export class RacingLine {
         // Append precise checkpoint coordinate
         rawPoints.push({ x: targetCP.x, z: targetCP.z });
 
-        // Prune redundant intermediate points that are already behind player
+        // Prune redundant intermediate points that are already behind player or too close
         while (rawPoints.length > 2) {
             const p1 = rawPoints[1];
+            const p2 = rawPoints[2];
             const dx = p1.x - player.x;
             const dz = p1.z - player.z;
-            const fDot = dx * player.forwardX + dz * player.forwardZ;
             const dist = Math.hypot(dx, dz);
-            if (fDot < -0.5 && dist < 4.0) {
+
+            // Duplicate waypoint check
+            const p1p2Dist = Math.hypot(p2.x - p1.x, p2.z - p1.z);
+            if (p1p2Dist < 0.2) {
+                rawPoints.splice(1, 1);
+                continue;
+            }
+
+            // Check if player has already reached or passed p1 along the segment towards p2:
+            const segX = p2.x - p1.x;
+            const segZ = p2.z - p1.z;
+            const segLenSq = segX * segX + segZ * segZ;
+            const toPlayerX = player.x - p1.x;
+            const toPlayerZ = player.z - p1.z;
+            const proj = segLenSq > 1e-4 ? (toPlayerX * segX + toPlayerZ * segZ) / segLenSq : 0;
+
+            // Check dot product with player's forward vector
+            const fDot = dx * player.forwardX + dz * player.forwardZ;
+
+            // Prune if player has passed p1 towards p2, or p1 is too close to bike, or p1 is behind player along segment
+            if (dist < 1.0 || proj > 0 || (fDot < -0.1 && proj > -0.2)) {
                 rawPoints.splice(1, 1);
             } else {
                 break;
@@ -376,17 +396,19 @@ export class RacingLine {
             this._computePath(player, targetCP);
         }
 
-        // Kinetic streaming animation: lines flow forward toward the checkpoint in sync with player rush
+        // Kinetic streaming animation: lines flow FORWARD away from the rider down the track toward the checkpoint
         const streamSpeed = 7.5 + Math.max(0, player.speed) * 0.75;
         this.streamOffset = (this.streamOffset + dt * streamSpeed) % this.spacing;
 
+        const baseDist = 1.0;
         const maxGuideDist = 30.0; // 30m forward sightline
 
         for (let i = 0; i < this.chevronCount; i++) {
             const ch = this.chevrons[i];
-            const dist = 1.8 + i * this.spacing - this.streamOffset;
+            // Moving away from the rider: + this.streamOffset causes distance to increase over time
+            const dist = baseDist + i * this.spacing + this.streamOffset;
 
-            if (dist < 0.6 || dist > this.totalLength || dist > maxGuideDist) {
+            if (dist < baseDist || dist > this.totalLength || dist > maxGuideDist) {
                 if (ch.entity.enabled) ch.entity.enabled = false;
                 continue;
             }
@@ -403,13 +425,25 @@ export class RacingLine {
             ch.entity.setPosition(sample.x, y, sample.z);
             ch.entity.setEulerAngles(0, (yaw * 180) / Math.PI, 0);
 
-            // Dynamic scale tapering: smooth fade-in near front tire, tapered fade-out at horizon
+            // Dynamic scale tapering: smooth emergence in front of bicycle, tapered fade-out at horizon & checkpoint
             let scale = 1.0;
-            if (dist < 3.8) {
-                scale = math.clamp(dist / 3.8, 0.25, 1.0);
-            } else if (dist > 20.0) {
-                scale = math.clamp((maxGuideDist - dist) / 10.0, 0.15, 1.0);
+            if (dist < 3.4) {
+                scale = math.clamp((dist - baseDist) / 2.0, 0.0, 1.0);
+            } else if (dist > 22.0) {
+                scale = math.clamp((maxGuideDist - dist) / 8.0, 0.0, 1.0);
             }
+
+            // Taper into checkpoint target if approaching the goal
+            const distToCP = this.totalLength - dist;
+            if (distToCP < 3.0) {
+                scale = Math.min(scale, math.clamp(distToCP / 3.0, 0.0, 1.0));
+            }
+
+            if (scale <= 0.02) {
+                if (ch.entity.enabled) ch.entity.enabled = false;
+                continue;
+            }
+
             ch.entity.setLocalScale(scale, 1, scale);
 
             // Dynamic color: golden-yellow for straights, energetic neon amber for sharp turn apexes

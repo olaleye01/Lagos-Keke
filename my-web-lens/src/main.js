@@ -450,6 +450,7 @@ btnStart.addEventListener('click', () => {
 });
 
 btnRetry.addEventListener('click', () => {
+    audio.unlock();
     startCountdown();
 });
 
@@ -538,8 +539,19 @@ if (btnSoundHud) btnSoundHud.addEventListener('click', toggleSound);
 if (btnPauseSound) btnPauseSound.addEventListener('click', toggleSound);
 if (btnSoundToggle) btnSoundToggle.addEventListener('click', toggleSound);
 
+// Mobile Web Audio unlocker: pre-warms audio engine on first interaction
+function unlockAudio() {
+    audio.unlock();
+}
+
+['touchstart', 'touchend', 'click', 'pointerdown'].forEach(evt => {
+    window.addEventListener(evt, unlockAudio, { passive: true, once: true });
+    document.addEventListener(evt, unlockAudio, { passive: true, once: true });
+});
+
 // Keyboard shortcuts: P or ESC to pause/resume, M to toggle sound
 window.addEventListener('keydown', e => {
+    audio.unlock();
     if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
         if (gameState === STATE.PAUSED || gameState === STATE.PLAYING || gameState === STATE.COUNTDOWN) {
             e.preventDefault();
