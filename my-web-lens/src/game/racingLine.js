@@ -439,6 +439,12 @@ export class RacingLine {
                 scale = Math.min(scale, math.clamp(distToCP / 3.0, 0.0, 1.0));
             }
 
+            // If traversing across the narrow wooden plank bridge, scale chevron down to fit 0.84m plank deck cleanly
+            const bridgeDist = Math.hypot(sample.x, sample.z);
+            if (bridgeDist >= 6.2 && bridgeDist <= 9.4 && (Math.abs(sample.x) < 0.8 || Math.abs(sample.z) < 0.8)) {
+                scale *= 0.65;
+            }
+
             if (scale <= 0.02) {
                 if (ch.entity.enabled) ch.entity.enabled = false;
                 continue;

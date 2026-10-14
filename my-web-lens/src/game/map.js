@@ -24,9 +24,9 @@ export const DRAIN = {
     RI: 6.6,            // inner edge of the opening (courtyard side)
     RO: 9.0,            // outer edge of the opening (road alley side, 2.4m wide trench)
     D: 1.6,             // physical depth below road level
-    BRIDGE_HALF: 0.8,   // plank bridge half-width (1.6m wide deck)
+    BRIDGE_HALF: 0.42,  // plank bridge half-width (0.84m total width: challenging to safely pass!)
     PLANK_SPAN: 3.0,    // plank boards span across the 2.4m gap and rest 0.3m on each bank
-    RAMP: 0.5           // approach transition ramp length
+    RAMP: 0.45          // approach transition ramp length
 };
 DRAIN.MID = (DRAIN.RI + DRAIN.RO) / 2; // 7.8m
 
@@ -914,8 +914,8 @@ export class HoodMap {
             const isNS = side.ns;
 
             // Two open gutter wings flanking the central wooden plank bridge:
-            // Wing A: from -RI (-6.6m) to -bridgeHalfW (-0.8m) -> length 5.8m
-            // Wing B: from +bridgeHalfW (+0.8m) to +RI (+6.6m) -> length 5.8m
+            // Wing A: from -RI (-6.6m) to -bridgeHalfW (-0.42m) -> length 6.18m
+            // Wing B: from +bridgeHalfW (+0.42m) to +RI (+6.6m) -> length 6.18m
             const wings = [
                 [-RI, -bridgeHalfW],
                 [bridgeHalfW, RI]
@@ -956,47 +956,65 @@ export class HoodMap {
                 // Dark muddy brown concrete trench floor
                 flatLocal(w0, RI, w1, RO, -D, PALETTE.drainFloor, 0.05);
 
-                // Murky stagnant water plane (12cm dirty water depth)
-                flatLocal(w0 + 0.06, RI + 0.08, w1 - 0.06, RO - 0.08, -D + 0.12, PALETTE.gutterWater);
+                // Murky stagnant water plane (16cm dirty water depth)
+                flatLocal(w0 + 0.04, RI + 0.08, w1 - 0.04, RO - 0.08, -D + 0.16, PALETTE.gutterWater);
 
                 // Floating green algae patches & slime slicks
-                flatLocal(w0 + 0.35, RI + 0.3, w1 - 0.35, RO - 0.3, -D + 0.125, PALETTE.gutterSlime, 0.08);
+                flatLocal(w0 + 0.25, RI + 0.35, w1 - 0.25, RO - 0.35, -D + 0.165, PALETTE.gutterSlime, 0.06);
 
                 // Authentic low-poly debris on the drain bed: discarded water sachet & concrete chunk
                 const sachetPos = w0 + wingLen * 0.45;
-                boxLocal(sachetPos, -D + 0.13, RI + 0.7, 0.22, 0.02, 0.15, PALETTE.sachetWhite, 22, 0);
-                boxLocal(sachetPos, -D + 0.14, RI + 0.7, 0.12, 0.01, 0.08, PALETTE.sachetBlue, 22, 0);
-                boxLocal(w0 + wingLen * 0.72, -D + 0.16, RO - 0.5, 0.28, 0.18, 0.20, [135, 130, 122], 15, 0.05);
+                boxLocal(sachetPos, -D + 0.17, RI + 0.7, 0.22, 0.02, 0.15, PALETTE.sachetWhite, 22, 0);
+                boxLocal(sachetPos, -D + 0.18, RI + 0.7, 0.12, 0.01, 0.08, PALETTE.sachetBlue, 22, 0);
+                boxLocal(w0 + wingLen * 0.75, -D + 0.20, RO - 0.6, 0.28, 0.18, 0.20, [135, 130, 122], 15, 0.04);
 
-                // --- B. OUTER WALL (Road side lip and descending concrete wall) ---
-                // Descends from road (y=0) down to floor (y=-1.6) in multi-shaded depth bands:
+                // --- B. CONCRETE WALLS (Descending 1.6m down into trench) ---
+                // Outer wall (RO)
                 boxLocal(midLat, -0.25, RO, wingLen, 0.50, 0.18, PALETTE.drainWallTop, 0, 0.02);
                 boxLocal(midLat, -0.75, RO, wingLen, 0.50, 0.18, PALETTE.drainWallMid, 0, 0.02);
                 boxLocal(midLat, -1.25, RO, wingLen, 0.50, 0.18, PALETTE.drainWallLow, 0, 0.02);
                 boxLocal(midLat, -D + 0.20, RO - 0.02, wingLen, 0.14, 0.14, PALETTE.drainAlgae, 0, 0.02);
 
-                // Raised light beige concrete outer curb lip (y = +0.05, height 0.08m, overhanging)
-                boxLocal(midLat, 0.05, RO + 0.08, wingLen, 0.08, 0.26, PALETTE.drainCap, 0, 0.02);
-                // Angular shadow strip under the overhanging lip
-                boxLocal(midLat, -0.03, RO - 0.02, wingLen, 0.06, 0.06, [46, 42, 38], 0, 0);
-
-                // --- C. INNER WALL (Courtyard side lip and descending concrete wall facing chase camera) ---
+                // Inner wall (RI)
                 boxLocal(midLat, -0.25, RI, wingLen, 0.50, 0.18, PALETTE.drainWallTop, 0, 0.02);
                 boxLocal(midLat, -0.75, RI, wingLen, 0.50, 0.18, PALETTE.drainWallMid, 0, 0.02);
                 boxLocal(midLat, -1.25, RI, wingLen, 0.50, 0.18, PALETTE.drainWallLow, 0, 0.02);
                 boxLocal(midLat, -D + 0.20, RI + 0.02, wingLen, 0.14, 0.14, PALETTE.drainAlgae, 0, 0.02);
 
-                // Raised light beige concrete inner curb lip (y = +0.05, height 0.08m, overhanging)
-                boxLocal(midLat, 0.05, RI - 0.08, wingLen, 0.08, 0.26, PALETTE.drainCap, 0, 0.02);
-                boxLocal(midLat, -0.03, RI + 0.02, wingLen, 0.06, 0.06, [46, 42, 38], 0, 0);
+                // --- C. PROMINENT LAGOS YELLOW-AND-BLACK CONCRETE DEMARCATION CURBS ---
+                // Divide the wing into alternating vibrant yellow and charcoal black curb blocks (~0.60m each)
+                const curbCount = Math.max(8, Math.round(wingLen / 0.60));
+                const curbLen = wingLen / curbCount;
+                for (let k = 0; k < curbCount; k++) {
+                    const cLat = w0 + (k + 0.5) * curbLen;
+                    const isYellow = (k % 2 === 0);
+                    const curbCol = isYellow ? PALETTE.curbYellow : PALETTE.curbBlack;
+
+                    // Outer curb capping block (elevated y=0.06, height 0.12m, width 0.30m overhanging into the trench)
+                    boxLocal(cLat, 0.06, RO + 0.08, curbLen, 0.12, 0.30, curbCol, 0, 0);
+                    // Inner curb capping block
+                    boxLocal(cLat, 0.06, RI - 0.08, curbLen, 0.12, 0.30, curbCol, 0, 0);
+                }
+
+                // Dark shadow strips beneath the overhanging curbs
+                boxLocal(midLat, -0.04, RO - 0.02, wingLen, 0.08, 0.08, [32, 30, 28], 0, 0);
+                boxLocal(midLat, -0.04, RI + 0.02, wingLen, 0.08, 0.08, [32, 30, 28], 0, 0);
+
+                // Warning hazard stakes along each open gutter wing to make the boundary visually prominent in 3D
+                for (const frac of [0.35, 0.72]) {
+                    const postLat = w0 + wingLen * frac;
+                    boxLocal(postLat, 0.36, RO + 0.24, 0.12, 0.72, 0.12, PALETTE.trunk, 0, 0.02);
+                    boxLocal(postLat, 0.60, RO + 0.24, 0.14, 0.14, 0.14, PALETTE.curbYellow, 0, 0);
+                    boxLocal(postLat, 0.46, RO + 0.24, 0.13, 0.08, 0.13, PALETTE.curbBlack, 0, 0);
+                }
 
                 // --- D. END WALL (Sealing channel at corner platform boundary) ---
                 const endLat = (w0 === -RI) ? -RI : RI;
                 boxLocal(endLat, -D / 2, midOut, 0.18, D, trenchWidth, PALETTE.drainWallMid, 0, 0.03);
             }
 
-            // --- E. WOODEN PLANK BRIDGE SPANNING THE 2.4m GAP ---
-            const boxBridge = (lat, y, out, sLat, sY, sOut, color, yaw = 0, jitter = 0.04) => {
+            // --- E. NARROW WOODEN PLANK BRIDGE (Reduced to 0.84m total width for an authentic steering challenge!) ---
+            const boxBridge = (lat, y, out, sLat, sY, sOut, color, yaw = 0, jitter = 0.03) => {
                 if (isNS) {
                     const worldZ = (sideKey === 'N') ? -out : out;
                     b.boxAt(lat, y, worldZ, sLat, sY, sOut, color, yaw, jitter);
@@ -1007,38 +1025,38 @@ export class HoodMap {
             };
 
             // 1. Two underlying heavy timber stringer runner beams spanning across the trench
-            for (const sLat of [-0.52, 0.52]) {
-                boxBridge(sLat, 0.015, midOut, 0.16, 0.14, plankLen, PALETTE.plankWoodDark, 0, 0.02);
+            for (const sLat of [-0.25, 0.25]) {
+                boxBridge(sLat, 0.015, midOut, 0.14, 0.14, plankLen, PALETTE.plankWoodDark, 0, 0.01);
             }
 
             // 2. Central vertical timber support prop descending down into the deep trench
-            for (const sLat of [-0.52, 0.52]) {
-                boxBridge(sLat, -D / 2 + 0.02, midOut, 0.14, D, 0.14, PALETTE.plankWoodDark, 0, 0.02);
+            for (const sLat of [-0.25, 0.25]) {
+                boxBridge(sLat, -D / 2 + 0.02, midOut, 0.12, D, 0.12, PALETTE.plankWoodDark, 0, 0.01);
             }
-            boxBridge(0, -0.06, midOut, 1.25, 0.09, 0.14, PALETTE.plankWoodDark, 0, 0.02);
+            boxBridge(0, -0.06, midOut, 0.72, 0.08, 0.12, PALETTE.plankWoodDark, 0, 0.01);
 
-            // 3. Individual rough-hewn timber boards laid side by side across the 1.6m width (5 planks)
-            // with visible 0.035m gaps showing through to the deep drain below
-            const plankCount = 5;
-            const plankW = (bridgeHalfW * 2 - 0.12) / plankCount; // ~0.296m each
+            // 3. Three individual rough-hewn timber boards laid side by side across the 0.84m width
+            // with visible 0.025m gaps showing through to the deep drain below
+            const plankCount = 3;
+            const plankW = (bridgeHalfW * 2 - 0.08) / plankCount; // ~0.253m each
 
             for (let i = 0; i < plankCount; i++) {
-                const off = -bridgeHalfW + 0.06 + (i + 0.5) * plankW;
-                const woodCol = (i % 3 === 0) ? PALETTE.plankWoodLight : (i % 3 === 1 ? PALETTE.plankWood : PALETTE.plankWoodDark);
-                const lenJitter = plankLen + (rand() - 0.5) * 0.16;
-                const yOff = 0.055 + (rand() - 0.5) * 0.006;
+                const off = -bridgeHalfW + 0.04 + (i + 0.5) * plankW;
+                const woodCol = (i === 1) ? PALETTE.plankWoodLight : (i === 0 ? PALETTE.plankWood : PALETTE.plankWoodDark);
+                const lenJitter = plankLen + (rand() - 0.5) * 0.12;
+                const yOff = 0.055 + (rand() - 0.5) * 0.004;
 
                 // Plank board with visible gap
-                boxBridge(off, yOff, midOut, plankW - 0.035, 0.05, lenJitter, woodCol, (rand() - 0.5) * 1.5, 0.06);
+                boxBridge(off, yOff, midOut, plankW - 0.025, 0.05, lenJitter, woodCol, (rand() - 0.5) * 1.2, 0.04);
 
                 // Hand-driven iron nails over the 2 runner stringers
-                boxBridge(off, yOff + 0.028, midOut - 1.1, 0.04, 0.01, 0.04, PALETTE.plankNail, 0, 0);
-                boxBridge(off, yOff + 0.028, midOut + 1.1, 0.04, 0.01, 0.04, PALETTE.plankNail, 0, 0);
+                boxBridge(off, yOff + 0.028, midOut - 1.1, 0.035, 0.01, 0.035, PALETTE.plankNail, 0, 0);
+                boxBridge(off, yOff + 0.028, midOut + 1.1, 0.035, 0.01, 0.035, PALETTE.plankNail, 0, 0);
             }
 
             // 4. Longitudinal side guide kerb logs along bridge edges
-            for (const gLat of [-bridgeHalfW + 0.03, bridgeHalfW - 0.03]) {
-                boxBridge(gLat, 0.095, midOut, 0.06, 0.05, plankLen - 0.06, PALETTE.plankWoodDark, 0, 0.02);
+            for (const gLat of [-bridgeHalfW + 0.02, bridgeHalfW - 0.02]) {
+                boxBridge(gLat, 0.095, midOut, 0.05, 0.05, plankLen - 0.06, PALETTE.plankWoodDark, 0, 0.01);
             }
 
             // 5. Packed mud transition approach ramps at both bridge landings
@@ -1056,12 +1074,12 @@ export class HoodMap {
             flatBridge(-bridgeHalfW, RO, bridgeHalfW, RO + DRAIN.RAMP, 0.025, PALETTE.mudDark);
             flatBridge(-bridgeHalfW, RI - DRAIN.RAMP, bridgeHalfW, RI, 0.025, PALETTE.mudDark);
 
-            // 6. Prominent reflective warning marker bollards tightly flanking the bridge landings
-            for (const bLat of [-bridgeHalfW - 0.14, bridgeHalfW + 0.14]) {
-                for (const bOut of [RO + 0.4, RI - 0.4]) {
-                    boxBridge(bLat, 0.32, bOut, 0.14, 0.64, 0.14, PALETTE.trunk, 0, 0.05);
-                    boxBridge(bLat, 0.56, bOut, 0.16, 0.14, 0.16, PALETTE.curbYellow, 0, 0);
-                    boxBridge(bLat, 0.44, bOut, 0.15, 0.08, 0.15, PALETTE.curbBlack, 0, 0);
+            // 6. Prominent reflective warning marker bollards tightly flanking the narrow bridge landings
+            for (const bLat of [-bridgeHalfW - 0.10, bridgeHalfW + 0.10]) {
+                for (const bOut of [RO + 0.35, RI - 0.35]) {
+                    boxBridge(bLat, 0.32, bOut, 0.12, 0.64, 0.12, PALETTE.trunk, 0, 0.03);
+                    boxBridge(bLat, 0.56, bOut, 0.14, 0.14, 0.14, PALETTE.curbYellow, 0, 0);
+                    boxBridge(bLat, 0.44, bOut, 0.13, 0.08, 0.13, PALETTE.curbBlack, 0, 0);
                 }
             }
         };
@@ -1208,25 +1226,25 @@ export class HoodMap {
      * @param {number} radius
      * @returns {boolean}
      */
-    isInOpenGutter(x, z, radius = 0.28) {
+    isInOpenGutter(x, z, radius = 0.20) {
         const RI = DRAIN.RI; // 6.6m inner edge
         const RO = DRAIN.RO; // 9.0m outer edge (2.4m wide channel)
-        const bridgeSafeHalfW = DRAIN.BRIDGE_HALF; // 0.8m bridge safe threshold (width 1.6m)
+        const bridgeSafeHalfW = DRAIN.BRIDGE_HALF; // 0.42m narrow bridge safe threshold (width 0.84m)
 
         // North gutter (z in [-RO, -RI])
-        if (z >= -RO - radius && z <= -RI + radius && Math.abs(x) <= RI + 0.4) {
+        if (z >= -RO - radius && z <= -RI + radius && Math.abs(x) <= RI + 0.3) {
             if (Math.abs(x) > bridgeSafeHalfW) return true;
         }
         // South gutter (z in [RI, RO])
-        if (z >= RI - radius && z <= RO + radius && Math.abs(x) <= RI + 0.4) {
+        if (z >= RI - radius && z <= RO + radius && Math.abs(x) <= RI + 0.3) {
             if (Math.abs(x) > bridgeSafeHalfW) return true;
         }
         // West gutter (x in [-RO, -RI])
-        if (x >= -RO - radius && x <= -RI + radius && Math.abs(z) <= RI + 0.4) {
+        if (x >= -RO - radius && x <= -RI + radius && Math.abs(z) <= RI + 0.3) {
             if (Math.abs(z) > bridgeSafeHalfW) return true;
         }
         // East gutter (x in [RI, RO])
-        if (x >= RI - radius && x <= RO + radius && Math.abs(z) <= RI + 0.4) {
+        if (x >= RI - radius && x <= RO + radius && Math.abs(z) <= RI + 0.3) {
             if (Math.abs(z) > bridgeSafeHalfW) return true;
         }
 
@@ -1466,6 +1484,41 @@ export class HoodMap {
             ctx.fill();
             ctx.restore();
         }
+
+        // Draw Central Gutter Trench and 4 Wooden Plank Bridges on Minimap
+        const pO0 = this.toMinimap(-DRAIN.RO, -DRAIN.RO, size);
+        const pO1 = this.toMinimap(DRAIN.RO, DRAIN.RO, size);
+        const pI0 = this.toMinimap(-DRAIN.RI, -DRAIN.RI, size);
+        const pI1 = this.toMinimap(DRAIN.RI, DRAIN.RI, size);
+
+        // Dark gutter trench ring
+        ctx.fillStyle = '#181a1e';
+        ctx.fillRect(pO0.mx, pO0.my, pO1.mx - pO0.mx, pO1.my - pO0.my);
+        // Central courtyard mud plaza inside gutter ring
+        ctx.fillStyle = '#b0623a';
+        ctx.fillRect(pI0.mx, pI0.my, pI1.mx - pI0.mx, pI1.my - pI0.my);
+
+        // Yellow-and-black curb demarcation outlines
+        ctx.strokeStyle = '#f4c428';
+        ctx.lineWidth = 1.0;
+        ctx.strokeRect(pO0.mx, pO0.my, pO1.mx - pO0.mx, pO1.my - pO0.my);
+        ctx.strokeRect(pI0.mx, pI0.my, pI1.mx - pI0.mx, pI1.my - pI0.my);
+
+        // 4 Narrow Wooden Plank Bridges across the gutter
+        const mid = DRAIN.MID;
+        const bW = (DRAIN.BRIDGE_HALF * 2 / (GRID * CELL)) * size * 1.5;
+        const bL = ((DRAIN.RO - DRAIN.RI + 0.6) / (GRID * CELL)) * size;
+        ctx.fillStyle = '#946642';
+        // North & South planks
+        const pN = this.toMinimap(0, -mid, size);
+        const pS = this.toMinimap(0, mid, size);
+        ctx.fillRect(pN.mx - bW / 2, pN.my - bL / 2, bW, bL);
+        ctx.fillRect(pS.mx - bW / 2, pS.my - bL / 2, bW, bL);
+        // West & East planks
+        const pW = this.toMinimap(-mid, 0, size);
+        const pE = this.toMinimap(mid, 0, size);
+        ctx.fillRect(pW.mx - bL / 2, pW.my - bW / 2, bL, bW);
+        ctx.fillRect(pE.mx - bL / 2, pE.my - bW / 2, bL, bW);
 
         return canvas;
     }

@@ -43,7 +43,9 @@ const minimapCtx = minimapCanvas.getContext('2d');
 const navArrow = document.getElementById('nav-arrow');
 const navDistEl = document.getElementById('nav-dist');
 const surfaceChip = document.getElementById('surface-chip');
-const toastEl = document.getElementById('toast');
+const toastLeftEl = document.getElementById('toast-left');
+const toastRightEl = document.getElementById('toast-right');
+const toastEl = toastLeftEl;
 const steerKnob = document.getElementById('steer-knob');
 
 const staminaBarEl = document.getElementById('stamina-bar');
@@ -248,12 +250,99 @@ let countdownTimer = 3;
 let toastTimeout = null;
 let lastTickSecond = -1;
 
+const toastActive = {
+    left: false,
+    right: false
+};
+let toastLastSide = 'right'; // Starts with 'left' when neither is active
+const toastTimeouts = {
+    left: null,
+    right: null
+};
+
+function pickToastSide() {
+    // If left is active and right is free: alternate to right
+    if (toastActive.left && !toastActive.right) {
+        return 'right';
+    }
+    // If right is active and left is free: alternate to left
+    if (toastActive.right && !toastActive.left) {
+        return 'left';
+    }
+    // If both are active: alternate away from last triggered side
+    if (toastActive.left && toastActive.right) {
+        return toastLastSide === 'left' ? 'right' : 'left';
+    }
+    // Default to left when idle
+    return 'left';
+}
+
 function showToast(text, type = 'normal', duration = 1800) {
-    if (toastTimeout) clearTimeout(toastTimeout);
-    toastEl.textContent = text;
-    toastEl.className = 'toast show ' + (type === 'bad' ? 'bad' : type === 'good' ? 'good' : '');
-    toastTimeout = setTimeout(() => {
-        toastEl.className = 'toast';
+    const side = pickToastSide();
+    const targetEl = side === 'right' ? toastRightEl : toastLeftEl;
+    if (!targetEl) return;
+
+    if (toastTimeouts[side]) {
+        clearTimeout(toastTimeouts[side]);
+        toastTimeouts[side] = null;
+    }
+
+    const toastIcon = targetEl.querySelector('.toast-icon-wrap');
+    const toastMsg = targetEl.querySelector('.toast-msg');
+    const toastDelta = targetEl.querySelector('.toast-delta');
+
+    // Parse countdown/time bonus or penalty (e.g. "+8s", "-2s", "-5s")
+    const deltaMatch = text.match(/\s*([+-]\d+s)\s*$/i);
+    let mainText = text;
+    let deltaText = '';
+
+    if (deltaMatch) {
+        deltaText = deltaMatch[1];
+        mainText = text.replace(deltaMatch[0], '').trim();
+    }
+
+    if (toastMsg) {
+        toastMsg.textContent = mainText;
+    }
+
+    if (toastDelta) {
+        if (deltaText) {
+            toastDelta.textContent = deltaText;
+            toastDelta.classList.remove('hidden');
+        } else {
+            toastDelta.textContent = '';
+            toastDelta.classList.add('hidden');
+        }
+    }
+
+    // Contextual SVG icons
+    if (toastIcon) {
+        if (type === 'good') {
+            toastIcon.innerHTML = `<svg viewBox="0 0 20 20" fill="none" class="toast-ico" aria-hidden="true"><circle cx="10" cy="10" r="8.5" fill="#166534" stroke="#fde047" stroke-width="1.5"/><path d="M6 10.2L8.6 12.8L14 7.2" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+        } else if (type === 'bad') {
+            toastIcon.innerHTML = `<svg viewBox="0 0 20 20" fill="none" class="toast-ico" aria-hidden="true"><circle cx="10" cy="10" r="8.5" fill="#991b1b" stroke="#fde047" stroke-width="1.5"/><path d="M10 5.8V11.2M10 13.8V14.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/></svg>`;
+        } else {
+            toastIcon.innerHTML = `<svg viewBox="0 0 20 20" fill="none" class="toast-ico" aria-hidden="true"><circle cx="10" cy="10" r="8.5" fill="#92400e" stroke="#fde047" stroke-width="1.5"/><polygon points="10,4.8 11.6,8.2 15.2,8.6 12.5,11.0 13.3,14.6 10,12.7 6.7,14.6 7.5,11.0 4.8,8.6 8.4,8.2" fill="#fde047"/></svg>`;
+        }
+    }
+
+    // Re-trigger animation cleanly if already showing on this side
+    if (targetEl.classList.contains('show')) {
+        targetEl.classList.remove('show');
+        void targetEl.offsetWidth;
+    }
+
+    targetEl.style.animationDuration = duration + 'ms';
+    targetEl.className = `toast toast-${side} show ${type === 'bad' ? 'bad' : type === 'good' ? 'good' : ''}`;
+
+    toastActive[side] = true;
+    toastLastSide = side;
+
+    toastTimeouts[side] = setTimeout(() => {
+        targetEl.className = `toast toast-${side}`;
+        targetEl.style.animationDuration = '';
+        toastActive[side] = false;
+        toastTimeouts[side] = null;
     }, duration);
 }
 
@@ -783,13 +872,6 @@ app.on('update', dt => {
     }
     if (isRiding && playerEvents.gutter) {
         showToast('Wahala! you don enter gutter!', 'bad', 1800);
-        // Smoothly orient camera behind the repositioned rider facing towards the plank bridge
-        const followDist = NORMAL_CAM.dist;
-        const camHeight = NORMAL_CAM.height;
-        currentCamPos.set(player.x - player.forwardX * followDist, camHeight, player.z - player.forwardZ * followDist);
-        currentCamLook.set(player.x + player.forwardX * NORMAL_CAM.lookAhead, NORMAL_CAM.lookY, player.z + player.forwardZ * NORMAL_CAM.lookAhead);
-        cameraEntity.setPosition(currentCamPos);
-        cameraEntity.lookAt(currentCamLook);
     }
 
     const npcToast = npcs.update(dt, player, isWorldActive, vehicles, isRiding);

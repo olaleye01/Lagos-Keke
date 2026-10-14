@@ -178,7 +178,17 @@
         <span id="stamina-val" class="stamina-pct">100%</span>
       </div>
 
-      <div id="toast" class="toast"></div>
+      <!-- Compact Arcade HUD Toast Notifications (Floating Left & Right) -->
+      <div id="toast-left" class="toast toast-left" role="status" aria-live="polite">
+        <span class="toast-icon-wrap" aria-hidden="true"></span>
+        <span class="toast-msg"></span>
+        <span class="toast-delta hidden"></span>
+      </div>
+      <div id="toast-right" class="toast toast-right" role="status" aria-live="polite">
+        <span class="toast-icon-wrap" aria-hidden="true"></span>
+        <span class="toast-msg"></span>
+        <span class="toast-delta hidden"></span>
+      </div>
 
       <!-- Chunky Arcade Bicycle Handlebar Steer Mechanism -->
       <div id="steer-meter" class="steer-meter-box" aria-label="Steer drag control">

@@ -739,51 +739,211 @@ html, body {
   text-shadow: 0 1.5px 0 var(--outline-dark);
 }
 
-/* 7. TOAST NOTIFICATIONS (Chunky Comic Sticker, Mobile-Safe Text Wrapping) */
+/* 7. TOAST NOTIFICATIONS (Floating Rising Arcade HUD Pills) */
 .toast {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.75);
+  bottom: calc(108px + var(--safe-bottom));
   width: max-content;
-  max-width: min(88vw, 340px);
+  min-width: clamp(160px, 30vw, 210px);
+  max-width: clamp(185px, 44vw, 280px);
+  height: clamp(42px, 5.5vh, 48px);
+  min-height: 42px;
   box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 0 12px 0 10px;
+  border-radius: 9999px;
+  background: rgba(20, 10, 4, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(245, 158, 11, 0.72);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 3px 0 rgba(10, 5, 2, 0.65), 
+    0 6px 16px rgba(0, 0, 0, 0.45), 
+    0 0 10px rgba(245, 158, 11, 0.22);
+  pointer-events: none;
+  z-index: 24;
+  opacity: 0;
+  visibility: hidden;
+  will-change: transform, opacity;
+}
+
+.toast-left {
+  left: max(14px, calc(var(--safe-left) + 8px));
+  transform-origin: left bottom;
+}
+
+.toast-right {
+  right: max(14px, calc(var(--safe-right) + 8px));
+  transform-origin: right bottom;
+}
+
+.toast-left.show {
+  visibility: visible;
+  animation-name: toastRiseLeft;
+  animation-timing-function: cubic-bezier(0.18, 0.88, 0.32, 1);
+  animation-fill-mode: forwards;
+}
+
+.toast-right.show {
+  visibility: visible;
+  animation-name: toastRiseRight;
+  animation-timing-function: cubic-bezier(0.18, 0.88, 0.32, 1);
+  animation-fill-mode: forwards;
+}
+
+@keyframes toastRiseLeft {
+  0% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.92);
+    box-shadow: 
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 3px 0 rgba(10, 5, 2, 0.65), 
+      0 4px 12px rgba(0, 0, 0, 0.35), 
+      0 0 0 rgba(245, 158, 11, 0);
+  }
+  14% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    box-shadow: 
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      0 3px 0 rgba(10, 5, 2, 0.65), 
+      0 8px 20px rgba(0, 0, 0, 0.5), 
+      0 0 16px rgba(245, 158, 11, 0.65),
+      inset 0 0 8px rgba(245, 158, 11, 0.25);
+  }
+  26% {
+    opacity: 1;
+    box-shadow: 
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 3px 0 rgba(10, 5, 2, 0.65), 
+      0 6px 16px rgba(0, 0, 0, 0.45), 
+      0 0 10px rgba(245, 158, 11, 0.22);
+  }
+  65% {
+    opacity: 0.95;
+    transform: translateY(-24px) scale(0.98);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-52px) scale(0.94);
+    box-shadow: none;
+  }
+}
+
+@keyframes toastRiseRight {
+  0% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.92);
+    box-shadow: 
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 3px 0 rgba(10, 5, 2, 0.65), 
+      0 4px 12px rgba(0, 0, 0, 0.35), 
+      0 0 0 rgba(245, 158, 11, 0);
+  }
+  14% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    box-shadow: 
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      0 3px 0 rgba(10, 5, 2, 0.65), 
+      0 8px 20px rgba(0, 0, 0, 0.5), 
+      0 0 16px rgba(245, 158, 11, 0.65),
+      inset 0 0 8px rgba(245, 158, 11, 0.25);
+  }
+  26% {
+    opacity: 1;
+    box-shadow: 
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 3px 0 rgba(10, 5, 2, 0.65), 
+      0 6px 16px rgba(0, 0, 0, 0.45), 
+      0 0 10px rgba(245, 158, 11, 0.22);
+  }
+  65% {
+    opacity: 0.95;
+    transform: translateY(-24px) scale(0.98);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-52px) scale(0.94);
+    box-shadow: none;
+  }
+}
+
+.toast.bad {
+  border-color: rgba(245, 120, 11, 0.85);
+}
+
+.toast.good {
+  border-color: rgba(245, 180, 11, 0.85);
+}
+
+.toast-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.toast-ico {
+  width: 22px;
+  height: 22px;
+  display: block;
+  filter: drop-shadow(0 1.5px 2px rgba(0, 0, 0, 0.5));
+}
+
+.toast-msg {
+  flex: 1 1 auto;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(11px, 2.6vw, 12.5px);
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+  text-shadow: 0 1.5px 2px rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+.toast-delta {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: clamp(15px, 4.2vw, 22px);
-  line-height: 1.25;
-  text-align: center;
-  padding: 8px 18px;
-  border-radius: 22px;
-  background: var(--panel-bg);
-  border: 3.5px solid var(--outline-dark);
-  box-shadow: 0 6px 0 var(--outline-deep), 0 12px 24px rgba(0, 0, 0, 0.5);
-  color: var(--arcade-yellow);
-  text-shadow: 
-    -2px -2px 0 var(--outline-dark),
-     2px -2px 0 var(--outline-dark),
-    -2px  2px 0 var(--outline-dark),
-     2px  2px 0 var(--outline-dark),
-     0 3px 0 var(--outline-deep);
-  opacity: 0;
-  white-space: normal;
-  word-break: break-word;
-  text-wrap: balance;
-  pointer-events: none;
-  z-index: 30;
-  transition: opacity 0.2s, transform 0.25s cubic-bezier(.2, 1.6, .4, 1);
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  padding: 3px 7px;
+  border-radius: 9999px;
+  background: rgba(245, 158, 11, 0.22);
+  color: #fde047;
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.25);
+  white-space: nowrap;
 }
-.toast.show {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
+
+.toast.bad .toast-delta {
+  background: rgba(239, 68, 68, 0.24);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.5);
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.3);
 }
-.toast.bad {
-  color: #ff6b6b;
-  border-color: #991b1b;
-}
-.toast.good {
+
+.toast.good .toast-delta {
+  background: rgba(34, 197, 94, 0.24);
   color: #86efac;
-  border-color: #166534;
+  border-color: rgba(74, 222, 128, 0.5);
+  box-shadow: 0 0 6px rgba(74, 222, 128, 0.3);
 }
 
 /* 8. BICYCLE HANDLEBAR STEER MECHANISM */
@@ -2193,8 +2353,17 @@ html, body {
 
   /* Toast */
   .toast {
-    font-size: clamp(20px, 4vw, 30px);
-    padding: 10px 24px;
+    bottom: calc(118px + var(--safe-bottom));
+    min-width: 200px;
+    max-width: 290px;
+    height: 46px;
+    padding: 0 14px 0 10px;
+  }
+  .toast-left {
+    left: max(24px, calc(var(--safe-left) + 16px));
+  }
+  .toast-right {
+    right: max(24px, calc(var(--safe-right) + 16px));
   }
 
   /* Controls */
@@ -2241,6 +2410,31 @@ html, body {
     top: calc(98px + var(--safe-top));
     left: max(14px, var(--safe-left));
     padding: 3px 8px;
+  }
+  .toast {
+    bottom: calc(72px + var(--safe-bottom));
+    height: 38px;
+    min-width: 150px;
+    max-width: clamp(160px, 32vw, 230px);
+    padding: 0 10px 0 8px;
+    gap: 6px;
+  }
+  .toast-left {
+    left: max(10px, var(--safe-left));
+  }
+  .toast-right {
+    right: max(10px, var(--safe-right));
+  }
+  .toast-msg {
+    font-size: 11px;
+  }
+  .toast-delta {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+  .toast-ico {
+    width: 18px;
+    height: 18px;
   }
   .minimap-cluster {
     top: calc(4px + var(--safe-top));
