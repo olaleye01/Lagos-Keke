@@ -364,18 +364,47 @@ export class Player {
     }
 
     knock(fromX, fromZ) {
-        this.speed = 0;
-        this.stun = 0.7;
-        this.wobble = 0.85;
-        this.shake = 0.45;
         this.stats.npcHits++;
-        const dx = this.x - fromX;
-        const dz = this.z - fromZ;
-        const d = Math.hypot(dx, dz) || 1;
-        const pos = { x: this.x + (dx / d) * 0.4, z: this.z + (dz / d) * 0.4 };
-        this.map.resolveCircle(pos, BIKE.RADIUS);
+
+        // Relative offset from rider to NPC
+        const toNpcX = fromX - this.x;
+        const toNpcZ = fromZ - this.z;
+
+        // Rider forward and lateral (right) unit vectors
+        const fwdX = this.forwardX;
+        const fwdZ = this.forwardZ;
+        const rightX = -fwdZ;
+        const rightZ = fwdX;
+
+        // Determine which side the NPC is on relative to the rider's travel direction
+        // side >= 0: NPC is to the rider's right -> deflect left (-right)
+        // side < 0: NPC is to the rider's left -> deflect right (+right)
+        const side = toNpcX * rightX + toNpcZ * rightZ;
+        const deflectSide = side >= 0 ? -1 : 1;
+
+        // Move smoothly past the NPC: lateral deflection away from NPC + forward slide past them
+        const lateralPush = deflectSide * 0.70;
+        const forwardPush = 0.95;
+
+        const newX = this.x + rightX * lateralPush + fwdX * forwardPush;
+        const newZ = this.z + rightZ * lateralPush + fwdZ * forwardPush;
+
+        const pos = { x: newX, z: newZ };
+        if (this.map && this.map.resolveCircle) {
+            this.map.resolveCircle(pos, BIKE.RADIUS);
+        }
         this.x = pos.x;
         this.z = pos.z;
+
+        // Maintain forward momentum while scrubbing speed slightly
+        this.speed = Math.max(3.8, this.speed * 0.65);
+        this.stun = 0.08;
+        this.wobble = 0.55;
+        this.shake = 0.35;
+
+        // Trigger arcade flicker effect and invulnerability while moving past
+        this.triggerFlicker(1.5);
+        this._burst(this.x, this.z, 10, 2);
     }
 
     respawnAt(pose) {

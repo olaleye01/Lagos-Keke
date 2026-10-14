@@ -149,6 +149,21 @@ export class NPCManager {
                 if (dist < HAZARDS.NPC_RADIUS + 0.55) {
                     npc.cooldown = 2.0;
                     npc.scared = 2.0;
+
+                    // Push NPC slightly aside away from the collision impact
+                    const dx = npc.x - player.x;
+                    const dz = npc.z - player.z;
+                    const d = Math.hypot(dx, dz) || 1;
+                    npc.x += (dx / d) * 0.45;
+                    npc.z += (dz / d) * 0.45;
+                    if (this.map && this.map.resolveCircle) {
+                        const nPos = { x: npc.x, z: npc.z };
+                        this.map.resolveCircle(nPos, HAZARDS.NPC_RADIUS);
+                        npc.x = nPos.x;
+                        npc.z = nPos.z;
+                    }
+                    npc.model.root.setPosition(npc.x, 0, npc.z);
+
                     player.knock(npc.x, npc.z);
                     this.audio.oops();
                     bumpedToast = pick(this.rand, HOOD_SHOUTS);
