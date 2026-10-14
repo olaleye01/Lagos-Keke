@@ -64,8 +64,7 @@ export const GENERAL_COLLISION_SHOUTS = [
     'Oga look front!',
     'Wetin be this?!',
     'Comot for road!',
-    'Ah ah, bicycle!',
-    'No be so o!'
+    'Ah ah, bicycle!'
 ];
 
 export const VEHICLE_CONFIG = {
