@@ -51,10 +51,22 @@ export const GAME = {
     MAX_SESSION_TIME: 120, // strict 2-minute Snapchat limit
     CHECKPOINT_BONUS: 5, // seconds added per stop reached
     NPC_HIT_PENALTY: 2, // seconds lost when you bump a pedestrian
-    VEHICLE_HIT_PENALTY: 4, // seconds lost when you collide with a vehicle
+    VEHICLE_HIT_PENALTY: 5, // seconds lost when you collide with a vehicle
     CHECKPOINT_RADIUS: 3.4,
     COUNTDOWN: 3
 };
+
+/**
+ * General collision toast shouts shared across NPCs and vehicles.
+ */
+export const GENERAL_COLLISION_SHOUTS = [
+    'Watch road o!',
+    'Oga look front!',
+    'Wetin be this?!',
+    'Comot for road!',
+    'Ah ah, bicycle!',
+    'No be so o!'
+];
 
 export const VEHICLE_CONFIG = {
     // Welcome screen initial fleet offsets: positioned near the south camera view
@@ -104,15 +116,15 @@ export const HAZARDS = {
  * Fits within the 2-minute (120s) Snapchat gameplay limit.
  */
 export const CHECKPOINTS = [
-    { name: 'Suya Alley Mud Corner', r: 6, c: 5, type: 'mud' },
-    { name: "Iya Basira's Bukka", r: 1, c: 15, type: 'road' },
-    { name: 'Timber Yard Mud Route', r: 14, c: 15, type: 'mud' },
-    { name: 'Football Field Gate', r: 19, c: 5, type: 'road' },
-    { name: 'Ketu Mud Passage', r: 6, c: 15, type: 'mud' },
-    { name: "Mama Caro's Provisions", r: 1, c: 5, type: 'road' },
-    { name: 'Vulcanizer Mud Lane', r: 14, c: 5, type: 'mud' },
-    { name: 'CMS Terminal East', r: 10, c: 19, type: 'road' },
-    { name: 'Home Sweet Home', r: 19, c: 10, type: 'road' }
+    { name: 'Suya Corner', r: 6, c: 5, type: 'mud' },
+    { name: "Zambezi Lane", r: 1, c: 15, type: 'road' },
+    { name: 'Baobab Spot', r: 14, c: 15, type: 'mud' },
+    { name: 'Uhuru Junction', r: 19, c: 5, type: 'road' },
+    { name: 'Ketu Passage', r: 6, c: 15, type: 'mud' },
+    { name: "Maasai Market", r: 1, c: 5, type: 'road' },
+    { name: 'Yaba Lane', r: 14, c: 5, type: 'mud' },
+    { name: 'Mzee Junction', r: 10, c: 19, type: 'road' },
+    { name: 'Afisuru Shop', r: 19, c: 10, type: 'road' }
 ];
 
 export const START = { r: 19, c: 10, yaw: 0 };

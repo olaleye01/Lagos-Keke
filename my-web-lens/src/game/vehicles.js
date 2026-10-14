@@ -5,35 +5,8 @@ import {
     createKeke,
     createOkada
 } from '../graphics/models.js';
-import { GAME, VEHICLE_CONFIG, BIKE } from './constants.js';
+import { GAME, VEHICLE_CONFIG, BIKE, GENERAL_COLLISION_SHOUTS } from './constants.js';
 import { mulberry32, pick } from '../graphics/palette.js';
-
-const DANFO_SHOUTS = [
-    'Your brake fail?! Watch front!',
-    'Commot! Danfo driver no get joy today!',
-    'Ah ah! You wan buy my bumper?!'
-];
-
-const KEKE_SHOUTS = [
-    'Keke Marwa no be toy o!',
-    'Brother see front! No wound yourself?!',
-    'Ah ah bicycle, mind your steering!',
-    'Look road my friend! Keke no be trailer!'
-];
-
-const OKADA_SHOUTS = [
-    'Oga shift!',
-    'Commot for road, jor!',
-    'Brother watch your lane!',
-    'Wetin dey do this bicycle boy?!'
-];
-
-const CAR_SHOUTS = [
-    'Peep peep! My bumper! Mind yourself!',
-    'Hey! Do you have eyes on your head?!',
-    'Ah ah! Watch where you dey go!',
-    'Look front oga! You wan scratch my motor?!'
-];
 
 /**
  * Closed-form parametric track evaluator for the perimeter ring road.
@@ -208,20 +181,16 @@ export class VehicleManager {
 
             let modelData;
             let typeName = conf.type;
-            let shouts = CAR_SHOUTS;
+            let shouts = GENERAL_COLLISION_SHOUTS;
 
             if (conf.type === 'danfo') {
                 modelData = createDanfo(this.app, seedRand);
-                shouts = DANFO_SHOUTS;
             } else if (conf.type === 'keke') {
                 modelData = createKeke(this.app, seedRand);
-                shouts = KEKE_SHOUTS;
             } else if (conf.type === 'okada') {
                 modelData = createOkada(this.app, seedRand);
-                shouts = OKADA_SHOUTS;
             } else {
                 modelData = createCar(this.app, seedRand);
-                shouts = CAR_SHOUTS;
             }
 
             this.app.root.addChild(modelData.root);

@@ -1,17 +1,7 @@
 import { Vec3 } from 'playcanvas';
 import { createPedestrian } from '../graphics/models.js';
-import { HAZARDS } from './constants.js';
+import { HAZARDS, GENERAL_COLLISION_SHOUTS } from './constants.js';
 import { mulberry32, pick } from '../graphics/palette.js';
-
-const HOOD_SHOUTS = [
-    'Watch road o!',
-    'You wan jam pesin?!',
-    'Oga look front!',
-    'Wetin be this?!',
-    'Commot for road!',
-    'Ah ah, rider!',
-    'No be so o!'
-];
 
 export class NPCManager {
     constructor(app, map, audio) {
@@ -166,7 +156,7 @@ export class NPCManager {
 
                     player.knock(npc.x, npc.z);
                     this.audio.oops();
-                    bumpedToast = pick(this.rand, HOOD_SHOUTS);
+                    bumpedToast = pick(this.rand, GENERAL_COLLISION_SHOUTS);
                 }
             }
         }
