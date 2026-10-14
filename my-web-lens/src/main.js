@@ -872,6 +872,16 @@ app.on('update', dt => {
     }
     if (isRiding && playerEvents.gutter) {
         showToast('Wahala! you don enter gutter!', 'bad', 1800);
+        // Snap camera smoothly right behind respawned player with elevated top-down view
+        const followDist = NORMAL_CAM.dist;
+        const camHeight = NORMAL_CAM.height;
+        currentCamPos.set(player.x - player.forwardX * followDist, camHeight, player.z - player.forwardZ * followDist);
+        currentCamLook.set(player.x + player.forwardX * NORMAL_CAM.lookAhead, NORMAL_CAM.lookY, player.z + player.forwardZ * NORMAL_CAM.lookAhead);
+        cameraEntity.setPosition(currentCamPos);
+        cameraEntity.lookAt(currentCamLook);
+
+        if (audio && audio.respawn) audio.respawn();
+        triggerRespawnScreenFlicker();
     }
 
     const npcToast = npcs.update(dt, player, isWorldActive, vehicles, isRiding);

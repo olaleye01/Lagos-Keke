@@ -981,32 +981,30 @@ export class HoodMap {
                 boxLocal(midLat, -1.25, RI, wingLen, 0.50, 0.18, PALETTE.drainWallLow, 0, 0.02);
                 boxLocal(midLat, -D + 0.20, RI + 0.02, wingLen, 0.14, 0.14, PALETTE.drainAlgae, 0, 0.02);
 
-                // --- C. PROMINENT LAGOS YELLOW-AND-BLACK CONCRETE DEMARCATION CURBS ---
-                // Divide the wing into alternating vibrant yellow and charcoal black curb blocks (~0.60m each)
-                const curbCount = Math.max(8, Math.round(wingLen / 0.60));
-                const curbLen = wingLen / curbCount;
-                for (let k = 0; k < curbCount; k++) {
-                    const cLat = w0 + (k + 0.5) * curbLen;
-                    const isYellow = (k % 2 === 0);
-                    const curbCol = isYellow ? PALETTE.curbYellow : PALETTE.curbBlack;
+                // --- C. PLAIN WEATHERED CONCRETE CURB CAPPING SLABS ---
+                // Precast concrete capping slabs along the outer (RO) and inner (RI) gutter edges
+                const concreteSlabCount = Math.max(6, Math.round(wingLen / 0.85));
+                const slabLen = wingLen / concreteSlabCount;
+                const concreteShades = [
+                    PALETTE.drainCap,            // [186, 180, 168] light weathered concrete
+                    PALETTE.gutterConcrete,      // [182, 178, 170] neutral concrete
+                    [176, 172, 164],             // aged concrete
+                    [190, 184, 174]              // cured concrete
+                ];
 
-                    // Outer curb capping block (elevated y=0.06, height 0.12m, width 0.30m overhanging into the trench)
-                    boxLocal(cLat, 0.06, RO + 0.08, curbLen, 0.12, 0.30, curbCol, 0, 0);
-                    // Inner curb capping block
-                    boxLocal(cLat, 0.06, RI - 0.08, curbLen, 0.12, 0.30, curbCol, 0, 0);
+                for (let k = 0; k < concreteSlabCount; k++) {
+                    const cLat = w0 + (k + 0.5) * slabLen;
+                    const slabCol = concreteShades[k % concreteShades.length];
+
+                    // Outer concrete curb slab (elevated y=0.05, height 0.10m, width 0.28m overhanging into the trench)
+                    boxLocal(cLat, 0.05, RO + 0.08, slabLen - 0.025, 0.10, 0.28, slabCol, 0, 0.01);
+                    // Inner concrete curb slab
+                    boxLocal(cLat, 0.05, RI - 0.08, slabLen - 0.025, 0.10, 0.28, slabCol, 0, 0.01);
                 }
 
-                // Dark shadow strips beneath the overhanging curbs
-                boxLocal(midLat, -0.04, RO - 0.02, wingLen, 0.08, 0.08, [32, 30, 28], 0, 0);
-                boxLocal(midLat, -0.04, RI + 0.02, wingLen, 0.08, 0.08, [32, 30, 28], 0, 0);
-
-                // Warning hazard stakes along each open gutter wing to make the boundary visually prominent in 3D
-                for (const frac of [0.35, 0.72]) {
-                    const postLat = w0 + wingLen * frac;
-                    boxLocal(postLat, 0.36, RO + 0.24, 0.12, 0.72, 0.12, PALETTE.trunk, 0, 0.02);
-                    boxLocal(postLat, 0.60, RO + 0.24, 0.14, 0.14, 0.14, PALETTE.curbYellow, 0, 0);
-                    boxLocal(postLat, 0.46, RO + 0.24, 0.13, 0.08, 0.13, PALETTE.curbBlack, 0, 0);
-                }
+                // Dark shadow strips beneath the overhanging concrete curbs
+                boxLocal(midLat, -0.03, RO - 0.02, wingLen, 0.06, 0.08, [42, 40, 36], 0, 0);
+                boxLocal(midLat, -0.03, RI + 0.02, wingLen, 0.06, 0.08, [42, 40, 36], 0, 0);
 
                 // --- D. END WALL (Sealing channel at corner platform boundary) ---
                 const endLat = (w0 === -RI) ? -RI : RI;
@@ -1074,12 +1072,11 @@ export class HoodMap {
             flatBridge(-bridgeHalfW, RO, bridgeHalfW, RO + DRAIN.RAMP, 0.025, PALETTE.mudDark);
             flatBridge(-bridgeHalfW, RI - DRAIN.RAMP, bridgeHalfW, RI, 0.025, PALETTE.mudDark);
 
-            // 6. Prominent reflective warning marker bollards tightly flanking the narrow bridge landings
+            // 6. Rustic timber guide posts flanking the narrow bridge landings
             for (const bLat of [-bridgeHalfW - 0.10, bridgeHalfW + 0.10]) {
                 for (const bOut of [RO + 0.35, RI - 0.35]) {
-                    boxBridge(bLat, 0.32, bOut, 0.12, 0.64, 0.12, PALETTE.trunk, 0, 0.03);
-                    boxBridge(bLat, 0.56, bOut, 0.14, 0.14, 0.14, PALETTE.curbYellow, 0, 0);
-                    boxBridge(bLat, 0.44, bOut, 0.13, 0.08, 0.13, PALETTE.curbBlack, 0, 0);
+                    boxBridge(bLat, 0.32, bOut, 0.12, 0.64, 0.12, PALETTE.trunk, 0, 0.02);
+                    boxBridge(bLat, 0.62, bOut, 0.13, 0.08, 0.13, PALETTE.plankWoodDark, 0, 0);
                 }
             }
         };
@@ -1498,8 +1495,8 @@ export class HoodMap {
         ctx.fillStyle = '#b0623a';
         ctx.fillRect(pI0.mx, pI0.my, pI1.mx - pI0.mx, pI1.my - pI0.my);
 
-        // Yellow-and-black curb demarcation outlines
-        ctx.strokeStyle = '#f4c428';
+        // Plain concrete curb demarcation outlines
+        ctx.strokeStyle = '#b6b0a4';
         ctx.lineWidth = 1.0;
         ctx.strokeRect(pO0.mx, pO0.my, pO1.mx - pO0.mx, pO1.my - pO0.my);
         ctx.strokeRect(pI0.mx, pI0.my, pI1.mx - pI0.mx, pI1.my - pI0.my);

@@ -297,20 +297,30 @@ export class Player {
 
         // Open Gutter hazard check (ignored while airborne)
         this.gutterCooldown = Math.max(0, (this.gutterCooldown || 0) - dt);
-        const inGutter = this.y < 0.3 && this.map.isInOpenGutter && this.map.isInOpenGutter(this.x, this.z, BIKE.RADIUS * 0.4);
-        if (inGutter) {
-            // Sluggish gutter sludge drag while wheels are down in the open drainage trench
-            this.speed = Math.min(this.speed, 2.8);
-            if (this.gutterCooldown <= 0) {
-                this.gutterCooldown = 1.4;
-                // Same effect of the pothole: speed reduction, handlebar wobble, screen shake, splash particles, and audio
-                this.speed = Math.max(1.8, this.speed * 0.50);
-                this.wobble = 0.95;
-                this.shake = 0.55;
-                this.stats.gutterFalls = (this.stats.gutterFalls || 0) + 1;
-                this.audio.pothole();
-                this._burst(this.x, this.z, 18, 2);
-                events.gutter = true;
+        const inGutter = !this.jumpState && this.y < 0.3 && this.map.isInOpenGutter && this.map.isInOpenGutter(this.x, this.z, BIKE.RADIUS * 0.45);
+        if (inGutter && this.gutterCooldown <= 0) {
+            this.gutterCooldown = 1.6;
+            this.audio.pothole();
+            this._burst(this.x, this.z, 20, 2);
+            events.gutter = true;
+            this.stats.gutterFalls = (this.stats.gutterFalls || 0) + 1;
+
+            // Reposition the rider safely on solid ground outside the gutter
+            if (this.map && this.map.getGutterRepositionPose) {
+                const pose = this.map.getGutterRepositionPose(this.x, this.z, this.forwardX, this.forwardZ);
+                this.x = pose.x;
+                this.y = 0;
+                this.z = pose.z;
+                this.yaw = pose.yaw;
+                this.speed = 0;
+                this.steer = 0;
+                this.wobble = 0.85;
+                this.shake = 0.65;
+                this.stun = 0.45;
+                this.invulnerable = 1.8;
+                this.triggerFlicker(1.8);
+                this._burst(this.x, this.z, 16, 2);
+                this._sync(0);
             }
         }
 
