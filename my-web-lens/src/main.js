@@ -43,6 +43,7 @@ const welcomeBestScore = document.getElementById('welcome-best-score');
 const welcomeRiderStatus = document.getElementById('welcome-rider-status');
 const endBitmojiWrap = document.getElementById('end-bitmoji-wrap');
 const endBitmojiImg = document.getElementById('end-bitmoji-img');
+const endRiderFallback = document.getElementById('end-rider-fallback');
 const statScoreEl = document.getElementById('stat-score');
 const statBestScoreEl = document.getElementById('stat-best-score');
 
@@ -656,6 +657,15 @@ function endGame(won) {
     endScreen.classList.remove('hidden');
 }
 
+if (typeof window !== 'undefined') {
+    window.__endGame = endGame;
+    window.addEventListener('hashchange', () => {
+        if (window.location.hash === '#end-screen') {
+            endGame(true);
+        }
+    });
+}
+
 // Button Events
 btnStart.addEventListener('click', () => {
     audio.unlock();
@@ -1261,10 +1271,20 @@ async function setupLensFeatures() {
             }
             if (endBitmojiImg) {
                 endBitmojiImg.src = avatarUrl;
+                endBitmojiImg.classList.remove('hidden');
+            }
+            if (endRiderFallback) {
+                endRiderFallback.classList.add('hidden');
             }
             if (endBitmojiWrap) {
                 endBitmojiWrap.classList.remove('hidden');
             }
+        } else {
+            if (welcomeRiderAvatar) welcomeRiderAvatar.classList.add('hidden');
+            if (welcomeRiderFallback) welcomeRiderFallback.classList.remove('hidden');
+            if (endBitmojiImg) endBitmojiImg.classList.add('hidden');
+            if (endRiderFallback) endRiderFallback.classList.remove('hidden');
+            if (endBitmojiWrap) endBitmojiWrap.classList.remove('hidden');
         }
 
         // 4. Bitmoji 3D Avatar (mount to bike rider on native device)

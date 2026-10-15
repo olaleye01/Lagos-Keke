@@ -2144,33 +2144,19 @@ html, body {
   animation: loadCardPop 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.25);
 }
 
-.end-trophy-avatar-cluster {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  gap: 12px;
-  margin-top: -8px;
-  margin-bottom: 6px;
-}
-
-.end-badge-wrap {
-  width: 64px;
-  height: 64px;
-  filter: drop-shadow(0 3.5px 0 var(--outline-deep));
-}
-
 .end-bitmoji-badge {
-  width: 56px;
-  height: 56px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
   background: #fef08a;
-  border: 2.8px solid var(--outline-dark);
-  box-shadow: 0 3px 0 var(--outline-deep), 0 6px 12px rgba(0, 0, 0, 0.14);
+  border: 3.2px solid var(--outline-dark);
+  box-shadow: 0 4px 0 var(--outline-deep), 0 8px 18px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-top: -6px;
+  margin-bottom: 8px;
   animation: loadCardPop 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.25);
   flex-shrink: 0;
 }
@@ -2182,7 +2168,15 @@ html, body {
   display: block;
 }
 
-.end-trophy-svg {
+.end-rider-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rider-avatar-svg {
   width: 100%;
   height: 100%;
   display: block;
@@ -2414,34 +2408,44 @@ html, body {
   line-height: 1.1;
 }
 
-/* End Actions Row (Leaderboard + Retry) */
+/* End Actions Row (Leaderboard Circular Icon Button + Primary Ride Again CTA) */
 .end-actions-cluster {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
-.end-lb-btn {
-  flex: 1;
-  background: #fde047;
-  color: var(--outline-dark);
-  display: inline-flex;
+.end-circle-lb-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #fecb16; /* Saturated arcade yellow */
+  border: 3px solid var(--outline-dark);
+  box-shadow: 0 4px 0 var(--outline-deep), 0 6px 12px rgba(0, 0, 0, 0.18);
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  font-size: clamp(14px, 3.8vw, 16px);
-  padding: 12px 14px;
+  color: var(--outline-dark);
+  cursor: pointer;
+  pointer-events: auto;
+  flex-shrink: 0;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.15s ease;
 }
-.end-lb-btn:hover {
-  background: #fef08a;
+.end-circle-lb-btn:hover {
+  background: #ffe066;
 }
-.end-lb-btn:active {
-  background: #facc15;
+.end-circle-lb-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 var(--outline-deep);
+}
+
+.lb-cup-icon {
+  display: block;
 }
 
 .end-retry-btn {
-  flex: 1.2;
+  flex: 1;
 }
 
 /* ==========================================================================

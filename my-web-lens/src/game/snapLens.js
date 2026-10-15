@@ -204,7 +204,7 @@ class SnapLensManager {
      * Returns a string URL or null if player has no Bitmoji or in stub.
      */
     async get2DAvatar() {
-        if (!this.bitmojiSupported) return null;
+        if (!this.bitmojiSupported || this.isStub) return null;
         if (this.avatarUrl2D) return this.avatarUrl2D;
 
         try {
