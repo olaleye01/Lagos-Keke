@@ -22,7 +22,26 @@ export class Player {
         this.particles = createParticlePool(app, 64);
         this._particleIndex = 0;
         this.standFactor = 0;
+        this.bitmojiEntity = null;
         this.reset();
+    }
+
+    /**
+     * Attach a loaded 3D Bitmoji entity to the bicycle rider's head/body mount.
+     * @param {Entity} bitmojiEntity
+     */
+    attachBitmoji(bitmojiEntity) {
+        if (!this.model || !this.model.avatar || !bitmojiEntity) return;
+        const { headMount, headPlaceholder } = this.model.avatar;
+        if (headPlaceholder) {
+            headPlaceholder.enabled = false;
+        }
+        if (headMount) {
+            bitmojiEntity.setLocalPosition(0, 0, 0);
+            bitmojiEntity.setLocalEulerAngles(0, 180, 0);
+            headMount.addChild(bitmojiEntity);
+            this.bitmojiEntity = bitmojiEntity;
+        }
     }
 
     reset() {

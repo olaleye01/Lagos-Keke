@@ -395,6 +395,18 @@
           </svg>
         </button>
 
+        <!-- Top Right Native Leaderboard Button -->
+        <button id="btn-welcome-leaderboard" class="welcome-leaderboard-btn hidden" aria-label="View Leaderboard" title="View Leaderboard">
+          <svg class="lb-top-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"></path>
+            <path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"></path>
+            <path d="M4 22h16"></path>
+            <path d="M10 14.66V17c0 .55-.45 1-1 1H7c-.55 0-1-.45-1-1v-2.34"></path>
+            <path d="M18 14.66V17c0 .55-.45 1-1 1h-2c-.55 0-1-.45-1-1v-2.34"></path>
+            <path d="M12 2v8a4 4 0 0 0 4 4h0a4 4 0 0 0 4-4V2z"></path>
+          </svg>
+        </button>
+
         <div class="welcome-title-group">
           <div class="welcome-kicker-wrap">
             <span class="welcome-kicker-line"></span>
@@ -421,8 +433,32 @@
         </div>
       </div>
 
-      <!-- Bottom Sheet Card (Mobile-Focused Controls Guide) -->
+      <!-- Bottom Sheet Card (Mobile-Focused Controls Guide & Rider Bitmoji Card) -->
       <div class="welcome-bottom-sheet">
+        <!-- Rider Profile Sticker Card (Shows Bitmoji / Saved Best Score) -->
+        <div id="welcome-rider-card" class="welcome-rider-card">
+          <div class="rider-avatar-bubble">
+            <img id="welcome-rider-avatar" class="rider-avatar-img hidden" alt="Rider Bitmoji" />
+            <div id="welcome-rider-fallback" class="rider-avatar-fallback">
+              <svg viewBox="0 0 36 36" width="30" height="30" fill="none">
+                <circle cx="18" cy="18" r="14" fill="#fecb16" stroke="#160c05" stroke-width="2"/>
+                <path d="M10 16 C10 9 26 9 26 16 L26 21 C26 23 24 24 22 24 L14 24 C12 24 10 23 10 21 Z" fill="#ef4444" stroke="#160c05" stroke-width="1.8"/>
+                <rect x="16" y="9" width="4" height="15" rx="1" fill="#fecb16"/>
+                <circle cx="14" cy="20" r="1.5" fill="#160c05"/>
+                <circle cx="22" cy="20" r="1.5" fill="#160c05"/>
+              </svg>
+            </div>
+          </div>
+          <div class="rider-meta">
+            <span class="rider-label">STREET RIDER</span>
+            <span id="welcome-rider-status" class="rider-sub">GEARED FOR THE HOOD</span>
+          </div>
+          <div class="rider-score-pill">
+            <span class="rider-score-lbl">BEST</span>
+            <span id="welcome-best-score" class="rider-score-val">0 PTS</span>
+          </div>
+        </div>
+
         <div class="welcome-sheet-header">
           <h2 class="welcome-sheet-title">Ready. Set. Ride!</h2>
           <p class="welcome-sheet-sub">Sprint for the finish - Rule the streets.</p>
@@ -547,24 +583,29 @@
     <!-- End screen with 3D Trophy Illustration matching welcome & pause card system -->
     <section id="end-screen" class="overlay hidden" aria-modal="true" role="dialog" aria-label="Race Results">
       <div class="end-card">
-        <!-- 3D Style Cartoon Golden Trophy Emblem Badge -->
-        <div class="end-badge-wrap">
-          <svg class="end-trophy-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <!-- Pedestal -->
-            <rect x="32" y="80" width="36" height="14" rx="5" fill="#361f0f" stroke="#160c05" stroke-width="3.2" />
-            <rect x="38" y="71" width="24" height="10" rx="3.5" fill="#92400e" stroke="#160c05" stroke-width="2.5" />
-            <path d="M 44 71 L 44 58 L 56 58 L 56 71 Z" fill="#d97706" stroke="#160c05" stroke-width="2.5" />
-            <!-- Handles -->
-            <path d="M 28 30 C 12 32, 12 52, 28 54 L 33 52 C 20 50, 20 34, 33 32 Z" fill="#f59e0b" stroke="#160c05" stroke-width="3" />
-            <path d="M 72 30 C 88 32, 88 52, 72 54 L 67 52 C 80 50, 80 34, 67 32 Z" fill="#f59e0b" stroke="#160c05" stroke-width="3" />
-            <!-- Main Gold Cup -->
-            <path d="M 28 20 C 28 52, 40 60, 50 60 C 60 60, 72 52, 72 20 Z" fill="#f59e0b" stroke="#160c05" stroke-width="3.5" />
-            <ellipse cx="50" cy="20" rx="22" ry="6" fill="#fcd34d" stroke="#160c05" stroke-width="3" />
-            <!-- Gold Star -->
-            <polygon points="50,30 53,37 60,38 55,43 57,50 50,46 43,50 45,43 40,38 47,37" fill="#fef08a" stroke="#160c05" stroke-width="1.8" />
-            <!-- 3D Sheen Highlight -->
-            <path d="M 33 24 C 33 44, 40 52, 45 54 C 39 50, 35 42, 35 24 Z" fill="#ffffff" opacity="0.65" />
-          </svg>
+        <!-- 3D Style Cartoon Golden Trophy Emblem & Rider Bitmoji Badge -->
+        <div class="end-trophy-avatar-cluster">
+          <div class="end-badge-wrap">
+            <svg class="end-trophy-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <!-- Pedestal -->
+              <rect x="32" y="80" width="36" height="14" rx="5" fill="#361f0f" stroke="#160c05" stroke-width="3.2" />
+              <rect x="38" y="71" width="24" height="10" rx="3.5" fill="#92400e" stroke="#160c05" stroke-width="2.5" />
+              <path d="M 44 71 L 44 58 L 56 58 L 56 71 Z" fill="#d97706" stroke="#160c05" stroke-width="2.5" />
+              <!-- Handles -->
+              <path d="M 28 30 C 12 32, 12 52, 28 54 L 33 52 C 20 50, 20 34, 33 32 Z" fill="#f59e0b" stroke="#160c05" stroke-width="3" />
+              <path d="M 72 30 C 88 32, 88 52, 72 54 L 67 52 C 80 50, 80 34, 67 32 Z" fill="#f59e0b" stroke="#160c05" stroke-width="3" />
+              <!-- Main Gold Cup -->
+              <path d="M 28 20 C 28 52, 40 60, 50 60 C 60 60, 72 52, 72 20 Z" fill="#f59e0b" stroke="#160c05" stroke-width="3.5" />
+              <ellipse cx="50" cy="20" rx="22" ry="6" fill="#fcd34d" stroke="#160c05" stroke-width="3" />
+              <!-- Gold Star -->
+              <polygon points="50,30 53,37 60,38 55,43 57,50 50,46 43,50 45,43 40,38 47,37" fill="#fef08a" stroke="#160c05" stroke-width="1.8" />
+              <!-- 3D Sheen Highlight -->
+              <path d="M 33 24 C 33 44, 40 52, 45 54 C 39 50, 35 42, 35 24 Z" fill="#ffffff" opacity="0.65" />
+            </svg>
+          </div>
+          <div id="end-bitmoji-wrap" class="end-bitmoji-badge hidden">
+            <img id="end-bitmoji-img" class="end-bitmoji-img" alt="Player Bitmoji" />
+          </div>
         </div>
 
         <div class="end-header">
@@ -607,6 +648,19 @@
 
         <!-- Inset White Stats Well Card (Exact match to welcome and pause cards) -->
         <div class="end-stats-box">
+          <!-- Arcade Score & Personal Best Record Hero -->
+          <div class="end-stat-hero end-score-hero">
+            <div class="end-score-main">
+              <span class="end-stat-label">ARCADE SCORE</span>
+              <span id="stat-score" class="end-stat-hero-val score-glow">0</span>
+            </div>
+            <div class="end-score-best">
+              <span class="end-stat-label">RECORD</span>
+              <span id="stat-best-score" class="end-best-val">0</span>
+            </div>
+          </div>
+          <div class="end-stats-sep"></div>
+
           <div class="end-stat-hero">
             <span class="end-stat-label">CHECKPOINTS</span>
             <span id="stat-cps" class="end-stat-hero-val">9/9</span>
@@ -632,10 +686,23 @@
           </div>
         </div>
 
-        <!-- Yellow CTA Button matching welcome and pause screen -->
-        <button id="btn-retry" class="welcome-cta-btn end-retry-btn">
-          <span class="welcome-cta-label">RIDE AGAIN</span>
-        </button>
+        <!-- Action Buttons: Leaderboard & Ride Again -->
+        <div class="end-actions-cluster">
+          <button id="btn-end-leaderboard" class="welcome-cta-btn end-lb-btn hidden" aria-label="Open Leaderboard">
+            <svg class="lb-trophy-ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"></path>
+              <path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"></path>
+              <path d="M4 22h16"></path>
+              <path d="M10 14.66V17c0 .55-.45 1-1 1H7c-.55 0-1-.45-1-1v-2.34"></path>
+              <path d="M18 14.66V17c0 .55-.45 1-1 1h-2c-.55 0-1-.45-1-1v-2.34"></path>
+              <path d="M12 2v8a4 4 0 0 0 4 4h0a4 4 0 0 0 4-4V2z"></path>
+            </svg>
+            <span>LEADERBOARD</span>
+          </button>
+          <button id="btn-retry" class="welcome-cta-btn end-retry-btn">
+            <span class="welcome-cta-label">RIDE AGAIN</span>
+          </button>
+        </div>
       </div>
     </section>
   </main>

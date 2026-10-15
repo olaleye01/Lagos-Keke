@@ -18,6 +18,7 @@ import { AudioFX } from './game/audio.js';
 import { createCheckpointBeacon } from './graphics/models.js';
 import { RacingLine } from './game/racingLine.js';
 import { GAME, CHECKPOINTS, BIKE } from './game/constants.js';
+import { snapLens } from './game/snapLens.js';
 
 // --- DOM References ---
 const canvas = document.getElementById('game-canvas');
@@ -32,6 +33,18 @@ const countdownVal = document.getElementById('countdown-value');
 const endScreen = document.getElementById('end-screen');
 const endTitle = document.getElementById('end-title');
 const endRank = document.getElementById('end-rank');
+
+// Snapchat Leaderboard & Bitmoji Elements
+const btnWelcomeLeaderboard = document.getElementById('btn-welcome-leaderboard');
+const btnEndLeaderboard = document.getElementById('btn-end-leaderboard');
+const welcomeRiderAvatar = document.getElementById('welcome-rider-avatar');
+const welcomeRiderFallback = document.getElementById('welcome-rider-fallback');
+const welcomeBestScore = document.getElementById('welcome-best-score');
+const welcomeRiderStatus = document.getElementById('welcome-rider-status');
+const endBitmojiWrap = document.getElementById('end-bitmoji-wrap');
+const endBitmojiImg = document.getElementById('end-bitmoji-img');
+const statScoreEl = document.getElementById('stat-score');
+const statBestScoreEl = document.getElementById('stat-best-score');
 
 const cpCountEl = document.getElementById('cp-count');
 const cpNameEl = document.getElementById('cp-name');
@@ -605,6 +618,41 @@ function endGame(won) {
     const statPotholesEl = document.getElementById('stat-potholes');
     if (statPotholesEl) statPotholesEl.textContent = potholes;
 
+    // Calculate Arcade Score (Option B: checkpoints + speed bonus + star rating - hazard penalties)
+    const currentScore = snapLens.calculateArcadeScore({
+        won,
+        checkpointsReached: won ? CHECKPOINTS.length : currentCPIndex,
+        timeLeft,
+        starCount,
+        stats: player.stats
+    });
+
+    const prevBest = snapLens.saveData.bestScore || 0;
+    const newBest = Math.max(prevBest, currentScore);
+
+    if (statScoreEl) statScoreEl.textContent = currentScore.toLocaleString();
+    if (statBestScoreEl) statBestScoreEl.textContent = newBest.toLocaleString();
+
+    // Submit to native Snapchat Leaderboard
+    if (snapLens.leaderboardsSupported) {
+        snapLens.submitScore(currentScore).then(serverBest => {
+            if (serverBest !== null && statBestScoreEl) {
+                statBestScoreEl.textContent = serverBest.toLocaleString();
+            }
+        });
+    }
+
+    // Persist best score & stats to Snapchat Account Storage
+    snapLens.queueSave({
+        bestScore: newBest,
+        bestStars: Math.max(snapLens.saveData.bestStars || 0, starCount),
+        runsPlayed: (snapLens.saveData.runsPlayed || 0) + 1
+    });
+
+    if (welcomeBestScore) {
+        welcomeBestScore.textContent = `${newBest.toLocaleString()} PTS`;
+    }
+
     endScreen.classList.remove('hidden');
 }
 
@@ -618,6 +666,20 @@ btnRetry.addEventListener('click', () => {
     audio.unlock();
     startCountdown();
 });
+
+if (btnWelcomeLeaderboard) {
+    btnWelcomeLeaderboard.addEventListener('click', () => {
+        audio.unlock();
+        snapLens.showLeaderboard();
+    });
+}
+
+if (btnEndLeaderboard) {
+    btnEndLeaderboard.addEventListener('click', () => {
+        audio.unlock();
+        snapLens.showLeaderboard();
+    });
+}
 
 // --- Unified Sound Controls ---
 function toggleSound() {
@@ -1169,6 +1231,51 @@ function renderMinimap(activeCP) {
     minimapCtx.restore();
 }
 
+// --- Snapchat Lens Features Bootstrap ---
+async function setupLensFeatures() {
+    // 1. Leaderboard Buttons Resilience
+    if (snapLens.leaderboardsSupported) {
+        if (btnWelcomeLeaderboard) btnWelcomeLeaderboard.classList.remove('hidden');
+        if (btnEndLeaderboard) btnEndLeaderboard.classList.remove('hidden');
+    }
+
+    // 2. Personal Best Display from Persistent Storage
+    const bestScore = snapLens.saveData.bestScore || 0;
+    if (welcomeBestScore) {
+        welcomeBestScore.textContent = `${bestScore.toLocaleString()} PTS`;
+    }
+
+    // 3. Bitmoji Avatar (2D Portrait)
+    if (snapLens.bitmojiSupported) {
+        const avatarUrl = await snapLens.get2DAvatar();
+        if (avatarUrl) {
+            if (welcomeRiderAvatar) {
+                welcomeRiderAvatar.src = avatarUrl;
+                welcomeRiderAvatar.classList.remove('hidden');
+            }
+            if (welcomeRiderFallback) {
+                welcomeRiderFallback.classList.add('hidden');
+            }
+            if (welcomeRiderStatus) {
+                welcomeRiderStatus.textContent = 'READY TO RIDE';
+            }
+            if (endBitmojiImg) {
+                endBitmojiImg.src = avatarUrl;
+            }
+            if (endBitmojiWrap) {
+                endBitmojiWrap.classList.remove('hidden');
+            }
+        }
+
+        // 4. Bitmoji 3D Avatar (mount to bike rider on native device)
+        snapLens.load3DAvatar(app).then(res => {
+            if (res && res.entity) {
+                player.attachBitmoji(res.entity);
+            }
+        });
+    }
+}
+
 // --- Preloader: "Gearing Up" Sequence ---
 // Only reveals the welcome screen once fonts, map, 3D assets, and GPU shaders are fully loaded & rendered
 function updateLoadingProgress(percent, statusText) {
@@ -1178,9 +1285,19 @@ function updateLoadingProgress(percent, statusText) {
 }
 
 async function initLoadingSequence() {
-    updateLoadingProgress(15, 'Preparing gears');
+    updateLoadingProgress(10, 'Connecting Snapchat Web Lens');
 
-    // 1. Wait for Google Web Fonts (Fredoka, Outfit, Sniglet) to be fully ready
+    // 1. Initialize Snapchat Web Lens API (Leaderboards, Bitmoji, Storage)
+    try {
+        await snapLens.init();
+        await setupLensFeatures();
+    } catch (e) {
+        console.warn('[SnapLens] setup error:', e);
+    }
+
+    updateLoadingProgress(35, 'Preparing gears');
+
+    // 2. Wait for Google Web Fonts (Fredoka, Outfit, Sniglet) to be fully ready
     try {
         if (document.fonts && document.fonts.ready) {
             await document.fonts.ready;
@@ -1188,7 +1305,7 @@ async function initLoadingSequence() {
     } catch {
         // Fallback gracefully
     }
-    updateLoadingProgress(45, 'Loading typography & UI');
+    updateLoadingProgress(55, 'Loading typography & UI');
 
     // 2. Yield briefly for procedural terrain, shops & props creation
     await new Promise(resolve => setTimeout(resolve, 100));
