@@ -871,7 +871,7 @@ app.on('update', dt => {
         showToast('Wahala! Pothole!', 'bad', 1400);
     }
     if (isRiding && playerEvents.gutter) {
-        showToast('Wahala! you don enter gutter!', 'bad', 1800);
+        showToast('Wahala! Gutter O!', 'bad', 1800);
         // Snap camera smoothly right behind respawned player with elevated top-down view
         const followDist = NORMAL_CAM.dist;
         const camHeight = NORMAL_CAM.height;
