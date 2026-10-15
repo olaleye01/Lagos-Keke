@@ -20,6 +20,7 @@ export default defineConfig({
         toplevel: true,
       },
     },
+    chunkSizeWarningLimit: 3000,
     rollupOptions: {
       output: {
         manualChunks: undefined,
