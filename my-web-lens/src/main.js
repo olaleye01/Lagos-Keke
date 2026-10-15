@@ -277,7 +277,7 @@ function pickToastSide() {
     return 'left';
 }
 
-function showToast(text, type = 'normal', duration = 1800) {
+function showToast(text, type = 'normal', duration = 2500) {
     const side = pickToastSide();
     const targetEl = side === 'right' ? toastRightEl : toastLeftEl;
     if (!targetEl) return;
@@ -332,7 +332,8 @@ function showToast(text, type = 'normal', duration = 1800) {
         void targetEl.offsetWidth;
     }
 
-    targetEl.style.animationDuration = duration + 'ms';
+    const effectiveDuration = Math.max(duration || 2500, 2400);
+    targetEl.style.animationDuration = effectiveDuration + 'ms';
     targetEl.className = `toast toast-${side} show ${type === 'bad' ? 'bad' : type === 'good' ? 'good' : ''}`;
 
     toastActive[side] = true;
@@ -343,7 +344,7 @@ function showToast(text, type = 'normal', duration = 1800) {
         targetEl.style.animationDuration = '';
         toastActive[side] = false;
         toastTimeouts[side] = null;
-    }, duration);
+    }, effectiveDuration);
 }
 
 // Input initialization
@@ -517,7 +518,7 @@ function startGame() {
     countdownScreen.classList.add('hidden');
     input.enabled = true;
     player.invulnerable = 2.0; // 2.0s protection against early collisions at race start
-    showToast('OYA GO! Beat the clock!', 'good', 2000);
+    showToast('OYA GO! Beat the clock!', 'good', 2600);
 }
 
 function endGame(won) {
@@ -837,7 +838,7 @@ app.on('update', dt => {
             void timerContainer.offsetWidth;
             timerContainer.classList.add('bonus');
 
-            showToast(`${activeCP.name}! +${GAME.CHECKPOINT_BONUS}s`, 'good', 1600);
+            showToast(`${activeCP.name}! +${GAME.CHECKPOINT_BONUS}s`, 'good', 2600);
             currentCPIndex++;
 
             if (currentCPIndex >= CHECKPOINTS.length) {
@@ -868,10 +869,10 @@ app.on('update', dt => {
     const isRiding = gameState === STATE.PLAYING;
     const playerEvents = player.update(dt, input, isRiding);
     if (isRiding && playerEvents.pothole) {
-        showToast('Wahala! Pothole!', 'bad', 1400);
+        showToast('Wahala! Pothole!', 'bad', 2400);
     }
     if (isRiding && playerEvents.gutter) {
-        showToast('Wahala! Gutter O!', 'bad', 1800);
+        showToast('Wahala! Gutter O!', 'bad', 2600);
         // Snap camera smoothly right behind respawned player with elevated top-down view
         const followDist = NORMAL_CAM.dist;
         const camHeight = NORMAL_CAM.height;
@@ -887,13 +888,13 @@ app.on('update', dt => {
     const npcToast = npcs.update(dt, player, isWorldActive, vehicles, isRiding);
     if (isRiding && npcToast) {
         timeLeft = Math.max(0, timeLeft - GAME.NPC_HIT_PENALTY);
-        showToast(`${npcToast} -${GAME.NPC_HIT_PENALTY}s`, 'bad', 1600);
+        showToast(`${npcToast} -${GAME.NPC_HIT_PENALTY}s`, 'bad', 2500);
     }
 
     const vehicleToast = vehicles.update(dt, player, isWorldActive, npcs, isRiding);
     if (isRiding && vehicleToast) {
         timeLeft = Math.max(0, timeLeft - GAME.VEHICLE_HIT_PENALTY);
-        showToast(`${vehicleToast} -${GAME.VEHICLE_HIT_PENALTY}s`, 'bad', 2000);
+        showToast(`${vehicleToast} -${GAME.VEHICLE_HIT_PENALTY}s`, 'bad', 2600);
         respawnPlayerAtLastCheckpoint('vehicle');
     }
 

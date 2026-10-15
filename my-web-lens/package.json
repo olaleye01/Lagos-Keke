@@ -12,6 +12,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@snap/web-lens-api": "^0.1.2",
     "playcanvas": "^2.23.2"
   },
   "devDependencies": {
