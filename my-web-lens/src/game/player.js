@@ -266,7 +266,10 @@ export class Player {
             const turnScale = math.clamp(this.speed / 4.2, 0.45, 1);
             let wobbleSteer = 0;
             if (this.wobble > 0) wobbleSteer = Math.sin(this.wobble * 28) * 0.5 * Math.min(1, this.wobble * 2);
-            if (this.surface === 'mud' && !this.isRampBoosting) wobbleSteer += Math.sin(performance.now() * 0.005) * 0.05;
+            if (this.surface === 'mud' && !this.isRampBoosting) {
+                const s01 = math.clamp(this.speed / BIKE.ROAD_MAX_SPEED, 0, 1);
+                wobbleSteer += Math.sin(performance.now() * 0.005) * 0.04 + Math.sin(performance.now() * 0.024) * 0.035 * s01;
+            }
             this.yaw -= (this.steer + wobbleSteer) * BIKE.TURN_RATE * turnScale * dt;
 
             const prevX = this.x;
@@ -516,11 +519,22 @@ export class Player {
         const { root, lean, frontFork, frontWheel, rearWheel, crank, pedals, kickstand, gripL, gripR } = this.model;
         const { avatarRoot, pelvis, torso, headMount, arms, legs } = this.model.avatar;
 
-        root.setPosition(this.x, this.y || 0, this.z);
+        let mudBounceY = 0;
+        let mudForkJitter = 0;
+        let mudPitchJitter = 0;
+        if (this.surface === 'mud' && !this.jumpState && this.speed > 0.5) {
+            const s01 = math.clamp(this.speed / BIKE.ROAD_MAX_SPEED, 0, 1.2);
+            const now = performance.now();
+            mudBounceY = (Math.sin(now * 0.052) * 0.014 + (Math.sin(now * 0.11) + (Math.random() - 0.5)) * 0.009) * s01;
+            mudForkJitter = Math.sin(now * 0.082) * 2.2 * s01;
+            mudPitchJitter = Math.sin(now * 0.065) * 1.4 * s01;
+        }
+
+        root.setPosition(this.x, (this.y || 0) + mudBounceY, this.z);
         root.setEulerAngles(0, (this.yaw * 180) / Math.PI, 0);
 
-        // Front fork & handlebars steering
-        frontFork.setLocalEulerAngles(0, this.steer * 24, 0);
+        // Front fork & handlebars steering (incorporates rough mud chatter)
+        frontFork.setLocalEulerAngles(0, this.steer * 24 + mudForkJitter, 0);
 
         // Wheels rotation (spins continuously from forward speed)
         const wheelDeg = (-this.wheelAngle * 180) / Math.PI;
@@ -589,8 +603,8 @@ export class Player {
         if (this.wobble > 0) roll += Math.sin(this.wobble * 30) * 9 * Math.min(1, this.wobble * 2);
         roll += Math.sin(this.crankAngle) * 2.8 * speed01;
 
-        // Synchronize rider and bicycle together in 100% lockstep
-        lean.setLocalEulerAngles(stuntPitch, stuntYaw, roll + stuntRoll);
+        // Synchronize rider and bicycle together in 100% lockstep (including mud pitch chatter)
+        lean.setLocalEulerAngles(stuntPitch + mudPitchJitter, stuntYaw, roll + stuntRoll);
 
         // Seated on road, standing up on pedals in mud or during aerial stunt
         const targetStand = (this.surface === 'mud' || this.jumpState) ? 1.0 : 0.0;

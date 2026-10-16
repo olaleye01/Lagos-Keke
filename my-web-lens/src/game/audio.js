@@ -62,13 +62,13 @@ export class AudioFX {
         src.start();
     }
 
-    /** Tyre noise: smooth hiss on tarmac, low rumble in the mud. */
+    /** Tyre noise: smooth hiss on tarmac, low textured rumble in the mud. */
     setRolling(speed01, surface) {
         if (!this.ctx || !this.rollGain || !this.rollFilter) return;
         const t = this.ctx.currentTime;
         const mud = surface === 'mud';
-        this.rollGain.gain.setTargetAtTime(speed01 * (mud ? 0.22 : 0.1), t, 0.1);
-        this.rollFilter.frequency.setTargetAtTime(mud ? 260 + speed01 * 200 : 900 + speed01 * 1500, t, 0.1);
+        this.rollGain.gain.setTargetAtTime(speed01 * (mud ? 0.32 : 0.1), t, 0.08);
+        this.rollFilter.frequency.setTargetAtTime(mud ? 320 + speed01 * 360 : 900 + speed01 * 1500, t, 0.08);
     }
 
     _tone(freq, start, dur, type = 'sine', vol = 0.3, endFreq = null) {

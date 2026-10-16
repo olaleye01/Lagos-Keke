@@ -942,6 +942,9 @@ app.on('update', dt => {
     const playerEvents = player.update(dt, input, isRiding);
     if (isRiding && playerEvents.pothole) {
         showToast('Wahala! Pothole!', 'bad', 2400);
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            try { navigator.vibrate([60, 40, 80]); } catch (_) {}
+        }
     }
     if (isRiding && playerEvents.gutter) {
         showToast('Wahala! Gutter O!', 'bad', 2600);
@@ -1007,6 +1010,24 @@ app.on('update', dt => {
             const shakeMag = player.shake * 0.35;
             shakeX = (Math.random() - 0.5) * shakeMag;
             shakeY = (Math.random() - 0.5) * shakeMag;
+        }
+
+        // Tactile vibration / rumble when riding on rough muddy alleys
+        if (player.surface === 'mud' && !player.jumpState && player.speed > 0.8) {
+            const speedRatio = math.clamp(player.speed / BIKE.ROAD_MAX_SPEED, 0, 1.2);
+            const mudRumbleMag = speedRatio * 0.055;
+            const t = performance.now() * 0.06;
+            shakeX += (Math.sin(t * 1.8) * 0.5 + (Math.random() - 0.5) * 0.6) * mudRumbleMag;
+            shakeY += (Math.cos(t * 2.4) * 0.4 + (Math.random() - 0.5) * 0.6) * mudRumbleMag * 0.8;
+
+            // Subtle mobile device haptic vibration (throttled)
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                const now = performance.now();
+                if (now - (window._lastMudHaptic || 0) > 110) {
+                    window._lastMudHaptic = now;
+                    try { navigator.vibrate(12); } catch (_) {}
+                }
+            }
         }
 
         // Smooth camera follow lerp

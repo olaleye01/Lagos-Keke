@@ -104,7 +104,8 @@ export const BIKE = {
 };
 
 export const HAZARDS = {
-    POTHOLE_COUNT: 16,
+    POTHOLE_COUNT: 12,
+    MUD_POTHOLE_COUNT: 5,
     POTHOLE_SPEED_KEEP: 0.4, // fraction of speed kept after hitting a pothole
     NPC_COUNT: 14,
     NPC_RADIUS: 0.4

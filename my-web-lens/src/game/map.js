@@ -108,8 +108,7 @@ export class HoodMap {
                 this._buildRoad(b, r, c, x, z);
                 break;
             case 'M':
-                b.flat(x0, z0, x1, z1, 0, PALETTE.mud, 0.08);
-                this._buildMudDetail(b, r, c, x, z);
+                this._buildMudAlley(b, r, c, x, z);
                 break;
             case '.': {
                 // The central courtyard builds its own ground with a cut-out for the deep drain. Its cells still
@@ -204,21 +203,243 @@ export class HoodMap {
         }
     }
 
-    _buildMudDetail(b, r, c, x, z) {
+    _buildMudAlley(b, r, c, x, z) {
         const rand = this.rand;
-        const vertical = isWalkable(cellAt(r - 1, c)) || isWalkable(cellAt(r + 1, c));
-        const horizontal = isWalkable(cellAt(r, c - 1)) || isWalkable(cellAt(r, c + 1));
-        // tyre ruts
+        const x0 = x - HALF_CELL;
+        const z0 = z - HALF_CELL;
+
+        const hasNorth = isWalkable(cellAt(r - 1, c));
+        const hasSouth = isWalkable(cellAt(r + 1, c));
+        const hasWest = isWalkable(cellAt(r, c - 1));
+        const hasEast = isWalkable(cellAt(r, c + 1));
+        const vertical = hasNorth || hasSouth;
+        const horizontal = hasWest || hasEast;
+
+        // Subdivided low-poly mesh grid (5x5 quads = 6x6 vertices = 50 faceted triangles)
+        const N = 5;
+        const verts = [];
+
+        for (let j = 0; j <= N; j++) {
+            const row = [];
+            const vz = z0 + (j / N) * CELL;
+            for (let i = 0; i <= N; i++) {
+                const vx = x0 + (i / N) * CELL;
+
+                // Base height calculation based on ruts, berms, and alley walls
+                let vy = 0.005;
+
+                // Vertical traffic: primary ruts at x - 0.85 and x + 0.85
+                if (vertical) {
+                    const distRutL = Math.abs(vx - (x - 0.85));
+                    const distRutR = Math.abs(vx - (x + 0.85));
+                    const distRut = Math.min(distRutL, distRutR);
+                    if (distRut < 0.55) {
+                        vy -= (0.55 - distRut) * 0.045;
+                    } else if (Math.abs(vx - x) < 0.4) {
+                        vy += 0.024;
+                    }
+                }
+
+                // Horizontal traffic: primary ruts at z - 0.85 and z + 0.85
+                if (horizontal) {
+                    const distRutU = Math.abs(vz - (z - 0.85));
+                    const distRutD = Math.abs(vz - (z + 0.85));
+                    const distRut = Math.min(distRutU, distRutD);
+                    if (distRut < 0.55) {
+                        vy -= (0.55 - distRut) * 0.045;
+                    } else if (Math.abs(vz - z) < 0.4) {
+                        vy += 0.024;
+                    }
+                }
+
+                // Raised dirt mounds banked against solid borders (buildings/fences)
+                if (i === 0 && cellAt(r, c - 1) !== 'M' && cellAt(r, c - 1) !== 'R') vy += 0.038;
+                if (i === N && cellAt(r, c + 1) !== 'M' && cellAt(r, c + 1) !== 'R') vy += 0.038;
+                if (j === 0 && cellAt(r - 1, c) !== 'M' && cellAt(r - 1, c) !== 'R') vy += 0.038;
+                if (j === N && cellAt(r + 1, c) !== 'M' && cellAt(r + 1, c) !== 'R') vy += 0.038;
+
+                // Smoothly taper to 0 on boundaries touching tarmac Road ('R')
+                if (i === 0 && cellAt(r, c - 1) === 'R') vy = 0;
+                else if (i === N && cellAt(r, c + 1) === 'R') vy = 0;
+                if (j === 0 && cellAt(r - 1, c) === 'R') vy = 0;
+                else if (j === N && cellAt(r + 1, c) === 'R') vy = 0;
+
+                // Add deterministic low-poly terrain roughness noise (only if not on a road seam)
+                const isRoadSeam = (i === 0 && cellAt(r, c - 1) === 'R') ||
+                                   (i === N && cellAt(r, c + 1) === 'R') ||
+                                   (j === 0 && cellAt(r - 1, c) === 'R') ||
+                                   (j === N && cellAt(r + 1, c) === 'R');
+                if (!isRoadSeam) {
+                    const noise = (Math.sin(vx * 2.2 + vz * 1.7) * 0.012 +
+                                   Math.cos(vx * 3.4 - vz * 2.1) * 0.009 +
+                                   (rand() - 0.5) * 0.014);
+                    vy += noise;
+                }
+
+                row.push(new Vec3(vx, Math.max(-0.032, vy), vz));
+            }
+            verts.push(row);
+        }
+
+        // Emit low-poly faceted triangles for the 5x5 quad grid
+        for (let j = 0; j < N; j++) {
+            for (let i = 0; i < N; i++) {
+                const p00 = verts[j][i];
+                const p10 = verts[j][i + 1];
+                const p11 = verts[j + 1][i + 1];
+                const p01 = verts[j + 1][i];
+
+                const flip = (i + j) % 2 === 0;
+
+                const t1 = flip ? [p00, p10, p11] : [p00, p10, p01];
+                const avgY1 = (t1[0].y + t1[1].y + t1[2].y) / 3;
+                let col1 = PALETTE.mud;
+                if (avgY1 < -0.006) col1 = rand() < 0.5 ? PALETTE.mudDark : PALETTE.mudDeep;
+                else if (avgY1 > 0.016) col1 = rand() < 0.5 ? PALETTE.mudBaked : PALETTE.mudLight;
+                b.tri(t1[0], t1[1], t1[2], col1, Vec3.UP, 0.10);
+
+                const t2 = flip ? [p00, p11, p01] : [p10, p11, p01];
+                const avgY2 = (t2[0].y + t2[1].y + t2[2].y) / 3;
+                let col2 = PALETTE.mud;
+                if (avgY2 < -0.006) col2 = rand() < 0.5 ? PALETTE.mudDark : PALETTE.mudDeep;
+                else if (avgY2 > 0.016) col2 = rand() < 0.5 ? PALETTE.mudBaked : PALETTE.mudLight;
+                b.tri(t2[0], t2[1], t2[2], col2, Vec3.UP, 0.10);
+            }
+        }
+
+        // Tire track grooves with pressed tread ridges
         if (vertical) {
-            b.flat(x - 1.0, z - HALF_CELL, x - 0.6, z + HALF_CELL, 0.008, PALETTE.mudDark, 0.08);
-            b.flat(x + 0.6, z - HALF_CELL, x + 1.0, z + HALF_CELL, 0.008, PALETTE.mudDark, 0.08);
+            for (const rx of [x - 0.85, x + 0.85]) {
+                for (let k = -2; k <= 2; k++) {
+                    const rz = z + k * 1.1 + (rand() - 0.5) * 0.2;
+                    b.flat(rx - 0.22, rz - 0.35, rx + 0.22, rz + 0.35, 0.006, PALETTE.mudDark, 0.08);
+                    b.flat(rx - 0.18, rz - 0.06, rx + 0.18, rz + 0.06, 0.009, PALETTE.mudDeep, 0.06);
+                }
+            }
         }
         if (horizontal) {
-            b.flat(x - HALF_CELL, z - 1.0, x + HALF_CELL, z - 0.6, 0.009, PALETTE.mudDark, 0.08);
-            b.flat(x - HALF_CELL, z + 0.6, x + HALF_CELL, z + 1.0, 0.009, PALETTE.mudDark, 0.08);
+            for (const rz of [z - 0.85, z + 0.85]) {
+                for (let k = -2; k <= 2; k++) {
+                    const rx = x + k * 1.1 + (rand() - 0.5) * 0.2;
+                    b.flat(rx - 0.35, rz - 0.22, rx + 0.35, rz + 0.22, 0.006, PALETTE.mudDark, 0.08);
+                    b.flat(rx - 0.06, rz - 0.18, rx + 0.06, rz + 0.18, 0.009, PALETTE.mudDeep, 0.06);
+                }
+            }
         }
-        if (rand() < 0.45) {
-            b.blob(x + (rand() - 0.5) * 3.5, 0.014, z + (rand() - 0.5) * 3.5, 0.6 + rand() * 0.7, 7, PALETTE.mudWet, rand);
+
+        // 4-7 low-poly mud clods / laterite stones along alley edges and rut borders
+        const clodCount = 4 + Math.floor(rand() * 4);
+        for (let i = 0; i < clodCount; i++) {
+            const side = (rand() - 0.5) * 4.6;
+            const along = (rand() - 0.5) * 4.8;
+            const cx = vertical ? x + side : x + along;
+            const cz = vertical ? z + along : z + side;
+            const clodW = 0.18 + rand() * 0.22;
+            const clodH = 0.04 + rand() * 0.05;
+            const clodL = 0.18 + rand() * 0.24;
+            const col = pick(rand, [PALETTE.mudDark, PALETTE.mudBaked, PALETTE.mudDeep, PALETTE.mud]);
+            b.boxAt(cx, clodH * 0.5, cz, clodW, clodH, clodL, col, rand() * 180, 0.08);
+        }
+
+        // Organic wet mud slicks / shallow puddle pools
+        if (rand() < 0.55) {
+            const px = x + (rand() - 0.5) * 3.2;
+            const pz = z + (rand() - 0.5) * 3.2;
+            const pr = 0.65 + rand() * 0.65;
+            b.blob(px, 0.012, pz, pr, 8, PALETTE.mudWet, rand, 0.35);
+            if (rand() < 0.6) {
+                b.blob(px, 0.017, pz, pr * 0.65, 7, PALETTE.mudPuddleWater, rand, 0.28);
+            }
+        }
+    }
+
+    _buildCourtyardMudPlaza(b, RI) {
+        const rand = this.rand;
+        const M = 11;
+        const totalSpan = 2 * RI;
+        const verts = [];
+
+        for (let j = 0; j <= M; j++) {
+            const row = [];
+            const vz = -RI + (j / M) * totalSpan;
+            for (let i = 0; i <= M; i++) {
+                const vx = -RI + (i / M) * totalSpan;
+
+                let vy = 0.005;
+
+                // Bridge approach tracks: North-South (x ≈ -0.4, x ≈ +0.4)
+                const distNS = Math.min(Math.abs(vx - 0.4), Math.abs(vx + 0.4));
+                if (distNS < 0.45) {
+                    vy -= 0.016;
+                } else if (Math.abs(vx) < 0.2) {
+                    vy += 0.018;
+                }
+
+                // Bridge approach tracks: East-West (z ≈ -0.4, z ≈ +0.4)
+                const distEW = Math.min(Math.abs(vz - 0.4), Math.abs(vz + 0.4));
+                if (distEW < 0.45) {
+                    vy -= 0.016;
+                } else if (Math.abs(vz) < 0.2) {
+                    vy += 0.018;
+                }
+
+                // Raised earthen mounds in the quadrants (away from crossing lanes)
+                const inQuadX = Math.abs(vx) > 1.8 && Math.abs(vx) < 5.2;
+                const inQuadZ = Math.abs(vz) > 1.8 && Math.abs(vz) < 5.2;
+                if (inQuadX && inQuadZ) {
+                    vy += 0.026;
+                }
+
+                // Outer perimeter edge flush with drain lip
+                const onEdge = (i === 0 || i === M || j === 0 || j === M);
+                if (onEdge) {
+                    vy = 0.005;
+                } else {
+                    const noise = Math.sin(vx * 1.7 + vz * 2.1) * 0.011 +
+                                  Math.cos(vx * 2.8 - vz * 1.8) * 0.008 +
+                                  (rand() - 0.5) * 0.012;
+                    vy += noise;
+                }
+
+                row.push(new Vec3(vx, Math.max(-0.025, vy), vz));
+            }
+            verts.push(row);
+        }
+
+        for (let j = 0; j < M; j++) {
+            for (let i = 0; i < M; i++) {
+                const p00 = verts[j][i];
+                const p10 = verts[j][i + 1];
+                const p11 = verts[j + 1][i + 1];
+                const p01 = verts[j + 1][i];
+
+                const flip = (i + j) % 2 === 0;
+
+                const t1 = flip ? [p00, p10, p11] : [p00, p10, p01];
+                const avgY1 = (t1[0].y + t1[1].y + t1[2].y) / 3;
+                let col1 = PALETTE.mud;
+                if (avgY1 < -0.004) col1 = rand() < 0.5 ? PALETTE.mudDark : PALETTE.mudDeep;
+                else if (avgY1 > 0.018) col1 = rand() < 0.5 ? PALETTE.mudBaked : PALETTE.mudLight;
+                b.tri(t1[0], t1[1], t1[2], col1, Vec3.UP, 0.09);
+
+                const t2 = flip ? [p00, p11, p01] : [p10, p11, p01];
+                const avgY2 = (t2[0].y + t2[1].y + t2[2].y) / 3;
+                let col2 = PALETTE.mud;
+                if (avgY2 < -0.004) col2 = rand() < 0.5 ? PALETTE.mudDark : PALETTE.mudDeep;
+                else if (avgY2 > 0.018) col2 = rand() < 0.5 ? PALETTE.mudBaked : PALETTE.mudLight;
+                b.tri(t2[0], t2[1], t2[2], col2, Vec3.UP, 0.09);
+            }
+        }
+
+        // Scatter 8 low-poly mud clods / stones in the courtyard open areas
+        for (let i = 0; i < 8; i++) {
+            const qx = (rand() < 0.5 ? -1 : 1) * (2.2 + rand() * 2.8);
+            const qz = (rand() < 0.5 ? -1 : 1) * (2.2 + rand() * 2.8);
+            const cw = 0.22 + rand() * 0.28;
+            const ch = 0.05 + rand() * 0.06;
+            const cl = 0.22 + rand() * 0.3;
+            const col = pick(rand, [PALETTE.mudDark, PALETTE.mudBaked, PALETTE.mudDeep]);
+            b.boxAt(qx, ch * 0.5, qz, cw, ch, cl, col, rand() * 180, 0.08);
         }
     }
 
@@ -621,7 +842,7 @@ export class HoodMap {
             const px = cand.axis === 'x' ? x + along : x + lateral;
             const pz = cand.axis === 'x' ? z + lateral : z + along;
             const radius = 0.75 + rand() * 0.35;
-            this.potholes.push({ x: px, z: pz, r: radius, cooldown: 0 });
+            this.potholes.push({ x: px, z: pz, r: radius, cooldown: 0, isMud: false });
             const b = this._chunk(cand.r, cand.c);
             b.blob(px, 0.016, pz, radius, 9, PALETTE.potholeRim, rand, 0.35);
             b.blob(px, 0.024, pz, radius * 0.7, 8, PALETTE.potholeWater, rand, 0.3);
@@ -629,6 +850,74 @@ export class HoodMap {
             for (let i = 0; i < 3; i++) {
                 const a = rand() * Math.PI * 2;
                 b.boxAt(px + Math.cos(a) * radius * 1.05, 0.04, pz + Math.sin(a) * radius * 1.05, 0.25, 0.08, 0.2, PALETTE.tarmacDark, rand() * 90, 0.1);
+            }
+        }
+
+        // ------------------------------------------------ Mud Alley Potholes
+        // Add very few (e.g. 5) treacherous mud potholes in the muddy alleys
+        const mudCandidates = [];
+        const isNearRamp = (x, z) => {
+            return this.ramps.some(ramp => Math.hypot(ramp.x - x, ramp.z - z) < 8.0);
+        };
+        const isNearGutterBridge = (x, z) => {
+            return Math.abs(x) < 9.5 && Math.abs(z) < 9.5;
+        };
+
+        for (let r = 0; r < GRID; r++) {
+            for (let c = 0; c < GRID; c++) {
+                if (MAP[r][c] !== 'M') continue;
+                if (reserved.has(`${r},${c}`)) continue;
+                const { x, z } = cellCenter(r, c);
+                if (isNearRamp(x, z) || isNearGutterBridge(x, z)) continue;
+
+                const vertical = isWalkable(cellAt(r - 1, c)) || isWalkable(cellAt(r + 1, c));
+                const horizontal = isWalkable(cellAt(r, c - 1)) || isWalkable(cellAt(r, c + 1));
+                mudCandidates.push({ r, c, vertical, horizontal, x, z });
+            }
+        }
+
+        for (let i = mudCandidates.length - 1; i > 0; i--) {
+            const j = Math.floor(rand() * (i + 1));
+            [mudCandidates[i], mudCandidates[j]] = [mudCandidates[j], mudCandidates[i]];
+        }
+
+        const mudPotholeCount = HAZARDS.MUD_POTHOLE_COUNT || 5;
+        for (const cand of mudCandidates.slice(0, mudPotholeCount)) {
+            const side = rand() < 0.5 ? -1 : 1;
+            const lateralOffset = side * (0.7 + rand() * 0.7);
+            const alongOffset = (rand() - 0.5) * 1.8;
+
+            let px = cand.x;
+            let pz = cand.z;
+            if (cand.vertical && !cand.horizontal) {
+                px += lateralOffset;
+                pz += alongOffset;
+            } else if (cand.horizontal && !cand.vertical) {
+                px += alongOffset;
+                pz += lateralOffset;
+            } else {
+                px += (rand() - 0.5) * 2.2;
+                pz += (rand() - 0.5) * 2.2;
+            }
+
+            const radius = 0.75 + rand() * 0.35;
+            this.potholes.push({ x: px, z: pz, r: radius, cooldown: 0, isMud: true });
+
+            const b = this._chunk(cand.r, cand.c);
+            // 1. Sunken dark churned mud depression ring
+            b.blob(px, 0.016, pz, radius * 1.25, 9, PALETTE.mudDark, rand, 0.4);
+            // 2. Wet mud crater inner rim
+            b.blob(px, 0.024, pz, radius * 0.95, 8, PALETTE.mudWet, rand, 0.35);
+            // 3. Deep murky muddy puddle water
+            b.blob(px, 0.032, pz, radius * 0.7, 8, PALETTE.mudPuddleWater, rand, 0.25);
+            // 4. Broken laterite clods and mud chunks thrown up around the crater
+            for (let i = 0; i < 4; i++) {
+                const a = rand() * Math.PI * 2;
+                const dist = radius * (1.0 + rand() * 0.3);
+                const clodX = px + Math.cos(a) * dist;
+                const clodZ = pz + Math.sin(a) * dist;
+                const sz = 0.22 + rand() * 0.2;
+                b.boxAt(clodX, 0.045, clodZ, sz, 0.08, sz * (0.8 + rand() * 0.4), PALETTE.mudDark, rand() * 90, 0.1);
             }
         }
     }
@@ -874,8 +1163,8 @@ export class HoodMap {
         const trenchWidth = RO - RI;   // 2.4m wide recessed trench
         const midOut = (RI + RO) / 2;  // 7.8m center of trench span
 
-        // 1. CENTRAL COURTYARD MUD PLAZA (Strictly within [-RI, RI], ending at the drain edge)
-        b.flat(-RI, -RI, RI, RI, 0.005, PALETTE.mud, 0.06);
+        // 1. CENTRAL COURTYARD MUD PLAZA (Faceted low-poly bumpy terrain within [-RI, RI])
+        this._buildCourtyardMudPlaza(b, RI);
 
         // North-South tyre tracks connecting North and South plank bridges:
         b.flat(-0.55, -RI, -0.25, RI, 0.012, PALETTE.mudDark, 0.04);
@@ -1446,8 +1735,8 @@ export class HoodMap {
                 }
             }
         }
-        ctx.fillStyle = '#1b1b1d';
         for (const p of this.potholes) {
+            ctx.fillStyle = p.isMud ? '#451a03' : '#1b1b1d';
             const { mx, my } = this.toMinimap(p.x, p.z, size);
             ctx.beginPath();
             ctx.arc(mx, my, px * 0.18, 0, Math.PI * 2);
