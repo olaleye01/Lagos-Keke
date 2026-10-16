@@ -219,17 +219,22 @@ const curLighting = {
 
 function updateMoodUI(mood) {
     const isNight = mood === 'night';
-    const btn = document.getElementById('btn-mood-toggle');
-    const dayOpt = document.getElementById('mood-opt-day');
-    const nightOpt = document.getElementById('mood-opt-night');
-
-    if (btn) {
+    const btns = document.querySelectorAll('.mood-toggle-btn');
+    btns.forEach(btn => {
         btn.classList.toggle('night-active', isNight);
         btn.setAttribute('aria-checked', isNight ? 'true' : 'false');
-    }
-    if (dayOpt) dayOpt.classList.toggle('active', !isNight);
-    if (nightOpt) nightOpt.classList.toggle('active', isNight);
+        const dayOpt = btn.querySelector('.mood-opt-day');
+        const nightOpt = btn.querySelector('.mood-opt-night');
+        if (dayOpt) dayOpt.classList.toggle('active', !isNight);
+        if (nightOpt) nightOpt.classList.toggle('active', isNight);
+    });
     document.body.classList.toggle('night-mode', isNight);
+
+    // Synchronize browser mobile address bar theme-color
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) {
+        metaTheme.setAttribute('content', isNight ? '#070a12' : '#2c1a10');
+    }
 }
 
 function setMood(mood, immediate = false) {
@@ -270,15 +275,14 @@ function setMood(mood, immediate = false) {
 window.gameMood = { get: () => currentMood, set: setMood };
 window.gameDebug.setMood = setMood;
 
-const btnMoodToggle = document.getElementById('btn-mood-toggle');
-if (btnMoodToggle) {
-    btnMoodToggle.addEventListener('click', () => {
+document.querySelectorAll('.mood-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
         if (audio && audio.unlock) audio.unlock();
         const nextMood = currentMood === 'afternoon' ? 'night' : 'afternoon';
         setMood(nextMood);
         if (audio && audio.countdown) audio.countdown(false);
     });
-}
+});
 
 // Initial mood setup from query param or localStorage
 const urlMoodParam = new URLSearchParams(window.location.search).get('mood');
