@@ -1919,8 +1919,8 @@ export class HoodMap {
         // Always guarantee the entrance alley right in front of player start:
         // (r=17, c=9 facing East) and (r=17, c=11 facing West)
         const guaranteed = [
-            { r: 17, c: 9, s: SIDES.e, sideName: 'e', isEntrance: true },
-            { r: 17, c: 11, s: SIDES.w, sideName: 'w', isEntrance: true }
+            { r: 17, c: 9, s: SIDES.e, sideName: 'e', lateralOff: 2.35 },
+            { r: 17, c: 11, s: SIDES.w, sideName: 'w', lateralOff: 2.35 }
         ];
 
         const selected = [...guaranteed];
@@ -1934,13 +1934,20 @@ export class HoodMap {
             if (selected.length >= 24) break;
         }
 
+        const BULB_COLORS = [
+            new Color(1.0, 0.74, 0.32), // classic warm tungsten amber
+            new Color(1.0, 0.66, 0.24), // deep rich golden sodium glow
+            new Color(1.0, 0.82, 0.44), // bright warm incandescent yellow
+            new Color(1.0, 0.71, 0.28)  // warm evening orange-yellow
+        ];
+
         selected.forEach((item, i) => {
-            const { r, c, s, isEntrance } = item;
+            const { r, c, s } = item;
             const { x, z } = cellCenter(r, c);
             const half = CELL * 0.44; // approx 2.64m
             const wallX = x + s.nx * (half + 0.05);
             const wallZ = z + s.nz * (half + 0.05);
-            const lateralOff = isEntrance ? 2.35 : (this.rand() - 0.5) * 1.4;
+            const lateralOff = item.lateralOff !== undefined ? item.lateralOff : (this.rand() - 0.5) * 1.8;
 
             const attachX = s.nz ? wallX + lateralOff : wallX;
             const attachZ = s.nx ? wallZ + lateralOff : wallZ;
@@ -1955,28 +1962,30 @@ export class HoodMap {
             // 3. Hanging black wire
             b.cylinder(GeoBuilder.trs(posX, bulbY + 0.06, posZ, 0, 0, 0, 0.015, 0.16, 0.015), 4, [25, 25, 25]);
             // 4. Conical rusty tin-can shade
-            b.pyramid(GeoBuilder.trs(posX, bulbY + 0.02, posZ, 180, 0, 0, 0.36, 0.12, 0.36), PALETTE.alleyTinShade || [142, 78, 48]);
+            b.pyramid(GeoBuilder.trs(posX, bulbY + 0.02, posZ, 180, 0, 0, 0.38, 0.13, 0.38), PALETTE.alleyTinShade || [142, 78, 48]);
             // 5. Amber glowing tungsten bulb
-            b.cylinder(GeoBuilder.trs(posX, bulbY - 0.06, posZ, 0, 0, 0, 0.08, 0.12, 0.08), 6, PALETTE.alleyBulbWarm || [255, 210, 95]);
+            b.cylinder(GeoBuilder.trs(posX, bulbY - 0.06, posZ, 0, 0, 0, 0.09, 0.14, 0.09), 6, PALETTE.alleyBulbWarm || [255, 210, 95]);
+
+            const lightColor = BULB_COLORS[i % BULB_COLORS.length];
 
             // 6. PlayCanvas Omni Light Entity
             const lightEnt = new Entity(`AlleyBulb_${i}`);
             lightEnt.setPosition(posX, bulbY - 0.12, posZ);
             lightEnt.addComponent('light', {
                 type: 'omni',
-                range: 9.8,
-                color: new Color(1.0, 0.74, 0.32), // rich warm tungsten amber
-                intensity: this.mood === 'night' ? 1.5 : 0,
+                range: 10.5,
+                color: lightColor,
+                intensity: this.mood === 'night' ? 1.55 : 0,
                 castShadows: false
             });
             this.root.addChild(lightEnt);
 
             this.alleyBulbs.push({
                 entity: lightEnt,
-                baseIntensity: 1.45 + (this.rand() - 0.5) * 0.3,
+                baseIntensity: 1.5 + (this.rand() - 0.5) * 0.35,
                 flickerSpeed: 4.5 + this.rand() * 9.0,
                 phase: this.rand() * Math.PI * 2,
-                spikeTimer: 0.8 + this.rand() * 2.5,
+                spikeTimer: 0.6 + this.rand() * 2.8,
                 spikeDuration: 0,
                 dipLevel: 0.15,
                 isDoubleSpike: false

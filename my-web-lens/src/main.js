@@ -282,8 +282,8 @@ if (btnMoodToggle) {
 
 // Initial mood setup from query param or localStorage
 const urlMoodParam = new URLSearchParams(window.location.search).get('mood');
-const initialMood = (urlMoodParam === 'night' || urlMoodParam === 'afternoon')
-    ? urlMoodParam
+const initialMood = (urlMoodParam === 'night' || urlMoodParam === 'noon' || urlMoodParam === 'afternoon')
+    ? (urlMoodParam === 'night' ? 'night' : 'afternoon')
     : (localStorage.getItem('lagos_keke_mood') || 'afternoon');
 setMood(initialMood, true);
 
