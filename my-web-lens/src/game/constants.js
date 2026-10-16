@@ -50,6 +50,7 @@ export const GAME = {
     TIME_LIMIT: 85, // initial time in seconds
     MAX_SESSION_TIME: 120, // strict 2-minute Snapchat limit
     CHECKPOINT_BONUS: 5, // seconds added per stop reached
+    POTHOLE_PENALTY: 2, // seconds lost when you hit a pothole
     NPC_HIT_PENALTY: 2, // seconds lost when you bump a pedestrian
     VEHICLE_HIT_PENALTY: 5, // seconds lost when you collide with a vehicle
     CHECKPOINT_RADIUS: 3.4,

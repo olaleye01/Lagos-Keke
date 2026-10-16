@@ -350,7 +350,7 @@ export class Player {
                 if (p.cooldown > 0) continue;
                 if (Math.abs(this.x - p.x) > 2.8 || Math.abs(this.z - p.z) > 2.8) continue;
                 const d = Math.hypot(this.x - p.x, this.z - p.z);
-                if (d < p.r * 0.85 && this.speed > 1.8) {
+                if (d < p.r * 0.85 && this.speed > 1.2) {
                     p.cooldown = 1.4;
                     this.speed = Math.max(2.4, this.speed * 0.55);
                     this.wobble = 0.95;

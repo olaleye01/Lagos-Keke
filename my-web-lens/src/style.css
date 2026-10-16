@@ -474,6 +474,15 @@ html, body {
   color: #86efac;
 }
 
+#timer.penalty {
+  animation: timerPenaltyPop 0.45s ease-out;
+  border-color: var(--danger-red);
+  box-shadow: 0 5px 0 #280909, 0 0 22px rgba(239, 68, 68, 0.6);
+}
+#timer.penalty #timer-value {
+  color: #ff6b6b;
+}
+
 /* 2. QUEST / NEXT STOP INFO (Floating Rounded Bubble matching warm cream card system) */
 .quest-panel,
 #cp-card {
@@ -2829,6 +2838,14 @@ html, body {
 @keyframes timerBonusPop {
   0% { transform: scale(1); }
   40% { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+
+@keyframes timerPenaltyPop {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.18) translateX(-4px); }
+  50% { transform: scale(1.18) translateX(4px); }
+  75% { transform: scale(1.08) translateX(-2px); }
   100% { transform: scale(1); }
 }
 

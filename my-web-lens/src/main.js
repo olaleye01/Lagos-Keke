@@ -52,6 +52,32 @@ const cpNameEl = document.getElementById('cp-name');
 const cpRouteBadgeEl = document.getElementById('cp-route-badge');
 const timerValEl = document.getElementById('timer-value');
 const timerContainer = document.getElementById('timer');
+
+let timerFxTimeout = null;
+
+function triggerTimerBonus() {
+    if (!timerContainer) return;
+    if (timerFxTimeout) clearTimeout(timerFxTimeout);
+    timerContainer.classList.remove('bonus', 'penalty');
+    void timerContainer.offsetWidth;
+    timerContainer.classList.add('bonus');
+    timerFxTimeout = setTimeout(() => {
+        if (timerContainer) timerContainer.classList.remove('bonus');
+        timerFxTimeout = null;
+    }, 450);
+}
+
+function triggerTimerPenalty() {
+    if (!timerContainer) return;
+    if (timerFxTimeout) clearTimeout(timerFxTimeout);
+    timerContainer.classList.remove('bonus', 'penalty');
+    void timerContainer.offsetWidth;
+    timerContainer.classList.add('penalty');
+    timerFxTimeout = setTimeout(() => {
+        if (timerContainer) timerContainer.classList.remove('penalty');
+        timerFxTimeout = null;
+    }, 450);
+}
 const minimapCanvas = document.getElementById('minimap');
 const minimapCtx = minimapCanvas.getContext('2d');
 const navArrow = document.getElementById('nav-arrow');
@@ -549,6 +575,12 @@ function startCountdown() {
     sessionElapsed = 0;
     currentCPIndex = 0;
     lastTickSecond = -1;
+    if (timerContainer) {
+        timerContainer.classList.remove('bonus', 'penalty', 'danger', 'warn');
+    }
+    if (timerValEl) {
+        timerValEl.textContent = GAME.TIME_LIMIT.toFixed(1);
+    }
 
     // Reset player, NPCs, vehicles, and racing line on every race start to guarantee zero early collisions
     player.reset();
@@ -623,8 +655,17 @@ function startCountdown() {
         currentCamPos.set(0.0, 6.5, 24.0);
         currentCamLook.set(9.0, 0.5, 24.0);
     }
+    const potholeParam = new URLSearchParams(window.location.search).get('pothole');
+    if (potholeParam === '1' && map && map.potholes && map.potholes.length > 0) {
+        const targetP = map.potholes[0];
+        player.x = targetP.x;
+        player.z = targetP.z + 3.2;
+        player.yaw = 0; // facing North towards target pothole
+        currentCamPos.set(player.x, 6.5, player.z + 6.0);
+        currentCamLook.set(player.x, 0.5, player.z - 3.0);
+    }
 
-    if (rampParam || new URLSearchParams(window.location.search).get('gutter') === '1') {
+    if (rampParam || new URLSearchParams(window.location.search).get('gutter') === '1' || potholeParam === '1') {
         player._sync(0);
     }
 
@@ -1035,9 +1076,7 @@ app.on('update', dt => {
             player.triggerCelebrate();
             // Bonus time capped at Snapchat 2-minute (120s) limit
             timeLeft = Math.min(GAME.MAX_SESSION_TIME, timeLeft + GAME.CHECKPOINT_BONUS);
-            timerContainer.classList.remove('bonus');
-            void timerContainer.offsetWidth;
-            timerContainer.classList.add('bonus');
+            triggerTimerBonus();
 
             showToast(`${activeCP.name}! +${GAME.CHECKPOINT_BONUS}s`, 'good', 2600);
             currentCPIndex++;
@@ -1070,9 +1109,15 @@ app.on('update', dt => {
     const isRiding = gameState === STATE.PLAYING;
     const playerEvents = player.update(dt, input, isRiding);
     if (isRiding && playerEvents.pothole) {
-        showToast('Wahala! Pothole!', 'bad', 2400);
+        timeLeft = Math.max(0, timeLeft - GAME.POTHOLE_PENALTY);
+        showToast(`Wahala! Pothole! -${GAME.POTHOLE_PENALTY}s`, 'bad', 2400);
+        triggerTimerPenalty();
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
             try { navigator.vibrate([60, 40, 80]); } catch (_) {}
+        }
+        if (timeLeft <= 0) {
+            timeLeft = 0;
+            endGame(false);
         }
     }
     if (isRiding && playerEvents.gutter) {
@@ -1093,13 +1138,23 @@ app.on('update', dt => {
     if (isRiding && npcToast) {
         timeLeft = Math.max(0, timeLeft - GAME.NPC_HIT_PENALTY);
         showToast(`${npcToast} -${GAME.NPC_HIT_PENALTY}s`, 'bad', 2500);
+        triggerTimerPenalty();
+        if (timeLeft <= 0) {
+            timeLeft = 0;
+            endGame(false);
+        }
     }
 
     const vehicleToast = vehicles.update(dt, player, isWorldActive, npcs, isRiding);
     if (isRiding && vehicleToast) {
         timeLeft = Math.max(0, timeLeft - GAME.VEHICLE_HIT_PENALTY);
         showToast(`${vehicleToast} -${GAME.VEHICLE_HIT_PENALTY}s`, 'bad', 2600);
+        triggerTimerPenalty();
         respawnPlayerAtLastCheckpoint('vehicle');
+        if (timeLeft <= 0) {
+            timeLeft = 0;
+            endGame(false);
+        }
     }
 
     // Audio rolling sound modulation
@@ -1205,13 +1260,8 @@ app.on('update', dt => {
     if (gameState === STATE.PLAYING || gameState === STATE.COUNTDOWN) {
         // Timer display
         timerValEl.textContent = Math.max(0, timeLeft).toFixed(1);
-        if (timeLeft <= 15) {
-            timerContainer.className = 'sticker-bubble timer-panel danger';
-        } else if (timeLeft <= 30) {
-            timerContainer.className = 'sticker-bubble timer-panel warn';
-        } else {
-            timerContainer.className = 'sticker-bubble timer-panel';
-        }
+        timerContainer.classList.toggle('danger', timeLeft <= 15);
+        timerContainer.classList.toggle('warn', timeLeft > 15 && timeLeft <= 30);
 
 
         // Stamina gauge display
