@@ -1972,6 +1972,137 @@ html, body {
   margin: 0;
 }
 
+/* --- Afternoon / Night Mood Switch Button --- */
+.welcome-mood-toggle-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 3px;
+  margin-bottom: 2px;
+}
+
+.mood-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mood-pill-track {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  background: #f1f2f6;
+  border: 2.2px solid var(--outline-dark);
+  border-radius: 999px;
+  padding: 2.5px;
+  box-shadow: 0 3px 0 var(--outline-deep), inset 0 1.5px 2px rgba(0, 0, 0, 0.08);
+  transition: all 0.28s cubic-bezier(0.2, 0.8, 0.3, 1);
+  overflow: hidden;
+}
+
+.mood-toggle-btn:hover .mood-pill-track {
+  border-color: #000000;
+  box-shadow: 0 3.5px 0 var(--outline-deep);
+}
+
+.mood-toggle-btn:active .mood-pill-track {
+  transform: translateY(1.5px);
+  box-shadow: 0 1.5px 0 var(--outline-deep);
+}
+
+/* Sliding active thumb indicator */
+.mood-pill-thumb {
+  position: absolute;
+  top: 2.5px;
+  left: 2.5px;
+  width: calc(50% - 2.5px);
+  height: calc(100% - 5px);
+  border-radius: 999px;
+  background: #f6ce34; /* Afternoon warm arcade yellow */
+  border: 1.8px solid var(--outline-dark);
+  box-shadow: 0 1.5px 0 rgba(0, 0, 0, 0.18);
+  transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Night active thumb position */
+.mood-toggle-btn.night-active .mood-pill-thumb {
+  transform: translateX(100%);
+  background: #1e1b4b; /* Deep midnight navy */
+  border-color: #6366f1; /* Neon indigo border */
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.45), 0 1.5px 0 rgba(0, 0, 0, 0.3);
+}
+
+.mood-toggle-btn.night-active .mood-pill-track {
+  background: #0f172a;
+  border-color: #020617;
+  box-shadow: 0 3px 0 #020617, inset 0 1.5px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Individual options */
+.mood-pill-opt {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 3.5px 10px;
+  min-width: 90px;
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: #71717a;
+  transition: color 0.25s ease, transform 0.2s ease;
+}
+
+.mood-opt-icon {
+  flex-shrink: 0;
+  transition: transform 0.3s ease, color 0.25s ease;
+}
+
+/* Active Day text & icon */
+.mood-toggle-btn:not(.night-active) .mood-opt-day {
+  color: #160c05;
+}
+
+.mood-toggle-btn:not(.night-active) .mood-opt-day .mood-opt-icon {
+  color: #d97706; /* amber sun rays */
+  transform: rotate(18deg) scale(1.1);
+}
+
+/* Active Night text & icon */
+.mood-toggle-btn.night-active .mood-opt-night {
+  color: #ffffff;
+  text-shadow: 0 0 8px rgba(129, 140, 248, 0.65);
+}
+
+.mood-toggle-btn.night-active .mood-opt-night .mood-opt-icon {
+  color: #818cf8; /* glowing moon */
+  transform: rotate(-12deg) scale(1.12);
+}
+
+/* Inactive Night option in daytime */
+.mood-toggle-btn:not(.night-active) .mood-opt-night {
+  color: #8e8e93;
+}
+
+/* Inactive Day option in nighttime */
+.mood-toggle-btn.night-active .mood-opt-day {
+  color: #64748b;
+}
+
 /* 3-Column Controls Guide Grid (NO EMOJIS! Clean vector icons) */
 .welcome-controls-grid {
   display: flex;

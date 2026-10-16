@@ -1,4 +1,4 @@
-import { Vec3, math } from 'playcanvas';
+import { Vec3, math, Entity, Color } from 'playcanvas';
 import {
     createCar,
     createDanfo,
@@ -221,7 +221,87 @@ export class VehicleManager {
 
             vehicle.model.setPosition(vehicle.x, 0, vehicle.z);
             vehicle.model.setEulerAngles(0, vehicle.yawDeg, 0);
+            this._attachVehicleLights(vehicle);
             this.vehicles.push(vehicle);
+        }
+    }
+
+    _attachVehicleLights(v) {
+        let headPos, tailPos;
+        if (v.type === 'danfo') {
+            headPos = { x: 0, y: 0.58, z: -2.15 };
+            tailPos = { x: 0, y: 0.65, z: 2.15 };
+        } else if (v.type === 'car') {
+            headPos = { x: 0, y: 0.52, z: -2.0 };
+            tailPos = { x: 0, y: 0.56, z: 1.95 };
+        } else if (v.type === 'keke') {
+            headPos = { x: 0, y: 0.54, z: -1.25 };
+            tailPos = { x: 0, y: 0.52, z: 1.28 };
+        } else {
+            // okada
+            headPos = { x: 0, y: 0.75, z: -0.65 };
+            tailPos = { x: 0, y: 0.68, z: 0.65 };
+        }
+
+        const isNight = this.mood === 'night';
+
+        // 1. Forward-shining Headlight Spot beam
+        const headSpot = new Entity(`${v.type}_HeadSpot_${v.id}`);
+        headSpot.setLocalPosition(headPos.x, headPos.y, headPos.z);
+        headSpot.setLocalEulerAngles(75, 0, 0); // Aimed forward (-Z) and down onto the road
+        headSpot.addComponent('light', {
+            type: 'spot',
+            range: 24.0,
+            innerConeAngle: 28,
+            outerConeAngle: 50,
+            color: new Color(1.0, 0.96, 0.84),
+            intensity: isNight ? 2.6 : 0,
+            castShadows: false
+        });
+        v.model.addChild(headSpot);
+
+        // 2. Headlight Fill omni
+        const headFill = new Entity(`${v.type}_HeadFill_${v.id}`);
+        headFill.setLocalPosition(headPos.x, headPos.y, headPos.z - 0.5);
+        headFill.addComponent('light', {
+            type: 'omni',
+            range: 6.5,
+            color: new Color(1.0, 0.95, 0.8),
+            intensity: isNight ? 1.6 : 0,
+            castShadows: false
+        });
+        v.model.addChild(headFill);
+
+        // 3. Taillight Red Glow omni
+        const tailGlow = new Entity(`${v.type}_TailGlow_${v.id}`);
+        tailGlow.setLocalPosition(tailPos.x, tailPos.y, tailPos.z + 0.25);
+        tailGlow.addComponent('light', {
+            type: 'omni',
+            range: 3.6,
+            color: new Color(1.0, 0.15, 0.15),
+            intensity: isNight ? 1.2 : 0,
+            castShadows: false
+        });
+        v.model.addChild(tailGlow);
+
+        v.lights = { headSpot, headFill, tailGlow };
+    }
+
+    setMood(mood) {
+        this.mood = mood;
+        const isNight = mood === 'night';
+        for (const v of this.vehicles) {
+            if (v.lights) {
+                if (v.lights.headSpot && v.lights.headSpot.light) {
+                    v.lights.headSpot.light.intensity = isNight ? 2.4 : 0;
+                }
+                if (v.lights.headFill && v.lights.headFill.light) {
+                    v.lights.headFill.light.intensity = isNight ? 1.0 : 0;
+                }
+                if (v.lights.tailGlow && v.lights.tailGlow.light) {
+                    v.lights.tailGlow.light.intensity = isNight ? 1.2 : 0;
+                }
+            }
         }
     }
 

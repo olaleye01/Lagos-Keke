@@ -1,4 +1,4 @@
-import { Entity, Vec3 } from 'playcanvas';
+import { Entity, Vec3, Color } from 'playcanvas';
 import { GeoBuilder } from '../graphics/builder.js';
 import { PALETTE, mulberry32, pick } from '../graphics/palette.js';
 import { CELL, GRID, MAP, CHECKPOINTS, START, HAZARDS, SPEED_RAMPS, cellAt, cellCenter, worldToCell } from './constants.js';
@@ -79,6 +79,11 @@ export class HoodMap {
         this._buildSpeedRamps();
         this.drainSolids = [];
         this._buildCenterGutterAndPlanks();
+        this.streetLights = [];
+        this.alleyBulbs = [];
+        this.mood = 'afternoon';
+        this._buildStreetLights();
+        this._buildMudAlleyBulbs();
 
         this.chunks.forEach((b, i) => {
             if (b.vertexCount) this.root.addChild(b.toEntity(app, `Chunk${i}`));
@@ -1812,5 +1817,223 @@ export class HoodMap {
     toMinimap(x, z, size) {
         const span = GRID * CELL;
         return { mx: (x / span + 0.5) * size, my: (z / span + 0.5) * size };
+    }
+
+    _buildStreetLights() {
+        const b = new GeoBuilder(this.rand);
+        this.streetLights = [];
+        const mastH = 5.6;
+        const armReach = 2.2;
+        const lampH = 5.4;
+
+        // 4 Sides of the perimeter main road (approx 56.4m from center)
+        const sides = [
+            { axis: 's', z: 56.4, dirZ: -1, dirX: 0 },
+            { axis: 'n', z: -56.4, dirZ: 1, dirX: 0 },
+            { axis: 'w', x: -56.4, dirX: 1, dirZ: 0 },
+            { axis: 'e', x: 56.4, dirX: -1, dirZ: 0 }
+        ];
+
+        // Steps along each side of the road (including roadside curb positions at +/- 6.5m)
+        const steps = [-44, -30, -18, -6.5, 6.5, 18, 30, 44];
+
+        sides.forEach((side, sideIdx) => {
+            steps.forEach((t, stepIdx) => {
+                let px, pz, lx, lz;
+                if (side.axis === 's' || side.axis === 'n') {
+                    px = t;
+                    pz = side.z;
+                    lx = t;
+                    lz = side.z + side.dirZ * armReach;
+                } else {
+                    px = side.x;
+                    pz = t;
+                    lx = side.x + side.dirX * armReach;
+                    lz = t;
+                }
+
+                // Concrete Pedestal base
+                b.boxAt(px, 0.25, pz, 0.46, 0.5, 0.46, PALETTE.streetPedestal || [125, 128, 134], 0, 0.02);
+                // Vertical Steel Mast
+                b.cylinder(GeoBuilder.trs(px, 0.45, pz, 0, 0, 0, 0.1, mastH - 0.45, 0.1), 6, PALETTE.streetPole || [72, 76, 84], 0.9, 0.04);
+
+                // Cantilever Arm extending toward the road lane
+                const midX = (px + lx) / 2;
+                const midZ = (pz + lz) / 2;
+                const armY = mastH + 0.18;
+                if (side.axis === 's' || side.axis === 'n') {
+                    b.boxAt(midX, armY, midZ, 0.08, 0.08, armReach, [64, 68, 75], 0, 0);
+                    b.box(GeoBuilder.trs(px, armY - 0.35, pz + side.dirZ * 0.45, -side.dirZ * 35, 0, 0, 0.06, 0.06, 0.9), [60, 64, 70], 0);
+                    b.boxAt(lx, lampH + 0.14, lz, 0.34, 0.16, 0.74, PALETTE.streetLuminaire || [46, 49, 54], 0, 0);
+                    b.flat(lx - 0.14, lz - 0.34, lx + 0.14, lz + 0.34, lampH + 0.05, PALETTE.streetLensGlow || [255, 242, 190]);
+                } else {
+                    b.boxAt(midX, armY, midZ, armReach, 0.08, 0.08, [64, 68, 75], 0, 0);
+                    b.box(GeoBuilder.trs(px + side.dirX * 0.45, armY - 0.35, pz, 0, 0, side.dirX * 35, 0.9, 0.06, 0.06), [60, 64, 70], 0);
+                    b.boxAt(lx, lampH + 0.14, lz, 0.74, 0.16, 0.34, PALETTE.streetLuminaire || [46, 49, 54], 0, 0);
+                    b.flat(lx - 0.34, lz - 0.14, lx + 0.34, lz + 0.14, lampH + 0.05, PALETTE.streetLensGlow || [255, 242, 190]);
+                }
+
+                // Stable PlayCanvas Omni Light Entity attached at the luminaire
+                const lightEnt = new Entity(`StreetLight_${side.axis}_${stepIdx}`);
+                lightEnt.setPosition(lx, lampH - 0.12, lz);
+                lightEnt.addComponent('light', {
+                    type: 'omni',
+                    range: 17.0,
+                    color: new Color(1.0, 0.88, 0.65), // warm sodium vapor street lamp
+                    intensity: this.mood === 'night' ? 1.85 : 0,
+                    castShadows: false
+                });
+                this.root.addChild(lightEnt);
+                this.streetLights.push({ entity: lightEnt, pos: { x: lx, y: lampH, z: lz } });
+            });
+        });
+
+        this.root.addChild(b.toEntity(this.app, 'StreetLightMeshes'));
+    }
+
+    _buildMudAlleyBulbs() {
+        const b = new GeoBuilder(this.rand);
+        this.alleyBulbs = [];
+        const candidates = [];
+
+        // Collect building cells that face mud alleys
+        for (let r = 2; r < GRID - 2; r++) {
+            for (let c = 2; c < GRID - 2; c++) {
+                if (MAP[r][c] !== 'B') continue;
+                for (const [sideName, s] of Object.entries(SIDES)) {
+                    const nr = r + s.dr;
+                    const nc = c + s.dc;
+                    if (cellAt(nr, nc) === 'M') {
+                        candidates.push({ r, c, nr, nc, s, sideName });
+                    }
+                }
+            }
+        }
+
+        // Shuffle candidates deterministically
+        for (let i = candidates.length - 1; i > 0; i--) {
+            const j = Math.floor(this.rand() * (i + 1));
+            [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+        }
+
+        // Always guarantee the entrance alley right in front of player start:
+        // (r=17, c=9 facing East) and (r=17, c=11 facing West)
+        const guaranteed = [
+            { r: 17, c: 9, s: SIDES.e, sideName: 'e', isEntrance: true },
+            { r: 17, c: 11, s: SIDES.w, sideName: 'w', isEntrance: true }
+        ];
+
+        const selected = [...guaranteed];
+        const seenCells = new Set(guaranteed.map(g => `${g.r},${g.c}`));
+
+        for (const cand of candidates) {
+            const key = `${cand.r},${cand.c}`;
+            if (seenCells.has(key)) continue;
+            seenCells.add(key);
+            selected.push(cand);
+            if (selected.length >= 24) break;
+        }
+
+        selected.forEach((item, i) => {
+            const { r, c, s, isEntrance } = item;
+            const { x, z } = cellCenter(r, c);
+            const half = CELL * 0.44; // approx 2.64m
+            const wallX = x + s.nx * (half + 0.05);
+            const wallZ = z + s.nz * (half + 0.05);
+            const lateralOff = isEntrance ? 2.35 : (this.rand() - 0.5) * 1.4;
+
+            const attachX = s.nz ? wallX + lateralOff : wallX;
+            const attachZ = s.nx ? wallZ + lateralOff : wallZ;
+            const posX = s.nx ? wallX + s.nx * 0.45 : attachX;
+            const posZ = s.nz ? wallZ + s.nz * 0.45 : attachZ;
+            const bulbY = 2.45 + (this.rand() * 0.35);
+
+            // 1. Wooden wall mount block
+            b.boxAt(attachX, bulbY + 0.12, attachZ, s.nx ? 0.08 : 0.28, 0.26, s.nz ? 0.08 : 0.28, PALETTE.alleyBracket || [96, 78, 58], 0, 0);
+            // 2. Angled bracket arm reaching out into alley
+            b.boxAt((attachX + posX) / 2, bulbY + 0.15, (attachZ + posZ) / 2, s.nx ? 0.45 : 0.05, 0.05, s.nz ? 0.45 : 0.05, PALETTE.alleyBracket || [96, 78, 58], 0, 0);
+            // 3. Hanging black wire
+            b.cylinder(GeoBuilder.trs(posX, bulbY + 0.06, posZ, 0, 0, 0, 0.015, 0.16, 0.015), 4, [25, 25, 25]);
+            // 4. Conical rusty tin-can shade
+            b.pyramid(GeoBuilder.trs(posX, bulbY + 0.02, posZ, 180, 0, 0, 0.36, 0.12, 0.36), PALETTE.alleyTinShade || [142, 78, 48]);
+            // 5. Amber glowing tungsten bulb
+            b.cylinder(GeoBuilder.trs(posX, bulbY - 0.06, posZ, 0, 0, 0, 0.08, 0.12, 0.08), 6, PALETTE.alleyBulbWarm || [255, 210, 95]);
+
+            // 6. PlayCanvas Omni Light Entity
+            const lightEnt = new Entity(`AlleyBulb_${i}`);
+            lightEnt.setPosition(posX, bulbY - 0.12, posZ);
+            lightEnt.addComponent('light', {
+                type: 'omni',
+                range: 9.8,
+                color: new Color(1.0, 0.74, 0.32), // rich warm tungsten amber
+                intensity: this.mood === 'night' ? 1.5 : 0,
+                castShadows: false
+            });
+            this.root.addChild(lightEnt);
+
+            this.alleyBulbs.push({
+                entity: lightEnt,
+                baseIntensity: 1.45 + (this.rand() - 0.5) * 0.3,
+                flickerSpeed: 4.5 + this.rand() * 9.0,
+                phase: this.rand() * Math.PI * 2,
+                spikeTimer: 0.8 + this.rand() * 2.5,
+                spikeDuration: 0,
+                dipLevel: 0.15,
+                isDoubleSpike: false
+            });
+        });
+
+        this.root.addChild(b.toEntity(this.app, 'AlleyBulbMeshes'));
+    }
+
+    setMood(mood) {
+        this.mood = mood;
+        const isNight = mood === 'night';
+        for (const sl of this.streetLights) {
+            if (sl.entity && sl.entity.light) {
+                sl.entity.light.intensity = isNight ? 1.85 : 0;
+            }
+        }
+        for (const ab of this.alleyBulbs) {
+            if (ab.entity && ab.entity.light) {
+                ab.entity.light.intensity = isNight ? ab.baseIntensity : 0;
+            }
+        }
+    }
+
+    update(dt) {
+        if (this.mood !== 'night') return;
+        const now = performance.now() * 0.001;
+
+        for (let i = 0; i < this.alleyBulbs.length; i++) {
+            const b = this.alleyBulbs[i];
+            b.spikeTimer -= dt;
+
+            if (b.spikeTimer <= 0) {
+                // Trigger erratic voltage dip (Lagos generator / grid flicker)
+                b.spikeDuration = 0.06 + Math.random() * 0.14;
+                b.dipLevel = Math.random() < 0.35 ? 0.04 : (0.18 + Math.random() * 0.22);
+                b.isDoubleSpike = Math.random() < 0.32;
+                b.spikeTimer = 1.0 + Math.random() * 3.5;
+            }
+
+            let curIntensity = b.baseIntensity;
+            if (b.spikeDuration > 0) {
+                b.spikeDuration -= dt;
+                curIntensity = b.baseIntensity * b.dipLevel;
+            } else if (b.isDoubleSpike) {
+                b.isDoubleSpike = false;
+                b.spikeDuration = 0.05;
+                b.dipLevel = 0.08;
+                curIntensity = b.baseIntensity * b.dipLevel;
+            } else {
+                // Subtle organic generator hum
+                const hum = Math.sin(now * b.flickerSpeed + b.phase) * 0.08
+                          + Math.sin(now * (b.flickerSpeed * 2.4) + b.phase * 1.3) * 0.04;
+                curIntensity = b.baseIntensity * (1.0 + hum);
+            }
+
+            b.entity.light.intensity = curIntensity;
+        }
     }
 }

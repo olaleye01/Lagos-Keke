@@ -185,6 +185,108 @@ const racingLine = new RacingLine(app, map);
 // Expose runtime debug handle
 window.gameDebug = { app, map, player, camera: cameraEntity };
 
+// --- Lighting Mood State & Presets (Afternoon & Night) ---
+const MOOD_PRESETS = {
+    afternoon: {
+        ambient: new Color(0.38, 0.34, 0.30),
+        sunColor: new Color(1.0, 0.94, 0.82),
+        sunIntensity: 1.45,
+        sunAngles: new Vec3(48, 135, 0),
+        fillColor: new Color(0.4, 0.5, 0.65),
+        fillIntensity: 0.45,
+        skyColor: new Color(0.96, 0.78, 0.62)
+    },
+    night: {
+        ambient: new Color(0.11, 0.13, 0.20),
+        sunColor: new Color(0.32, 0.42, 0.62), // cool moonlight
+        sunIntensity: 0.22,
+        sunAngles: new Vec3(62, 150, 0),
+        fillColor: new Color(0.14, 0.20, 0.35),
+        fillIntensity: 0.10,
+        skyColor: new Color(0.04, 0.06, 0.12) // deep midnight Lagos sky
+    }
+};
+
+let currentMood = 'afternoon';
+const curLighting = {
+    ambient: new Color(0.38, 0.34, 0.30),
+    sunColor: new Color(1.0, 0.94, 0.82),
+    sunIntensity: 1.45,
+    fillColor: new Color(0.4, 0.5, 0.65),
+    fillIntensity: 0.45,
+    skyColor: new Color(0.96, 0.78, 0.62)
+};
+
+function updateMoodUI(mood) {
+    const isNight = mood === 'night';
+    const btn = document.getElementById('btn-mood-toggle');
+    const dayOpt = document.getElementById('mood-opt-day');
+    const nightOpt = document.getElementById('mood-opt-night');
+
+    if (btn) {
+        btn.classList.toggle('night-active', isNight);
+        btn.setAttribute('aria-checked', isNight ? 'true' : 'false');
+    }
+    if (dayOpt) dayOpt.classList.toggle('active', !isNight);
+    if (nightOpt) nightOpt.classList.toggle('active', isNight);
+    document.body.classList.toggle('night-mode', isNight);
+}
+
+function setMood(mood, immediate = false) {
+    currentMood = (mood === 'night') ? 'night' : 'afternoon';
+    const isNight = currentMood === 'night';
+    const target = MOOD_PRESETS[currentMood];
+
+    if (immediate && target) {
+        curLighting.ambient.copy(target.ambient);
+        curLighting.sunColor.copy(target.sunColor);
+        curLighting.sunIntensity = target.sunIntensity;
+        curLighting.fillColor.copy(target.fillColor);
+        curLighting.fillIntensity = target.fillIntensity;
+        curLighting.skyColor.copy(target.skyColor);
+
+        app.scene.ambientLight.copy(target.ambient);
+        sun.light.color.copy(target.sunColor);
+        sun.light.intensity = target.sunIntensity;
+        sun.setEulerAngles(target.sunAngles.x, target.sunAngles.y, target.sunAngles.z);
+        fillLight.light.color.copy(target.fillColor);
+        fillLight.light.intensity = target.fillIntensity;
+        cameraEntity.camera.clearColor.copy(target.skyColor);
+    } else if (target) {
+        sun.setEulerAngles(target.sunAngles.x, target.sunAngles.y, target.sunAngles.z);
+    }
+
+    if (map && map.setMood) map.setMood(currentMood);
+    if (vehicles && vehicles.setMood) vehicles.setMood(currentMood);
+    if (player && player.setMood) player.setMood(currentMood);
+
+    updateMoodUI(currentMood);
+
+    try {
+        localStorage.setItem('lagos_keke_mood', currentMood);
+    } catch (_) {}
+}
+
+window.gameMood = { get: () => currentMood, set: setMood };
+window.gameDebug.setMood = setMood;
+
+const btnMoodToggle = document.getElementById('btn-mood-toggle');
+if (btnMoodToggle) {
+    btnMoodToggle.addEventListener('click', () => {
+        if (audio && audio.unlock) audio.unlock();
+        const nextMood = currentMood === 'afternoon' ? 'night' : 'afternoon';
+        setMood(nextMood);
+        if (audio && audio.countdown) audio.countdown(false);
+    });
+}
+
+// Initial mood setup from query param or localStorage
+const urlMoodParam = new URLSearchParams(window.location.search).get('mood');
+const initialMood = (urlMoodParam === 'night' || urlMoodParam === 'afternoon')
+    ? urlMoodParam
+    : (localStorage.getItem('lagos_keke_mood') || 'afternoon');
+setMood(initialMood, true);
+
 // Pre-rendered minimap background
 const minimapBase = map.renderMinimapBase(minimapCanvas.width);
 
@@ -820,6 +922,30 @@ cameraEntity.lookAt(currentCamLook);
 app.on('update', dt => {
     // Clamp delta time to maintain stability
     dt = Math.min(dt, 0.08);
+
+    // Smooth Lighting Transitions for Afternoon <-> Night mood
+    const targetPreset = MOOD_PRESETS[currentMood];
+    if (targetPreset) {
+        const tLerp = 1 - Math.exp(-6 * dt);
+        curLighting.ambient.lerp(curLighting.ambient, targetPreset.ambient, tLerp);
+        curLighting.sunColor.lerp(curLighting.sunColor, targetPreset.sunColor, tLerp);
+        curLighting.sunIntensity = math.lerp(curLighting.sunIntensity, targetPreset.sunIntensity, tLerp);
+        curLighting.fillColor.lerp(curLighting.fillColor, targetPreset.fillColor, tLerp);
+        curLighting.fillIntensity = math.lerp(curLighting.fillIntensity, targetPreset.fillIntensity, tLerp);
+        curLighting.skyColor.lerp(curLighting.skyColor, targetPreset.skyColor, tLerp);
+
+        app.scene.ambientLight.copy(curLighting.ambient);
+        sun.light.color.copy(curLighting.sunColor);
+        sun.light.intensity = curLighting.sunIntensity;
+        fillLight.light.color.copy(curLighting.fillColor);
+        fillLight.light.intensity = curLighting.fillIntensity;
+        cameraEntity.camera.clearColor.copy(curLighting.skyColor);
+    }
+
+    // Dynamic map elements (flickering bulbs on mud alley buildings)
+    if (map && map.update) {
+        map.update(dt);
+    }
 
     if (gameState === STATE.PAUSED) {
         // Complete simulation freeze while game is paused

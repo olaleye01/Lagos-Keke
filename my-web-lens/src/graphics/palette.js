@@ -129,7 +129,14 @@ export const PALETTE = {
     ],
     headlight: [255, 245, 170],
     taillight: [230, 30, 30],
-    vehicleGlass: [135, 180, 210]
+    vehicleGlass: [135, 180, 210],
+    streetPole: [72, 76, 84],
+    streetPedestal: [125, 128, 134],
+    streetLuminaire: [46, 49, 54],
+    streetLensGlow: [255, 242, 190],
+    alleyBracket: [96, 78, 58],
+    alleyTinShade: [142, 78, 48],
+    alleyBulbWarm: [255, 210, 95]
 };
 
 /** Small deterministic PRNG so the neighbourhood looks the same every run. */

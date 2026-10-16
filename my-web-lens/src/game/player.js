@@ -23,7 +23,53 @@ export class Player {
         this._particleIndex = 0;
         this.standFactor = 0;
         this.bitmojiEntity = null;
+        this.mood = 'afternoon';
+        this._setupHeadlight();
         this.reset();
+    }
+
+    _setupHeadlight() {
+        this.bikeLight = new Entity('BikeHeadlight');
+        this.bikeLight.setLocalPosition(0, 0.95, -0.58);
+        this.bikeLight.setLocalEulerAngles(74, 0, 0);
+        this.bikeLight.addComponent('light', {
+            type: 'spot',
+            range: 20.0,
+            innerConeAngle: 28,
+            outerConeAngle: 48,
+            color: new Color(1.0, 0.98, 0.92),
+            intensity: this.mood === 'night' ? 2.4 : 0,
+            castShadows: false
+        });
+
+        this.bikeLightFill = new Entity('BikeHeadlightFill');
+        this.bikeLightFill.setLocalPosition(0, 0.95, -0.65);
+        this.bikeLightFill.addComponent('light', {
+            type: 'omni',
+            range: 3.8,
+            color: new Color(1.0, 0.95, 0.85),
+            intensity: this.mood === 'night' ? 1.0 : 0,
+            castShadows: false
+        });
+
+        if (this.model && this.model.frontFork) {
+            this.model.frontFork.addChild(this.bikeLight);
+            this.model.frontFork.addChild(this.bikeLightFill);
+        } else if (this.model && this.model.root) {
+            this.model.root.addChild(this.bikeLight);
+            this.model.root.addChild(this.bikeLightFill);
+        }
+    }
+
+    setMood(mood) {
+        this.mood = mood;
+        const isNight = mood === 'night';
+        if (this.bikeLight && this.bikeLight.light) {
+            this.bikeLight.light.intensity = isNight ? 2.4 : 0;
+        }
+        if (this.bikeLightFill && this.bikeLightFill.light) {
+            this.bikeLightFill.light.intensity = isNight ? 1.0 : 0;
+        }
     }
 
     /**

@@ -520,7 +520,34 @@
 
         <div class="welcome-sheet-header">
           <h2 class="welcome-sheet-title">Ready. Set. Ride!</h2>
-          <p class="welcome-sheet-sub">Sprint for the finish - Rule the streets.</p>
+          <div class="welcome-mood-toggle-wrap">
+            <button id="btn-mood-toggle" class="mood-toggle-btn" type="button" role="switch" aria-checked="false" aria-label="Switch between afternoon and night mood" title="Toggle Afternoon / Night Mode">
+              <span class="mood-pill-track">
+                <span id="mood-opt-day" class="mood-pill-opt mood-opt-day active">
+                  <svg class="mood-opt-icon" viewBox="0 0 24 24" width="13.5" height="13.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="4.5"></circle>
+                    <line x1="12" y1="1.5" x2="12" y2="3.5"></line>
+                    <line x1="12" y1="20.5" x2="12" y2="22.5"></line>
+                    <line x1="4.5" y1="4.5" x2="6" y2="6"></line>
+                    <line x1="18" y1="18" x2="19.5" y2="19.5"></line>
+                    <line x1="1.5" y1="12" x2="3.5" y2="12"></line>
+                    <line x1="20.5" y1="12" x2="22.5" y2="12"></line>
+                    <line x1="4.5" y1="19.5" x2="6" y2="18"></line>
+                    <line x1="18" y1="6" x2="19.5" y2="4.5"></line>
+                  </svg>
+                  <span class="mood-opt-text">AFTERNOON</span>
+                </span>
+                <span id="mood-opt-night" class="mood-pill-opt mood-opt-night">
+                  <svg class="mood-opt-icon" viewBox="0 0 24 24" width="13.5" height="13.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    <circle cx="18" cy="5" r="1.2" fill="currentColor"></circle>
+                  </svg>
+                  <span class="mood-opt-text">NIGHT</span>
+                </span>
+                <span id="mood-pill-thumb" class="mood-pill-thumb"></span>
+              </span>
+            </button>
+          </div>
         </div>
 
         <div class="welcome-controls-grid">
