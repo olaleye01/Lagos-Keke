@@ -678,6 +678,18 @@ function startGame() {
     countdownScreen.classList.add('hidden');
     input.enabled = true;
     player.invulnerable = 2.0; // 2.0s protection against early collisions at race start
+
+    // Starting grid safety check: ensure no vehicle is colliding with player at the start
+    if (vehicles && vehicles.vehicles) {
+        for (const v of vehicles.vehicles) {
+            if (Math.abs(v.z - 54.0) < 6.0 && Math.abs(v.x - player.x) < 14.0) {
+                v.cooldown = 2.4;
+                v.yieldTimer = 1.2;
+                v.speed = 0;
+            }
+        }
+    }
+
     showToast('OYA GO! Beat the clock!', 'good', 2600);
 }
 
@@ -803,8 +815,86 @@ function endGame(won) {
     endScreen.classList.remove('hidden');
 }
 
+function showWelcomeScreen() {
+    audio.unlock();
+    gameState = STATE.TITLE;
+    previousStateBeforePause = null;
+    input.enabled = false;
+    audio.setRolling(0, 'road');
+    countdownTimer = 3;
+    timeLeft = GAME.TIME_LIMIT;
+    sessionElapsed = 0;
+    currentCPIndex = 0;
+    lastTickSecond = -1;
+
+    // Reset player, NPCs, vehicles, and racing line
+    player.reset();
+    npcs.reset();
+    vehicles.reset();
+    racingLine.reset();
+    updateBeaconPosition();
+
+    if (dashFx) dashFx.classList.remove('active');
+    if (btnSprint) btnSprint.classList.remove('dashing');
+    if (respawnFx) respawnFx.classList.remove('flickering');
+    if (timerContainer) {
+        timerContainer.classList.remove('bonus', 'penalty', 'danger', 'warn');
+    }
+    if (timerValEl) {
+        timerValEl.textContent = GAME.TIME_LIMIT.toFixed(1);
+    }
+
+    // Dismiss any active toast messages
+    if (toastTimeouts.left) {
+        clearTimeout(toastTimeouts.left);
+        toastTimeouts.left = null;
+    }
+    if (toastTimeouts.right) {
+        clearTimeout(toastTimeouts.right);
+        toastTimeouts.right = null;
+    }
+    if (toastLeftEl) toastLeftEl.className = 'toast toast-left';
+    if (toastRightEl) toastRightEl.className = 'toast toast-right';
+    toastActive.left = false;
+    toastActive.right = false;
+
+    const pauseScreen = document.getElementById('pause-screen');
+    if (pauseScreen) pauseScreen.classList.add('hidden');
+    document.querySelectorAll('.pause-icon').forEach(el => el.classList.remove('hidden'));
+    document.querySelectorAll('.play-icon').forEach(el => el.classList.add('hidden'));
+
+    if (endScreen) endScreen.classList.add('hidden');
+    if (hud) hud.classList.add('hidden');
+    if (countdownScreen) countdownScreen.classList.add('hidden');
+    if (titleScreen) titleScreen.classList.remove('hidden');
+
+    // Reset camera to elevated panoramic title view
+    currentCamPos.set(
+        player.x - player.forwardX * TOP_CAM.dist,
+        TOP_CAM.height,
+        player.z - player.forwardZ * TOP_CAM.dist
+    );
+    currentCamLook.set(
+        player.x + player.forwardX * TOP_CAM.lookAhead,
+        TOP_CAM.lookY,
+        player.z + player.forwardZ * TOP_CAM.lookAhead
+    );
+    cameraEntity.setPosition(currentCamPos);
+    cameraEntity.lookAt(currentCamLook);
+
+    // Clear hash if it was pointing to #end-screen
+    if (typeof window !== 'undefined' && window.location.hash === '#end-screen') {
+        try {
+            history.replaceState(null, '', window.location.pathname + window.location.search);
+        } catch (_) {
+            window.location.hash = '';
+        }
+    }
+}
+
 if (typeof window !== 'undefined') {
     window.__endGame = endGame;
+    window.__showWelcomeScreen = showWelcomeScreen;
     window.addEventListener('hashchange', () => {
         if (window.location.hash === '#end-screen') {
             endGame(true);
@@ -819,8 +909,7 @@ btnStart.addEventListener('click', () => {
 });
 
 btnRetry.addEventListener('click', () => {
-    audio.unlock();
-    startCountdown();
+    showWelcomeScreen();
 });
 
 if (btnWelcomeLeaderboard) {

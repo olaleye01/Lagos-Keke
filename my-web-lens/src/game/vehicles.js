@@ -250,17 +250,62 @@ export class VehicleManager {
 
             // Distribute 8 vehicles evenly across the 4 main road quadrants (2 vehicles per road)
             for (let q = 0; q < 4; q++) {
-                // Quadrant q covers [q * 0.25, (q + 1) * 0.25]
-                // Slot 1: in the first half of the road quadrant
-                // Slot 2: in the second half of the road quadrant
-                const slot1Offset = q * 0.25 + 0.04 + rand() * 0.06;
-                const slot2Offset = q * 0.25 + 0.15 + rand() * 0.06;
+                let slot1Offset, slot2Offset;
+
+                if (q === 2) {
+                    // Quadrant 2 is South Road where the rider starts at (x=0, z≈54).
+                    // To completely avoid early collisions on the initial starting position of the rider:
+                    // Place both vehicles downstream of x=0 heading away into the corners.
+                    // This guarantees zero oncoming traffic heading towards the rider's start grid,
+                    // with at least 18m+ to 42m+ clearance while still keeping moving traffic in both lanes.
+                    const isOuter = lane.track === this.outerTrack;
+                    const quadLen = lane.track.quadLen;
+                    const totalLen = lane.track.totalLen;
+                    const uStart = 2 * quadLen;
+
+                    if (isOuter) {
+                        // Outer track (CCW, heading East): x = -51.4 + u. Rider at x=0 (u=51.4).
+                        // Downstream (heading East away from rider into East corner):
+                        const u1 = 51.4 + 18.0 + rand() * 6.0; // x ≈ +18 to +24 (heading East away)
+                        const u2 = 51.4 + 36.0 + rand() * 6.0; // x ≈ +36 to +42 (heading East away)
+                        slot1Offset = (uStart + u1) / totalLen;
+                        slot2Offset = (uStart + u2) / totalLen;
+                    } else {
+                        // Inner track (CW, heading West): x = 48.6 - u. Rider at x=0 (u=48.6).
+                        // Downstream (heading West away from rider into West corner):
+                        const u1 = 48.6 + 18.0 + rand() * 6.0; // x ≈ -18 to -24 (heading West away)
+                        const u2 = 48.6 + 36.0 + rand() * 6.0; // x ≈ -36 to -42 (heading West away)
+                        slot1Offset = (uStart + u1) / totalLen;
+                        slot2Offset = (uStart + u2) / totalLen;
+                    }
+                } else {
+                    // Quadrant q covers [q * 0.25, (q + 1) * 0.25]
+                    // Slot 1: in the first half of the road quadrant
+                    // Slot 2: in the second half of the road quadrant
+                    slot1Offset = q * 0.25 + 0.04 + rand() * 0.06;
+                    slot2Offset = q * 0.25 + 0.15 + rand() * 0.06;
+                }
 
                 const v1 = laneVehicles[q * 2];
                 const v2 = laneVehicles[q * 2 + 1];
 
                 if (v1) this._placeVehicleAtOffset(v1, slot1Offset);
                 if (v2) this._placeVehicleAtOffset(v2, slot2Offset);
+            }
+        }
+
+        // Safety Net: Guarantee no vehicle on South Road (z ≈ 52-56) is within 14m of rider start x=0
+        for (const v of this.vehicles) {
+            if (Math.abs(v.z - 54.0) < 6.0 && Math.abs(v.x) < 14.0) {
+                const shiftDist = (16.0 - Math.abs(v.x)) + 6.0;
+                v.s = (v.s + shiftDist) % v.track.totalLen;
+                const pose = v.track.evaluate(v.s);
+                v.x = pose.x;
+                v.z = pose.z;
+                v.yawDeg = pose.yawDeg;
+                v.yawRad = pose.yawRad;
+                v.model.setPosition(v.x, 0, v.z);
+                v.model.setEulerAngles(0, v.yawDeg, 0);
             }
         }
     }
