@@ -203,7 +203,7 @@ const MOOD_PRESETS = {
         sunAngles: new Vec3(62, 150, 0),
         fillColor: new Color(0.14, 0.20, 0.35),
         fillIntensity: 0.10,
-        skyColor: new Color(0.04, 0.06, 0.12) // deep midnight Lagos sky
+        skyColor: new Color(0.04, 0.06, 0.12) // deep midnight sky
     }
 };
 
@@ -263,7 +263,7 @@ function setMood(mood, immediate = false) {
     updateMoodUI(currentMood);
 
     try {
-        localStorage.setItem('lagos_keke_mood', currentMood);
+        localStorage.setItem('street_rush_mood', currentMood);
     } catch (_) {}
 }
 
@@ -284,7 +284,7 @@ if (btnMoodToggle) {
 const urlMoodParam = new URLSearchParams(window.location.search).get('mood');
 const initialMood = (urlMoodParam === 'night' || urlMoodParam === 'noon' || urlMoodParam === 'afternoon')
     ? (urlMoodParam === 'night' ? 'night' : 'afternoon')
-    : (localStorage.getItem('lagos_keke_mood') || 'afternoon');
+    : (localStorage.getItem('street_rush_mood') || localStorage.getItem('lagos_keke_mood') || 'afternoon');
 setMood(initialMood, true);
 
 // Pre-rendered minimap background
@@ -313,8 +313,8 @@ function renderSpeedLines(dt, playerSpeed, isSprinting) {
     const h = speedLinesCanvas.height;
     speedLinesCtx.clearRect(0, 0, w, h);
 
-    const sprintRatio = playerSpeed / (BIKE.SPRINT_MAX_SPEED || 13.6);
-    if (sprintRatio < 0.65 && !isSprinting) {
+    // Dash effect / speed lines only display during active sprint/boost, not during normal road cruising
+    if (!isSprinting) {
         speedLinesCanvas.classList.remove('active');
         return;
     }
@@ -322,11 +322,10 @@ function renderSpeedLines(dt, playerSpeed, isSprinting) {
 
     const cx = w * 0.5;
     const cy = h * 0.46;
-    const intensity = isSprinting ? 1.0 : (sprintRatio - 0.65) / 0.35;
     const maxR = Math.hypot(cx, cy);
 
-    speedLinesCtx.lineWidth = isSprinting ? 2.8 : 1.6;
-    speedLinesCtx.strokeStyle = isSprinting ? 'rgba(255, 230, 80, 0.75)' : `rgba(255, 255, 255, ${(0.38 * intensity).toFixed(2)})`;
+    speedLinesCtx.lineWidth = 2.8;
+    speedLinesCtx.strokeStyle = 'rgba(255, 230, 80, 0.75)';
     speedLinesCtx.beginPath();
     for (const s of streaks) {
         s.radius += s.speed * dt * (isSprinting ? 2.6 : 1.3);
@@ -678,7 +677,7 @@ function endGame(won) {
         } else if (gutterFalls <= 1 && vehicleHits <= 2) {
             starCount = 3;
             endRank.textContent = 'Pro Rider';
-            if (endRankDesc) endRankDesc.textContent = 'Street Veteran! Took a few Lagos knocks, but powered through.';
+            if (endRankDesc) endRankDesc.textContent = 'Street Veteran! Took a few street knocks, but powered through.';
         } else {
             starCount = 2;
             endRank.textContent = 'Rough Rider';
@@ -1180,7 +1179,8 @@ app.on('update', dt => {
         const hasBoost = (player.stamina / BIKE.MAX_STAMINA) * 100 >= minBoostPct;
         const isBoostActive = (player.isSprinting && hasBoost) || player.isRampBoosting;
 
-        const targetFov = 54 + speedRatio * (isBoostActive ? 9 : 4);
+        // Dynamic Camera FOV for sprint/boost rush sensation (no distortion during normal road riding)
+        const targetFov = 54 + (isBoostActive ? (speedRatio * 9) : 0);
         cameraEntity.camera.fov = math.lerp(cameraEntity.camera.fov, targetFov, 1 - Math.exp(-6 * dt));
     }
 

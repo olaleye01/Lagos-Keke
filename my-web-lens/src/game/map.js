@@ -859,7 +859,7 @@ export class HoodMap {
         }
 
         // ------------------------------------------------ Mud Alley Potholes
-        // Add very few (e.g. 5) treacherous mud potholes in the muddy alleys
+        // Treacherous mud potholes / puddles doubled in the muddy alleys
         const mudCandidates = [];
         const isNearRamp = (x, z) => {
             return this.ramps.some(ramp => Math.hypot(ramp.x - x, ramp.z - z) < 8.0);
@@ -1822,20 +1822,22 @@ export class HoodMap {
     _buildStreetLights() {
         const b = new GeoBuilder(this.rand);
         this.streetLights = [];
-        const mastH = 5.6;
-        const armReach = 2.2;
-        const lampH = 5.4;
+        const mastH = 5.8;
+        const armReach = 3.6;
+        const lampH = 5.6;
 
-        // 4 Sides of the perimeter main road (approx 56.4m from center)
+        // 4 Sides of the perimeter main road, placed into the sidewalks / market walkways (58.0m from center)
         const sides = [
-            { axis: 's', z: 56.4, dirZ: -1, dirX: 0 },
-            { axis: 'n', z: -56.4, dirZ: 1, dirX: 0 },
-            { axis: 'w', x: -56.4, dirX: 1, dirZ: 0 },
-            { axis: 'e', x: 56.4, dirX: -1, dirZ: 0 }
+            { axis: 's', z: 58.0, dirZ: -1, dirX: 0 },
+            { axis: 'n', z: -58.0, dirZ: 1, dirX: 0 },
+            { axis: 'w', x: -58.0, dirX: 1, dirZ: 0 },
+            { axis: 'e', x: 58.0, dirX: -1, dirZ: 0 }
         ];
 
-        // Steps along each side of the road (including roadside curb positions at +/- 6.5m)
-        const steps = [-44, -30, -18, -6.5, 6.5, 18, 30, 44];
+        // Steps along each sidewalk, placed at exact 3.0m midpoints between market stalls
+        // (multiples of 6) and wooden utility poles (+/-6, 18, 30, 42), guaranteeing zero collision
+        // with any shops, stalls, or existing utility poles.
+        const steps = [-45, -33, -21, -9, 9, 21, 33, 45];
 
         sides.forEach((side, sideIdx) => {
             steps.forEach((t, stepIdx) => {
@@ -1852,7 +1854,7 @@ export class HoodMap {
                     lz = t;
                 }
 
-                // Concrete Pedestal base
+                // Concrete Pedestal base on sidewalk pavement
                 b.boxAt(px, 0.25, pz, 0.46, 0.5, 0.46, PALETTE.streetPedestal || [125, 128, 134], 0, 0.02);
                 // Vertical Steel Mast
                 b.cylinder(GeoBuilder.trs(px, 0.45, pz, 0, 0, 0, 0.1, mastH - 0.45, 0.1), 6, PALETTE.streetPole || [72, 76, 84], 0.9, 0.04);
@@ -1878,7 +1880,7 @@ export class HoodMap {
                 lightEnt.setPosition(lx, lampH - 0.12, lz);
                 lightEnt.addComponent('light', {
                     type: 'omni',
-                    range: 17.0,
+                    range: 18.0,
                     color: new Color(1.0, 0.88, 0.65), // warm sodium vapor street lamp
                     intensity: this.mood === 'night' ? 1.85 : 0,
                     castShadows: false
@@ -2019,7 +2021,7 @@ export class HoodMap {
             b.spikeTimer -= dt;
 
             if (b.spikeTimer <= 0) {
-                // Trigger erratic voltage dip (Lagos generator / grid flicker)
+                // Trigger erratic voltage dip (neighborhood generator / grid flicker)
                 b.spikeDuration = 0.06 + Math.random() * 0.14;
                 b.dipLevel = Math.random() < 0.35 ? 0.04 : (0.18 + Math.random() * 0.22);
                 b.isDoubleSpike = Math.random() < 0.32;

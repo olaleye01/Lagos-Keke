@@ -69,14 +69,14 @@ const isCourtyard = (r, c) => r >= 9 && r <= 11 && c >= 9 && c <= 11;
 /**
  * Dynamic 3D Racing Line Guide:
  * Computes street-accurate pathfinding through roads and alleys,
- * and streams an animated trail of glowing Lagos taxi chevrons ahead of the rider.
+ * and streams an animated trail of glowing street taxi chevrons ahead of the rider.
  */
 export class RacingLine {
     constructor(app, map) {
         this.app = app;
         this.map = map;
 
-        // Visual materials: warm Lagos golden-yellow for straights, neon amber for sharp turn apexes
+        // Visual materials: warm street golden-yellow for straights, neon amber for sharp turn apexes
         this.matStraight = createGlowMaterial(new Color(1.0, 0.84, 0.18), 0.88);
         this.matTurn = createGlowMaterial(new Color(1.0, 0.44, 0.08), 0.92);
 

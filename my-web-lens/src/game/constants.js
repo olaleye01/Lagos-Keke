@@ -104,8 +104,8 @@ export const BIKE = {
 };
 
 export const HAZARDS = {
-    POTHOLE_COUNT: 12,
-    MUD_POTHOLE_COUNT: 5,
+    POTHOLE_COUNT: 0, // removed all potholes on the main road
+    MUD_POTHOLE_COUNT: 10, // doubled mud potholes/puddles in the muddy alleys (from 5 to 10)
     POTHOLE_SPEED_KEEP: 0.4, // fraction of speed kept after hitting a pothole
     NPC_COUNT: 14,
     NPC_RADIUS: 0.4
