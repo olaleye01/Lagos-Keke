@@ -183,7 +183,7 @@ app.root.addChild(beacon.root);
 const racingLine = new RacingLine(app, map);
 
 // Expose runtime debug handle
-window.gameDebug = { app, map, player, camera: cameraEntity };
+window.gameDebug = { app, map, player, vehicles, npcs, camera: cameraEntity };
 
 // --- Lighting Mood State & Presets (Afternoon & Night) ---
 const MOOD_PRESETS = {

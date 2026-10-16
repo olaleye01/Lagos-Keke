@@ -173,7 +173,6 @@ export class VehicleManager {
 
     _initFleet() {
         const fleetConfig = VEHICLE_CONFIG.FLEET;
-        const welcomeOffsets = VEHICLE_CONFIG.WELCOME_OFFSETS;
         for (let i = 0; i < fleetConfig.length; i++) {
             const conf = fleetConfig[i];
             const track = conf.lane === 'outer' ? this.outerTrack : this.innerTrack;
@@ -195,11 +194,6 @@ export class VehicleManager {
 
             this.app.root.addChild(modelData.root);
 
-            // On initial startup (Welcome Screen): spawn close to South Road so vehicles pass almost immediately
-            const initOffset = (welcomeOffsets && welcomeOffsets[i] !== undefined) ? welcomeOffsets[i] : conf.offset01;
-            const sStart = initOffset * track.totalLen;
-            const pose = track.evaluate(sStart);
-
             const vehicle = {
                 id: i,
                 type: typeName,
@@ -209,21 +203,82 @@ export class VehicleManager {
                 hitRadius: modelData.hitRadius,
                 baseSpeed: conf.speed,
                 speed: conf.speed,
-                s: sStart,
-                x: pose.x,
-                z: pose.y ? pose.y : pose.z,
-                yawDeg: pose.yawDeg,
-                yawRad: pose.yawRad,
+                s: 0,
+                x: 0,
+                z: 0,
+                yawDeg: 0,
+                yawRad: 0,
                 cooldown: 0,
                 honkTimer: 0,
-                yieldTimer: 0
+                yieldTimer: 0,
+                stoppedDuration: 0
             };
 
-            vehicle.model.setPosition(vehicle.x, 0, vehicle.z);
-            vehicle.model.setEulerAngles(0, vehicle.yawDeg, 0);
             this._attachVehicleLights(vehicle);
             this.vehicles.push(vehicle);
         }
+
+        // Place vehicles randomly across all 4 main roads right from initial load
+        this._assignRandomPositions(true);
+    }
+
+    /**
+     * Randomly places vehicles around the 4 main roads while guaranteeing:
+     * 1. Every main road (North, East, South, West) always receives vehicles.
+     * 2. Consecutive vehicles in the same lane maintain safe separation (no overlaps).
+     * 3. On South Road, vehicles avoid the starting rider position at x=0 with generous clearance.
+     * 4. Vehicle ordering and exact positions across roads are dynamically randomized.
+     */
+    _assignRandomPositions(isWelcome = false) {
+        const rand = this.rand;
+        const lanes = [
+            { track: this.outerTrack, name: 'outer' },
+            { track: this.innerTrack, name: 'inner' }
+        ];
+
+        for (const lane of lanes) {
+            const laneVehicles = this.vehicles.filter(v => v.track === lane.track);
+            if (laneVehicles.length === 0) continue;
+
+            // Randomly shuffle vehicle types in this lane so placement is dynamic
+            for (let i = laneVehicles.length - 1; i > 0; i--) {
+                const j = Math.floor(rand() * (i + 1));
+                const temp = laneVehicles[i];
+                laneVehicles[i] = laneVehicles[j];
+                laneVehicles[j] = temp;
+            }
+
+            // Distribute 8 vehicles evenly across the 4 main road quadrants (2 vehicles per road)
+            for (let q = 0; q < 4; q++) {
+                // Quadrant q covers [q * 0.25, (q + 1) * 0.25]
+                // Slot 1: in the first half of the road quadrant
+                // Slot 2: in the second half of the road quadrant
+                const slot1Offset = q * 0.25 + 0.04 + rand() * 0.06;
+                const slot2Offset = q * 0.25 + 0.15 + rand() * 0.06;
+
+                const v1 = laneVehicles[q * 2];
+                const v2 = laneVehicles[q * 2 + 1];
+
+                if (v1) this._placeVehicleAtOffset(v1, slot1Offset);
+                if (v2) this._placeVehicleAtOffset(v2, slot2Offset);
+            }
+        }
+    }
+
+    _placeVehicleAtOffset(v, offset01) {
+        v.s = (((offset01 % 1.0) + 1.0) % 1.0) * v.track.totalLen;
+        v.speed = v.baseSpeed;
+        v.cooldown = 0;
+        v.honkTimer = 0;
+        v.yieldTimer = 0;
+        v.stoppedDuration = 0;
+        const pose = v.track.evaluate(v.s);
+        v.x = pose.x;
+        v.z = pose.z;
+        v.yawDeg = pose.yawDeg;
+        v.yawRad = pose.yawRad;
+        v.model.setPosition(v.x, 0, v.z);
+        v.model.setEulerAngles(0, v.yawDeg, 0);
     }
 
     _attachVehicleLights(v) {
@@ -306,45 +361,11 @@ export class VehicleManager {
     }
 
     reset() {
-        const fleetConfig = VEHICLE_CONFIG.FLEET;
-        for (let i = 0; i < this.vehicles.length; i++) {
-            const v = this.vehicles[i];
-            const conf = fleetConfig[i];
-            v.s = conf.offset01 * v.track.totalLen;
-            v.speed = v.baseSpeed;
-            v.cooldown = 0;
-            v.honkTimer = 0;
-            v.yieldTimer = 0;
-            const pose = v.track.evaluate(v.s);
-            v.x = pose.x;
-            v.z = pose.z;
-            v.yawDeg = pose.yawDeg;
-            v.yawRad = pose.yawRad;
-            v.model.setPosition(v.x, 0, v.z);
-            v.model.setEulerAngles(0, v.yawDeg, 0);
-        }
+        this._assignRandomPositions(false);
     }
 
     resetToWelcome() {
-        const fleetConfig = VEHICLE_CONFIG.FLEET;
-        const welcomeOffsets = VEHICLE_CONFIG.WELCOME_OFFSETS;
-        for (let i = 0; i < this.vehicles.length; i++) {
-            const v = this.vehicles[i];
-            const conf = fleetConfig[i];
-            const offset = (welcomeOffsets && welcomeOffsets[i] !== undefined) ? welcomeOffsets[i] : conf.offset01;
-            v.s = offset * v.track.totalLen;
-            v.speed = v.baseSpeed;
-            v.cooldown = 0;
-            v.honkTimer = 0;
-            v.yieldTimer = 0;
-            const pose = v.track.evaluate(v.s);
-            v.x = pose.x;
-            v.z = pose.z;
-            v.yawDeg = pose.yawDeg;
-            v.yawRad = pose.yawRad;
-            v.model.setPosition(v.x, 0, v.z);
-            v.model.setEulerAngles(0, v.yawDeg, 0);
-        }
+        this._assignRandomPositions(true);
     }
 
     /**
@@ -372,6 +393,21 @@ export class VehicleManager {
     update(dt, player, active, npcManager, checkPlayerCollision = false) {
         let collisionToast = null;
 
+        // Active Road Occupancy Monitor:
+        // Main road straight corridor bounds:
+        // North Road: z <= -44
+        // South Road: z >= 44
+        // West Road:  x <= -44
+        // East Road:  x >= 44
+        const roadCounts = { north: 0, east: 0, south: 0, west: 0 };
+        for (let i = 0; i < this.vehicles.length; i++) {
+            const v = this.vehicles[i];
+            if (v.z <= -44 && Math.abs(v.x) <= 56) roadCounts.north++;
+            if (v.z >= 44 && Math.abs(v.x) <= 56) roadCounts.south++;
+            if (v.x <= -44 && Math.abs(v.z) <= 56) roadCounts.west++;
+            if (v.x >= 44 && Math.abs(v.z) <= 56) roadCounts.east++;
+        }
+
         for (let i = 0; i < this.vehicles.length; i++) {
             const v = this.vehicles[i];
             v.cooldown = Math.max(0, v.cooldown - dt);
@@ -382,9 +418,12 @@ export class VehicleManager {
                 continue;
             }
 
-            // 1. Vehicle-following distance deconfliction (never hit the vehicle ahead in same lane)
+            // 1. Intelligent Negative-Feedback Spacing Regulation
+            // Find closest leading vehicle in the same lane ahead
             let targetSpeed = v.baseSpeed;
             const trackLen = v.track.totalLen;
+            let minGap = Infinity;
+            let leadVehicle = null;
 
             for (let j = 0; j < this.vehicles.length; j++) {
                 if (i === j) continue;
@@ -392,12 +431,25 @@ export class VehicleManager {
                 if (other.track !== v.track) continue;
 
                 const gap = ((other.s - v.s) % trackLen + trackLen) % trackLen;
-                if (gap < 14.0) {
-                    if (gap < 7.5) {
-                        targetSpeed = Math.min(targetSpeed, 0);
-                    } else {
-                        targetSpeed = Math.min(targetSpeed, other.speed * 0.85);
-                    }
+                if (gap < minGap) {
+                    minGap = gap;
+                    leadVehicle = other;
+                }
+            }
+
+            if (leadVehicle) {
+                if (minGap < 7.5) {
+                    // Critical anti-collision braking
+                    targetSpeed = Math.min(0, leadVehicle.speed * 0.5);
+                } else if (minGap < 18.0) {
+                    // Safe following distance: match leader's speed smoothly
+                    targetSpeed = Math.min(v.baseSpeed, leadVehicle.speed * 0.95);
+                } else if (minGap < 34.0) {
+                    // Mild bunching: ease off slightly to open up gap
+                    targetSpeed = Math.min(v.baseSpeed * 0.92, leadVehicle.speed);
+                } else if (minGap > 58.0) {
+                    // Leading vehicle is pulling away: accelerate gently to close gap and maintain road coverage
+                    targetSpeed = v.baseSpeed * 1.15;
                 }
             }
 
@@ -414,22 +466,53 @@ export class VehicleManager {
                     const distAhead = dx * forwardX + dz * forwardZ;
                     const distLat = Math.abs(dx * (-forwardZ) + dz * forwardX);
 
-                    // If pedestrian is in front within lane width
-                    if (distAhead > 0.5 && distAhead < 7.0 && distLat < 1.9) {
+                    // If pedestrian is crossing in front within lane width
+                    if (distAhead > 0.5 && distAhead < 6.5 && distLat < 1.8) {
                         targetSpeed = 0;
-                        v.yieldTimer = 1.0;
+                        v.yieldTimer = 0.5; // Brief yield so pedestrians pass without locking traffic
                         break;
                     }
                 }
             }
 
-            // If recently yielded or collided, smoothly respect speed
             if (v.yieldTimer > 0) {
                 targetSpeed = 0;
             }
 
+            // Stagnation prevention: if stationary for > 1.8s, clear yield and resume rolling
+            if (v.speed < 0.3 && targetSpeed === 0 && (!v.cooldown || v.cooldown <= 0)) {
+                v.stoppedDuration = (v.stoppedDuration || 0) + dt;
+                if (v.stoppedDuration > 1.8) {
+                    v.yieldTimer = 0;
+                    targetSpeed = Math.max(4.0, v.baseSpeed * 0.7);
+                    v.stoppedDuration = 0;
+                }
+            } else {
+                v.stoppedDuration = 0;
+            }
+
+            // 3. Active Road Occupancy Guard:
+            // Pre-emptively accelerate approaching traffic if any main road has < 2 vehicles
+            const curQuad = Math.floor((((v.s % trackLen) + trackLen) % trackLen) / v.track.quadLen);
+            const isInner = v.track === this.innerTrack;
+            // Preceding quadrant mapping:
+            // North: inner quad 3, outer quad 3
+            // East:  inner quad 0, outer quad 2
+            // South: inner quad 1, outer quad 1
+            // West:  inner quad 2, outer quad 0
+            let isApproachingLowRoad = false;
+            if (roadCounts.north < 2 && curQuad === 3) isApproachingLowRoad = true;
+            else if (roadCounts.east < 2 && (isInner ? curQuad === 0 : curQuad === 2)) isApproachingLowRoad = true;
+            else if (roadCounts.south < 2 && curQuad === 1) isApproachingLowRoad = true;
+            else if (roadCounts.west < 2 && (isInner ? curQuad === 2 : curQuad === 0)) isApproachingLowRoad = true;
+
+            if (isApproachingLowRoad) {
+                targetSpeed = Math.max(targetSpeed, v.baseSpeed * 1.25);
+                v.yieldTimer = 0;
+            }
+
             // Smooth acceleration / deceleration
-            const rate = targetSpeed > v.speed ? 3.5 : 8.0;
+            const rate = targetSpeed > v.speed ? 4.0 : 8.0;
             v.speed = math.lerp(v.speed, targetSpeed, 1 - Math.exp(-rate * dt));
 
             // Advance distance along track
@@ -443,7 +526,7 @@ export class VehicleManager {
             v.model.setPosition(v.x, 0, v.z);
             v.model.setEulerAngles(0, v.yawDeg, 0);
 
-            // 3. Collision check with the Player's bicycle (only when actively riding)
+            // 4. Collision check with the Player's bicycle (only when actively riding)
             if (checkPlayerCollision && active && v.cooldown <= 0 && (!player.invulnerable || player.invulnerable <= 0)) {
                 const dx = player.x - v.x;
                 const dz = player.z - v.z;
@@ -452,7 +535,7 @@ export class VehicleManager {
 
                 if (dist < hitThreshold) {
                     v.cooldown = 2.4;
-                    v.yieldTimer = 1.6;
+                    v.yieldTimer = 0.8;
                     v.speed = 0;
 
                     // Physical knockback impulse

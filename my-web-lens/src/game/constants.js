@@ -68,20 +68,37 @@ export const GENERAL_COLLISION_SHOUTS = [
 ];
 
 export const VEHICLE_CONFIG = {
-    // Welcome screen initial fleet offsets: positioned near the south camera view
-    // so vehicles start passing across the screen almost immediately (within 1.5s - 2.0s).
-    WELCOME_OFFSETS: [0.590, 0.535, 0.470, 0.405, 0.575, 0.515, 0.450, 0.380],
+    // Welcome screen initial fleet offsets: distributed across all 4 main roads (North, West, South, East)
+    // with South Road vehicles immediately cruising across the welcome camera view.
+    WELCOME_OFFSETS: [
+        // Outer lane (8 vehicles): North, West, South, East
+        0.08, 0.19, 0.33, 0.44, 0.58, 0.69, 0.83, 0.94,
+        // Inner lane (8 vehicles): North, East, South, West
+        0.07, 0.18, 0.32, 0.43, 0.57, 0.68, 0.82, 0.93
+    ],
 
-    // Fair race start offsets: distributed around the perimeter track to prevent early spawn collisions
+    // Fleet of 16 vehicles (doubled from 8): authentic Lagos street mix (Danfos, Kekes, Cars, Okadas)
+    // 8 on outer lane (counter-clockwise) and 8 on inner lane (clockwise).
     FLEET: [
-        { type: 'danfo', speed: 7.6, lane: 'outer', offset01: 0.08 },
-        { type: 'keke', speed: 6.2, lane: 'outer', offset01: 0.35 },
-        { type: 'car', speed: 8.4, lane: 'outer', offset01: 0.68 },
-        { type: 'okada', speed: 9.0, lane: 'outer', offset01: 0.90 },
-        { type: 'okada', speed: 9.0, lane: 'inner', offset01: 0.12 },
-        { type: 'danfo', speed: 7.4, lane: 'inner', offset01: 0.35 },
-        { type: 'keke', speed: 6.4, lane: 'inner', offset01: 0.68 },
-        { type: 'car', speed: 8.2, lane: 'inner', offset01: 0.88 }
+        // Outer Lane (CCW: 0=North, 1=West, 2=South, 3=East)
+        { type: 'danfo', speed: 7.6, lane: 'outer', road: 'north', offset01: 0.08 },
+        { type: 'okada', speed: 8.3, lane: 'outer', road: 'north', offset01: 0.19 },
+        { type: 'keke',  speed: 7.2, lane: 'outer', road: 'west',  offset01: 0.33 },
+        { type: 'car',   speed: 8.0, lane: 'outer', road: 'west',  offset01: 0.44 },
+        { type: 'danfo', speed: 7.5, lane: 'outer', road: 'south', offset01: 0.58 },
+        { type: 'okada', speed: 8.4, lane: 'outer', road: 'south', offset01: 0.69 },
+        { type: 'keke',  speed: 7.2, lane: 'outer', road: 'east',  offset01: 0.83 },
+        { type: 'car',   speed: 7.9, lane: 'outer', road: 'east',  offset01: 0.94 },
+
+        // Inner Lane (CW: 0=North, 1=East, 2=South, 3=West)
+        { type: 'car',   speed: 8.0, lane: 'inner', road: 'north', offset01: 0.07 },
+        { type: 'keke',  speed: 7.2, lane: 'inner', road: 'north', offset01: 0.18 },
+        { type: 'danfo', speed: 7.6, lane: 'inner', road: 'east',  offset01: 0.32 },
+        { type: 'okada', speed: 8.4, lane: 'inner', road: 'east',  offset01: 0.43 },
+        { type: 'car',   speed: 7.9, lane: 'inner', road: 'south', offset01: 0.57 },
+        { type: 'keke',  speed: 7.2, lane: 'inner', road: 'south', offset01: 0.68 },
+        { type: 'danfo', speed: 7.5, lane: 'inner', road: 'west',  offset01: 0.82 },
+        { type: 'okada', speed: 8.3, lane: 'inner', road: 'west',  offset01: 0.93 }
     ]
 };
 
