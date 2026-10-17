@@ -978,24 +978,24 @@ btnRetry.addEventListener('click', () => {
 // --- Street Arcade Leaderboard Controller ---
 const STREET_ROSTERS = {
     noon: [
-        { name: 'Agba Rider', title: 'Agba Rider', score: 19000, stars: 5, avatar: '👑' },
-        { name: 'Lekki Speedster', title: 'Boss Rider', score: 18400, stars: 5, avatar: '⚡' },
-        { name: 'Danfo Dodger', title: 'Boss Rider', score: 16960, stars: 4, avatar: '🚐' },
-        { name: 'Keke King', title: 'Boss Rider', score: 16220, stars: 4, avatar: '🛺' },
-        { name: 'Surulere Sprint', title: 'Pro Rider', score: 13340, stars: 3, avatar: '🔥' },
-        { name: 'Yaba Express', title: 'Pro Rider', score: 12400, stars: 3, avatar: '💻' },
-        { name: 'Oshodi Dasher', title: 'Rough Rider', score: 10680, stars: 2, avatar: '🏃' },
-        { name: 'Ikeja Flyer', title: 'Rough Rider', score: 9540, stars: 2, avatar: '🚀' }
+        { name: 'Agba Rider', title: 'Agba Rider', score: 19000, stars: 5 },
+        { name: 'Lekki Speedster', title: 'Boss Rider', score: 18400, stars: 5 },
+        { name: 'Danfo Dodger', title: 'Boss Rider', score: 16960, stars: 4 },
+        { name: 'Keke King', title: 'Boss Rider', score: 16220, stars: 4 },
+        { name: 'Surulere Sprint', title: 'Pro Rider', score: 13340, stars: 3 },
+        { name: 'Yaba Express', title: 'Pro Rider', score: 12400, stars: 3 },
+        { name: 'Oshodi Dasher', title: 'Rough Rider', score: 10680, stars: 2 },
+        { name: 'Ikeja Flyer', title: 'Rough Rider', score: 9540, stars: 2 }
     ],
     night: [
-        { name: 'Agba Rider', title: 'Agba Rider', score: 19350, stars: 5, avatar: '👑' },
-        { name: 'Midnight Phantom', title: 'Boss Rider', score: 18750, stars: 5, avatar: '🦇' },
-        { name: 'Dark Alley Burna', title: 'Boss Rider', score: 17310, stars: 4, avatar: '🌑' },
-        { name: 'Neon Dasher', title: 'Boss Rider', score: 16570, stars: 4, avatar: '✨' },
-        { name: 'Moonlight Keke', title: 'Pro Rider', score: 13690, stars: 3, avatar: '🌙' },
-        { name: 'Surulere Ghost', title: 'Pro Rider', score: 12750, stars: 3, avatar: '👻' },
-        { name: 'Eko Starlight', title: 'Rough Rider', score: 11030, stars: 2, avatar: '⭐' },
-        { name: 'Street Owl', title: 'Rough Rider', score: 9890, stars: 2, avatar: '🦉' }
+        { name: 'Agba Rider', title: 'Agba Rider', score: 19350, stars: 5 },
+        { name: 'Midnight Phantom', title: 'Boss Rider', score: 18750, stars: 5 },
+        { name: 'Dark Alley Burna', title: 'Boss Rider', score: 17310, stars: 4 },
+        { name: 'Neon Dasher', title: 'Boss Rider', score: 16570, stars: 4 },
+        { name: 'Moonlight Keke', title: 'Pro Rider', score: 13690, stars: 3 },
+        { name: 'Surulere Ghost', title: 'Pro Rider', score: 12750, stars: 3 },
+        { name: 'Eko Starlight', title: 'Rough Rider', score: 11030, stars: 2 },
+        { name: 'Street Owl', title: 'Rough Rider', score: 9890, stars: 2 }
     ]
 };
 
@@ -1053,7 +1053,6 @@ function renderLeaderboard(mode = 'noon') {
             title: playerTitle,
             score: playerScore,
             stars: playerStars || 1,
-            avatar: '🚲',
             isPlayer: true
         });
     }
@@ -1083,11 +1082,8 @@ function renderLeaderboard(mode = 'noon') {
             row.className = `lb-row ${entry.isPlayer ? 'lb-row-player' : ''}`;
             row.setAttribute('role', 'listitem');
 
-            const rankBadge = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
-
             row.innerHTML = `
-                <div class="lb-row-rank ${rankClass}">${rank <= 3 ? rankBadge : rank}</div>
-                <div class="lb-row-avatar">${entry.avatar}</div>
+                <div class="lb-row-rank ${rankClass}">${rank}</div>
                 <div class="lb-row-info">
                     <div class="lb-row-name-wrap">
                         <span class="lb-row-name">${entry.name}</span>
@@ -1110,7 +1106,6 @@ function renderLeaderboard(mode = 'noon') {
             unrankedRow.setAttribute('role', 'listitem');
             unrankedRow.innerHTML = `
                 <div class="lb-row-rank rank-other">-</div>
-                <div class="lb-row-avatar">🚲</div>
                 <div class="lb-row-info">
                     <div class="lb-row-name-wrap">
                         <span class="lb-row-name">YOU (Street Rider)</span>

@@ -3053,7 +3053,7 @@ html, body {
 .lb-actions-footer {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
 }
 
@@ -3061,29 +3061,49 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   flex: 1;
-  padding: 10px 10px;
-  background: #fffc00;
-  border: 2.5px solid var(--outline-dark);
-  border-radius: 16px;
-  box-shadow: 0 3px 0 var(--outline-deep);
+  height: clamp(50px, 11vw, 56px);
+  min-height: 48px;
+  padding: 0 16px;
+  background: transparent;
+  border: 3.5px solid var(--outline-dark);
+  border-radius: 29px;
+  box-shadow: 0 5px 0 var(--outline-deep);
   color: var(--outline-dark);
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: clamp(15px, 3.8vw, 18px);
   font-weight: 900;
+  letter-spacing: 0.06em;
   cursor: pointer;
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.15s ease;
 }
+
+.lb-snap-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
 .lb-snap-btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 1px 0 var(--outline-deep);
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 var(--outline-deep);
+}
+
+.lb-snap-btn-label {
+  display: inline-block;
+  line-height: 1;
 }
 
 .lb-continue-btn {
   flex: 1;
   margin-top: 0;
-  min-height: 42px;
+  height: clamp(50px, 11vw, 56px);
+  min-height: 48px;
+  padding: 0 16px;
+}
+
+.lb-continue-btn .welcome-cta-label {
+  font-size: clamp(15px, 3.8vw, 18px);
+  letter-spacing: 0.06em;
 }
 
 /* ==========================================================================
@@ -3746,6 +3766,20 @@ body.night-mode .lb-row.lb-row-player {
   background: #172554;
   border-color: #38bdf8;
   box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+}
+
+body.night-mode .lb-snap-btn {
+  border-color: #38bdf8;
+  color: #f8fafc;
+  box-shadow: 0 5px 0 #020617;
+  background: transparent;
+}
+body.night-mode .lb-snap-btn:hover {
+  background: rgba(56, 189, 248, 0.12);
+}
+body.night-mode .lb-snap-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 #020617;
 }
 
 body.night-mode .end-circle-lb-btn:hover {
