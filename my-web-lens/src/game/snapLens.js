@@ -14,14 +14,23 @@ class SnapLensManager {
         this.bitmojiSupported = false;
         this.storageSupported = false;
 
-        // In-memory cache for storage
+        // In-memory cache for storage with separate Noon and Night score systems
         this.storageLoaded = false;
         this.saveData = {
             bestScore: 0,
             bestStars: 0,
             bestRank: '',
-            runsPlayed: 0
+            runsPlayed: 0,
+            bestScoreNoon: 0,
+            bestScoreNight: 0,
+            bestStarsNoon: 0,
+            bestStarsNight: 0,
+            runsPlayedNoon: 0,
+            runsPlayedNight: 0
         };
+
+        // Load persisted local storage cache immediately
+        this.loadLocalStorageCache();
 
         // Chained write promise to prevent ERR_QUOTA_EXCEEDED
         this.pendingSave = Promise.resolve();
@@ -32,6 +41,24 @@ class SnapLensManager {
 
         // 3D Avatar Asset
         this.avatar3DAsset = null;
+    }
+
+    /**
+     * Synchronously seed in-memory cache from localStorage for instant offline access.
+     */
+    loadLocalStorageCache() {
+        try {
+            const raw = localStorage.getItem('street_rush_save_data');
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed && typeof parsed === 'object') {
+                    this.saveData = {
+                        ...this.saveData,
+                        ...parsed
+                    };
+                }
+            }
+        } catch (_) {}
     }
 
     /**
@@ -73,8 +100,10 @@ class SnapLensManager {
     // =========================================================================
 
     async loadSaveData() {
+        this.loadLocalStorageCache();
         if (!this.storageSupported) {
             this.storageLoaded = true;
+            this.migrateSaveData();
             return this.saveData;
         }
         await this.pendingSave;
@@ -91,7 +120,20 @@ class SnapLensManager {
             console.warn('[SnapLens] loadSaveData failed:', e.message);
             this.storageLoaded = true;
         }
+        this.migrateSaveData();
         return this.saveData;
+    }
+
+    migrateSaveData() {
+        // If legacy single score exists but mode scores are unpopulated, seed Noon score with it
+        if (this.saveData.bestScore > 0 && !this.saveData.bestScoreNoon && !this.saveData.bestScoreNight) {
+            this.saveData.bestScoreNoon = this.saveData.bestScore;
+            this.saveData.bestStarsNoon = this.saveData.bestStars || 0;
+            this.saveData.runsPlayedNoon = this.saveData.runsPlayed || 0;
+        }
+        try {
+            localStorage.setItem('street_rush_save_data', JSON.stringify(this.saveData));
+        } catch (_) {}
     }
 
     queueSave(newData) {
@@ -99,6 +141,10 @@ class SnapLensManager {
             ...this.saveData,
             ...newData
         };
+        try {
+            localStorage.setItem('street_rush_save_data', JSON.stringify(this.saveData));
+        } catch (_) {}
+
         if (!this.storageSupported || !this.storageLoaded) {
             return Promise.resolve(false);
         }
@@ -124,14 +170,65 @@ class SnapLensManager {
     }
 
     // =========================================================================
-    // LEADERBOARDS API (Option B: Arcade Points)
+    // MODE-AWARE SCORE & RECORD GETTERS / RECORDING
+    // =========================================================================
+
+    getBestScore(mode = 'noon') {
+        const isNight = mode === 'night';
+        const val = isNight ? this.saveData.bestScoreNight : this.saveData.bestScoreNoon;
+        if (!val && !isNight && this.saveData.bestScore > 0) {
+            return this.saveData.bestScore;
+        }
+        return val || 0;
+    }
+
+    getBestStars(mode = 'noon') {
+        const isNight = mode === 'night';
+        const val = isNight ? this.saveData.bestStarsNight : this.saveData.bestStarsNoon;
+        return val || this.saveData.bestStars || 0;
+    }
+
+    getRunsPlayed(mode = 'noon') {
+        const isNight = mode === 'night';
+        return (isNight ? this.saveData.runsPlayedNight : this.saveData.runsPlayedNoon) || 0;
+    }
+
+    recordRun(mode = 'noon', score, stars = 1) {
+        const isNight = mode === 'night';
+        const prevBest = this.getBestScore(mode);
+        const newBest = Math.max(prevBest, score);
+        const prevStars = this.getBestStars(mode);
+        const newStars = Math.max(prevStars, stars);
+        const runsKey = isNight ? 'runsPlayedNight' : 'runsPlayedNoon';
+        const scoreKey = isNight ? 'bestScoreNight' : 'bestScoreNoon';
+        const starsKey = isNight ? 'bestStarsNight' : 'bestStarsNoon';
+
+        const updateData = {
+            [scoreKey]: newBest,
+            [starsKey]: newStars,
+            [runsKey]: (this.saveData[runsKey] || 0) + 1,
+            bestScore: Math.max(this.saveData.bestScore || 0, score),
+            bestStars: Math.max(this.saveData.bestStars || 0, stars),
+            runsPlayed: (this.saveData.runsPlayed || 0) + 1
+        };
+
+        this.queueSave(updateData);
+        return {
+            isNewBest: score > prevBest,
+            newBest,
+            previousBest: prevBest
+        };
+    }
+
+    // =========================================================================
+    // LEADERBOARDS API (Mode-Aware Arcade Points)
     // =========================================================================
 
     /**
      * Calculate score using Option B: Arcade Points.
      * Guaranteed to return an integer score.
      */
-    calculateArcadeScore({ won, checkpointsReached, timeLeft, starCount, stats }) {
+    calculateArcadeScore({ won, checkpointsReached, timeLeft, starCount, stats, mode = 'noon' }) {
         const cps = Math.max(0, checkpointsReached || 0);
         const time = Math.max(0, timeLeft || 0);
         const stars = Math.max(1, starCount || 1);
@@ -148,6 +245,10 @@ class SnapLensManager {
         // Flawless Street Mastery Bonus: 1,500 extra points for no crashes or gutter falls
         const cleanBonus = won && stats.gutterFalls === 0 && stats.vehicleHits === 0 ? 1500 : 0;
 
+        // Mode Bonus: Night mode navigating dark streets with headlights
+        const isNight = mode === 'night';
+        const modeBonus = isNight ? (won ? 350 : 150) : 0;
+
         // Hazard Deductions
         const potholePenalty = (stats.potholes || 0) * 40;
         const vehiclePenalty = (stats.vehicleHits || 0) * 160;
@@ -155,42 +256,59 @@ class SnapLensManager {
         const gutterPenalty = (stats.gutterFalls || 0) * 200;
         const totalPenalty = potholePenalty + vehiclePenalty + npcPenalty + gutterPenalty;
 
-        const totalScore = Math.max(150, Math.round(cpPoints + timeBonus + starBonus + cleanBonus - totalPenalty));
+        const totalScore = Math.max(150, Math.round(cpPoints + timeBonus + starBonus + cleanBonus + modeBonus - totalPenalty));
         return totalScore;
     }
 
     /**
      * Submit integer score to native Snapchat leaderboard.
-     * Returns bestScore if available.
+     * Follows official documentation: https://developers.snap.com/web-lenses/leaderboards
+     * - score must be an integer (Math.round)
+     * - ordering: 'descending' (higher scores rank first)
+     * - bestScore in the result is the player's best score on the board
+     * @param {number} score - The arcade score to submit (rounded to integer).
+     * @returns {Promise<number|null>} Server-acknowledged bestScore, or the submitted score, or null on error.
      */
     async submitScore(score) {
         if (!this.leaderboardsSupported) return null;
+        const integerScore = Math.round(score);
+
         try {
-            const integerScore = Math.round(score);
-            const res = await snapchat.leaderboards.submitScore({
+            const { bestScore } = await snapchat.leaderboards.submitScore({
                 score: integerScore,
                 ordering: 'descending'
             });
-            return res?.bestScore ?? integerScore;
+            return bestScore !== undefined ? bestScore : integerScore;
         } catch (e) {
-            console.warn('[SnapLens] submitScore error:', e.message);
+            console.warn('Leaderboard unavailable:', e.message);
             return null;
         }
     }
 
     /**
      * Opens Snapchat native leaderboard modal.
+     * Follows official documentation: https://developers.snap.com/web-lenses/leaderboards
+     * Submits score first if provided so the panel has data to show, then presents the board.
+     * Handles ERR_INTERNAL or unavailability gracefully with a console warning.
+     * @param {number} [score] - Optional final or best score to submit before presenting the board.
+     * @returns {Promise<boolean>}
      */
-    async showLeaderboard() {
+    async showLeaderboard(score) {
         if (!this.leaderboardsSupported) {
             console.info('[SnapLens] Leaderboards not supported in this host.');
             return false;
         }
         try {
+            if (score !== undefined && score !== null && !isNaN(score)) {
+                await snapchat.leaderboards.submitScore({
+                    score: Math.round(score),
+                    ordering: 'descending'
+                });
+            }
             await snapchat.leaderboards.show();
             return true;
         } catch (e) {
-            console.warn('[SnapLens] showLeaderboard error:', e.message);
+            console.warn('Leaderboard unavailable:', e.message);
             return false;
         }
     }

@@ -39,6 +39,8 @@ const btnWelcomeLeaderboard = document.getElementById('btn-welcome-leaderboard')
 const btnEndLeaderboard = document.getElementById('btn-end-leaderboard');
 const welcomeRiderAvatar = document.getElementById('welcome-rider-avatar');
 const welcomeRiderFallback = document.getElementById('welcome-rider-fallback');
+const welcomeScorePill = document.getElementById('welcome-score-pill');
+const welcomeScoreLbl = document.getElementById('welcome-score-lbl');
 const welcomeBestScore = document.getElementById('welcome-best-score');
 const welcomeRiderStatus = document.getElementById('welcome-rider-status');
 const endBitmojiWrap = document.getElementById('end-bitmoji-wrap');
@@ -46,6 +48,30 @@ const endBitmojiImg = document.getElementById('end-bitmoji-img');
 const endRiderFallback = document.getElementById('end-rider-fallback');
 const statScoreEl = document.getElementById('stat-score');
 const statBestScoreEl = document.getElementById('stat-best-score');
+const statScoreLabel = document.getElementById('stat-score-label');
+const statBestScoreLabel = document.getElementById('stat-best-score-label');
+const endModeBadge = document.getElementById('end-mode-badge');
+const endModeIcon = document.getElementById('end-mode-icon');
+const endModeText = document.getElementById('end-mode-text');
+const endNewRecordBanner = document.getElementById('end-new-record-banner');
+const endNewRecordText = document.getElementById('end-new-record-text');
+
+// Leaderboard Screen Modal Elements
+const leaderboardScreen = document.getElementById('leaderboard-screen');
+const btnCloseLeaderboard = document.getElementById('btn-close-leaderboard');
+const btnLbCloseBottom = document.getElementById('btn-lb-close-bottom');
+const lbTabNoon = document.getElementById('lb-tab-noon');
+const lbTabNight = document.getElementById('lb-tab-night');
+const lbPlayerAvatarImg = document.getElementById('lb-player-avatar-img');
+const lbPlayerFallbackSvg = document.getElementById('lb-player-fallback-svg');
+const lbPlayerRankDesc = document.getElementById('lb-player-rank-desc');
+const lbPlayerModeTag = document.getElementById('lb-player-mode-tag');
+const lbPlayerScoreVal = document.getElementById('lb-player-score-val');
+const lbStandingsList = document.getElementById('lb-standings-list');
+const btnSnapFriendsLb = document.getElementById('btn-snap-friends-lb');
+
+// Active gameplay mode for currently running race ('noon' or 'night')
+let currentRaceMode = 'noon';
 
 const cpCountEl = document.getElementById('cp-count');
 const cpNameEl = document.getElementById('cp-name');
@@ -292,10 +318,23 @@ function setMood(mood, immediate = false) {
     if (player && player.setMood) player.setMood(currentMood);
 
     updateMoodUI(currentMood);
+    updateWelcomeScoreCard();
 
     try {
         localStorage.setItem('street_rush_mood', currentMood);
     } catch (_) {}
+}
+
+function updateWelcomeScoreCard() {
+    const isNight = currentMood === 'night';
+    const mode = isNight ? 'night' : 'noon';
+    const score = snapLens.getBestScore(mode);
+    if (welcomeScoreLbl) {
+        welcomeScoreLbl.textContent = isNight ? '🌙 NIGHT BEST' : '☀️ NOON BEST';
+    }
+    if (welcomeBestScore) {
+        welcomeBestScore.textContent = `${score.toLocaleString()} PTS`;
+    }
 }
 
 window.gameMood = { get: () => currentMood, set: setMood };
@@ -570,6 +609,7 @@ function respawnPlayerAtLastCheckpoint(reason = 'crash') {
 function startCountdown() {
     gameState = STATE.COUNTDOWN;
     previousStateBeforePause = null;
+    currentRaceMode = currentMood === 'night' ? 'night' : 'noon';
     countdownTimer = 3;
     timeLeft = GAME.TIME_LIMIT;
     sessionElapsed = 0;
@@ -777,22 +817,53 @@ function endGame(won) {
     const statPotholesEl = document.getElementById('stat-potholes');
     if (statPotholesEl) statPotholesEl.textContent = potholes;
 
-    // Calculate Arcade Score (Option B: checkpoints + speed bonus + star rating - hazard penalties)
+    // Determine mode for this completed race
+    const mode = currentRaceMode || (currentMood === 'night' ? 'night' : 'noon');
+    const isNight = mode === 'night';
+
+    // Update End Screen Mode Badge
+    if (endModeBadge) {
+        endModeBadge.className = `end-mode-badge ${mode}`;
+    }
+    if (endModeIcon) {
+        endModeIcon.textContent = isNight ? '🌙' : '☀️';
+    }
+    if (endModeText) {
+        endModeText.textContent = isNight ? 'NIGHT TIME TRIAL' : 'NOON TIME TRIAL';
+    }
+
+    // Calculate Mode Arcade Score
     const currentScore = snapLens.calculateArcadeScore({
         won,
         checkpointsReached: won ? CHECKPOINTS.length : currentCPIndex,
         timeLeft,
         starCount,
-        stats: player.stats
+        stats: player.stats,
+        mode
     });
 
-    const prevBest = snapLens.saveData.bestScore || 0;
-    const newBest = Math.max(prevBest, currentScore);
+    // Record run and check for mode-specific high score
+    const { isNewBest, newBest } = snapLens.recordRun(mode, currentScore, starCount);
+
+    if (statScoreLabel) statScoreLabel.textContent = isNight ? 'NIGHT ARCADE SCORE' : 'NOON ARCADE SCORE';
+    if (statBestScoreLabel) statBestScoreLabel.textContent = isNight ? 'NIGHT RECORD' : 'NOON RECORD';
 
     if (statScoreEl) statScoreEl.textContent = currentScore.toLocaleString();
     if (statBestScoreEl) statBestScoreEl.textContent = newBest.toLocaleString();
 
-    // Submit to native Snapchat Leaderboard
+    // New Record Celebration Banner
+    if (endNewRecordBanner) {
+        if (isNewBest) {
+            endNewRecordBanner.classList.remove('hidden');
+            if (endNewRecordText) {
+                endNewRecordText.textContent = isNight ? '★ NEW NIGHT RECORD! ★' : '★ NEW NOON RECORD! ★';
+            }
+        } else {
+            endNewRecordBanner.classList.add('hidden');
+        }
+    }
+
+    // Submit to native Snapchat Leaderboard per https://developers.snap.com/web-lenses/leaderboards
     if (snapLens.leaderboardsSupported) {
         snapLens.submitScore(currentScore).then(serverBest => {
             if (serverBest !== null && statBestScoreEl) {
@@ -801,16 +872,7 @@ function endGame(won) {
         });
     }
 
-    // Persist best score & stats to Snapchat Account Storage
-    snapLens.queueSave({
-        bestScore: newBest,
-        bestStars: Math.max(snapLens.saveData.bestStars || 0, starCount),
-        runsPlayed: (snapLens.saveData.runsPlayed || 0) + 1
-    });
-
-    if (welcomeBestScore) {
-        welcomeBestScore.textContent = `${newBest.toLocaleString()} PTS`;
-    }
+    updateWelcomeScoreCard();
 
     endScreen.classList.remove('hidden');
 }
@@ -821,6 +883,7 @@ function showWelcomeScreen() {
     previousStateBeforePause = null;
     input.enabled = false;
     audio.setRolling(0, 'road');
+    updateWelcomeScoreCard();
     countdownTimer = 3;
     timeLeft = GAME.TIME_LIMIT;
     sessionElapsed = 0;
@@ -912,19 +975,256 @@ btnRetry.addEventListener('click', () => {
     showWelcomeScreen();
 });
 
+// --- Street Arcade Leaderboard Controller ---
+const STREET_ROSTERS = {
+    noon: [
+        { name: 'Agba Rider', title: 'Agba Rider', score: 19000, stars: 5, avatar: '👑' },
+        { name: 'Lekki Speedster', title: 'Boss Rider', score: 18400, stars: 5, avatar: '⚡' },
+        { name: 'Danfo Dodger', title: 'Boss Rider', score: 16960, stars: 4, avatar: '🚐' },
+        { name: 'Keke King', title: 'Boss Rider', score: 16220, stars: 4, avatar: '🛺' },
+        { name: 'Surulere Sprint', title: 'Pro Rider', score: 13340, stars: 3, avatar: '🔥' },
+        { name: 'Yaba Express', title: 'Pro Rider', score: 12400, stars: 3, avatar: '💻' },
+        { name: 'Oshodi Dasher', title: 'Rough Rider', score: 10680, stars: 2, avatar: '🏃' },
+        { name: 'Ikeja Flyer', title: 'Rough Rider', score: 9540, stars: 2, avatar: '🚀' }
+    ],
+    night: [
+        { name: 'Agba Rider', title: 'Agba Rider', score: 19350, stars: 5, avatar: '👑' },
+        { name: 'Midnight Phantom', title: 'Boss Rider', score: 18750, stars: 5, avatar: '🦇' },
+        { name: 'Dark Alley Burna', title: 'Boss Rider', score: 17310, stars: 4, avatar: '🌑' },
+        { name: 'Neon Dasher', title: 'Boss Rider', score: 16570, stars: 4, avatar: '✨' },
+        { name: 'Moonlight Keke', title: 'Pro Rider', score: 13690, stars: 3, avatar: '🌙' },
+        { name: 'Surulere Ghost', title: 'Pro Rider', score: 12750, stars: 3, avatar: '👻' },
+        { name: 'Eko Starlight', title: 'Rough Rider', score: 11030, stars: 2, avatar: '⭐' },
+        { name: 'Street Owl', title: 'Rough Rider', score: 9890, stars: 2, avatar: '🦉' }
+    ]
+};
+
+function getRiderTitle(score) {
+    if (score >= 18500) return 'Agba Rider';
+    if (score >= 16000) return 'Boss Rider';
+    if (score >= 12000) return 'Pro Rider';
+    if (score >= 9000) return 'Rough Rider';
+    if (score >= 5000) return 'Street Hustler';
+    return 'Street Rookie';
+}
+
+function renderLeaderboard(mode = 'noon') {
+    const isNight = mode === 'night';
+
+    // Update tab button states
+    if (lbTabNoon) {
+        lbTabNoon.classList.toggle('active', !isNight);
+        lbTabNoon.setAttribute('aria-selected', !isNight ? 'true' : 'false');
+    }
+    if (lbTabNight) {
+        lbTabNight.classList.toggle('active', isNight);
+        lbTabNight.setAttribute('aria-selected', isNight ? 'true' : 'false');
+    }
+
+    // Mode-specific score and stats
+    const playerScore = snapLens.getBestScore(mode);
+    const playerStars = snapLens.getBestStars(mode);
+    const runsPlayed = snapLens.getRunsPlayed(mode);
+
+    if (lbPlayerModeTag) {
+        lbPlayerModeTag.textContent = isNight ? 'NIGHT BEST' : 'NOON BEST';
+    }
+    if (lbPlayerScoreVal) {
+        lbPlayerScoreVal.textContent = `${playerScore.toLocaleString()} PTS`;
+    }
+
+    // Sync avatar thumbnail
+    if (snapLens.avatarUrl2D && lbPlayerAvatarImg) {
+        lbPlayerAvatarImg.src = snapLens.avatarUrl2D;
+        lbPlayerAvatarImg.classList.remove('hidden');
+        if (lbPlayerFallbackSvg) lbPlayerFallbackSvg.classList.add('hidden');
+    } else {
+        if (lbPlayerAvatarImg) lbPlayerAvatarImg.classList.add('hidden');
+        if (lbPlayerFallbackSvg) lbPlayerFallbackSvg.classList.remove('hidden');
+    }
+
+    // Assemble leaderboard roster
+    const roster = STREET_ROSTERS[mode].map(r => ({ ...r, isPlayer: false }));
+    const playerTitle = playerScore > 0 ? getRiderTitle(playerScore) : 'Ready to Race';
+
+    if (playerScore > 0) {
+        roster.push({
+            name: 'YOU (Street Rider)',
+            title: playerTitle,
+            score: playerScore,
+            stars: playerStars || 1,
+            avatar: '🚲',
+            isPlayer: true
+        });
+    }
+
+    // Sort descending by score
+    roster.sort((a, b) => b.score - a.score);
+
+    // Update Player Rank Text
+    if (lbPlayerRankDesc) {
+        if (playerScore > 0) {
+            const playerRank = roster.findIndex(r => r.isPlayer) + 1;
+            lbPlayerRankDesc.textContent = `Rank #${playerRank} · ${playerTitle} (${runsPlayed} ${runsPlayed === 1 ? 'run' : 'runs'})`;
+        } else {
+            lbPlayerRankDesc.textContent = `Unranked · Complete a ${isNight ? 'Night' : 'Noon'} run to rank!`;
+        }
+    }
+
+    // Populate Standings List
+    if (lbStandingsList) {
+        lbStandingsList.innerHTML = '';
+        roster.forEach((entry, idx) => {
+            const rank = idx + 1;
+            const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
+            const starStr = '★'.repeat(entry.stars || 1);
+
+            const row = document.createElement('div');
+            row.className = `lb-row ${entry.isPlayer ? 'lb-row-player' : ''}`;
+            row.setAttribute('role', 'listitem');
+
+            const rankBadge = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+
+            row.innerHTML = `
+                <div class="lb-row-rank ${rankClass}">${rank <= 3 ? rankBadge : rank}</div>
+                <div class="lb-row-avatar">${entry.avatar}</div>
+                <div class="lb-row-info">
+                    <div class="lb-row-name-wrap">
+                        <span class="lb-row-name">${entry.name}</span>
+                        ${entry.isPlayer ? '<span class="lb-you-tag">YOU</span>' : ''}
+                    </div>
+                    <span class="lb-row-title">${entry.title}</span>
+                </div>
+                <div class="lb-row-score-wrap">
+                    <span class="lb-row-score">${entry.score.toLocaleString()}</span>
+                    <span class="lb-row-stars">${starStr}</span>
+                </div>
+            `;
+            lbStandingsList.appendChild(row);
+        });
+
+        // If player has not yet scored in this mode, append unranked placeholder
+        if (playerScore === 0) {
+            const unrankedRow = document.createElement('div');
+            unrankedRow.className = 'lb-row lb-row-player';
+            unrankedRow.setAttribute('role', 'listitem');
+            unrankedRow.innerHTML = `
+                <div class="lb-row-rank rank-other">-</div>
+                <div class="lb-row-avatar">🚲</div>
+                <div class="lb-row-info">
+                    <div class="lb-row-name-wrap">
+                        <span class="lb-row-name">YOU (Street Rider)</span>
+                        <span class="lb-you-tag">YOU</span>
+                    </div>
+                    <span class="lb-row-title">No runs recorded in ${isNight ? 'Night' : 'Noon'} mode</span>
+                </div>
+                <div class="lb-row-score-wrap">
+                    <span class="lb-row-score">0 PTS</span>
+                    <span class="lb-row-stars">UNRANKED</span>
+                </div>
+            `;
+            lbStandingsList.appendChild(unrankedRow);
+        }
+    }
+
+    // Toggle Snapchat Friends board button based on leaderboards capability
+    if (btnSnapFriendsLb) {
+        if (snapLens.leaderboardsSupported) {
+            btnSnapFriendsLb.classList.remove('hidden');
+        } else {
+            btnSnapFriendsLb.classList.add('hidden');
+        }
+    }
+}
+
+function openLeaderboard(mode) {
+    if (audio && audio.unlock) audio.unlock();
+    const targetMode = mode || (currentMood === 'night' ? 'night' : 'noon');
+    renderLeaderboard(targetMode);
+    if (leaderboardScreen) {
+        leaderboardScreen.classList.remove('hidden');
+    }
+}
+
+function closeLeaderboard() {
+    if (audio && audio.unlock) audio.unlock();
+    if (leaderboardScreen) {
+        leaderboardScreen.classList.add('hidden');
+    }
+}
+
 if (btnWelcomeLeaderboard) {
     btnWelcomeLeaderboard.addEventListener('click', () => {
-        audio.unlock();
-        snapLens.showLeaderboard();
+        openLeaderboard(currentMood === 'night' ? 'night' : 'noon');
     });
 }
 
 if (btnEndLeaderboard) {
     btnEndLeaderboard.addEventListener('click', () => {
-        audio.unlock();
-        snapLens.showLeaderboard();
+        openLeaderboard(currentRaceMode);
     });
 }
+
+if (welcomeScorePill) {
+    welcomeScorePill.addEventListener('click', () => {
+        openLeaderboard(currentMood === 'night' ? 'night' : 'noon');
+    });
+    welcomeScorePill.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openLeaderboard(currentMood === 'night' ? 'night' : 'noon');
+        }
+    });
+}
+
+if (btnCloseLeaderboard) {
+    btnCloseLeaderboard.addEventListener('click', closeLeaderboard);
+}
+
+if (btnLbCloseBottom) {
+    btnLbCloseBottom.addEventListener('click', closeLeaderboard);
+}
+
+if (leaderboardScreen) {
+    leaderboardScreen.addEventListener('click', (e) => {
+        if (e.target === leaderboardScreen) {
+            closeLeaderboard();
+        }
+    });
+}
+
+if (lbTabNoon) {
+    lbTabNoon.addEventListener('click', () => {
+        if (audio && audio.unlock) audio.unlock();
+        renderLeaderboard('noon');
+    });
+}
+
+if (lbTabNight) {
+    lbTabNight.addEventListener('click', () => {
+        if (audio && audio.unlock) audio.unlock();
+        renderLeaderboard('night');
+    });
+}
+
+if (btnSnapFriendsLb) {
+    btnSnapFriendsLb.addEventListener('click', () => {
+        if (audio && audio.unlock) audio.unlock();
+        const activeMode = currentMood === 'night' ? 'night' : 'noon';
+        const best = snapLens.getBestScore(activeMode);
+        snapLens.showLeaderboard(best > 0 ? best : undefined).then(opened => {
+            if (opened && snapLens.isStub) {
+                showToast('Snapchat Leaderboard presented (stub mode)');
+            }
+        });
+    });
+}
+
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && leaderboardScreen && !leaderboardScreen.classList.contains('hidden')) {
+        closeLeaderboard();
+    }
+});
 
 // --- Unified Sound Controls ---
 function toggleSound() {
@@ -1533,17 +1833,21 @@ function renderMinimap(activeCP) {
 
 // --- Snapchat Lens Features Bootstrap ---
 async function setupLensFeatures() {
-    // 1. Leaderboard Buttons Resilience
+    // 1. Leaderboard Features Visibility
+    // Strictly follows https://developers.snap.com/web-lenses/leaderboards:
+    // "Check snapchat.isSupported('leaderboards') after init(), and hide leaderboard features when it's false."
     if (snapLens.leaderboardsSupported) {
         if (btnWelcomeLeaderboard) btnWelcomeLeaderboard.classList.remove('hidden');
         if (btnEndLeaderboard) btnEndLeaderboard.classList.remove('hidden');
+        if (btnSnapFriendsLb) btnSnapFriendsLb.classList.remove('hidden');
+    } else {
+        if (btnWelcomeLeaderboard) btnWelcomeLeaderboard.classList.add('hidden');
+        if (btnEndLeaderboard) btnEndLeaderboard.classList.add('hidden');
+        if (btnSnapFriendsLb) btnSnapFriendsLb.classList.add('hidden');
     }
 
-    // 2. Personal Best Display from Persistent Storage
-    const bestScore = snapLens.saveData.bestScore || 0;
-    if (welcomeBestScore) {
-        welcomeBestScore.textContent = `${bestScore.toLocaleString()} PTS`;
-    }
+    // 2. Personal Best Display from Persistent Storage (Mode-aware)
+    updateWelcomeScoreCard();
 
     // 3. Bitmoji Avatar (2D Portrait)
     if (snapLens.bitmojiSupported) {

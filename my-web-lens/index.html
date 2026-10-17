@@ -395,8 +395,8 @@
           </svg>
         </button>
 
-        <!-- Top Right Native Leaderboard Button -->
-        <button id="btn-welcome-leaderboard" class="welcome-leaderboard-btn hidden" aria-label="View Leaderboard" title="View Leaderboard">
+        <!-- Top Right Leaderboard Button -->
+        <button id="btn-welcome-leaderboard" class="welcome-leaderboard-btn" aria-label="View Leaderboards" title="View Street Leaderboards">
           <svg class="lb-cup-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"></path>
             <path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"></path>
@@ -512,8 +512,8 @@
             <span class="rider-label">STREET RIDER</span>
             <span id="welcome-rider-status" class="rider-sub">GEARED FOR THE HOOD</span>
           </div>
-          <div class="rider-score-pill">
-            <span class="rider-score-lbl">BEST</span>
+          <div id="welcome-score-pill" class="rider-score-pill" role="button" tabindex="0" title="View Street Leaderboards" aria-label="View Street Leaderboards">
+            <span id="welcome-score-lbl" class="rider-score-lbl">NOON BEST</span>
             <span id="welcome-best-score" class="rider-score-val">0 PTS</span>
           </div>
         </div>
@@ -748,6 +748,12 @@
         </div>
 
         <div class="end-header">
+          <!-- Active Mode Badge (Noon or Night) -->
+          <div id="end-mode-badge" class="end-mode-badge noon">
+            <span id="end-mode-icon" class="end-mode-icon">☀️</span>
+            <span id="end-mode-text">NOON RUN</span>
+          </div>
+
           <h2 id="end-title" class="end-title">ALL CHECKPOINTS CLEARED!</h2>
 
           <!-- 5-Star Arcade Rating Cluster -->
@@ -787,17 +793,23 @@
 
         <!-- Inset White Stats Well Card (Exact match to welcome and pause cards) -->
         <div class="end-stats-box">
-          <!-- Arcade Score & Personal Best Record Hero -->
+          <!-- Arcade Score & Personal Best Record Hero with Mode Labels -->
           <div class="end-stat-hero end-score-hero">
             <div class="end-score-main">
-              <span class="end-stat-label">ARCADE SCORE</span>
+              <span id="stat-score-label" class="end-stat-label">NOON ARCADE SCORE</span>
               <span id="stat-score" class="end-stat-hero-val score-glow">0</span>
             </div>
             <div class="end-score-best">
-              <span class="end-stat-label">RECORD</span>
+              <span id="stat-best-score-label" class="end-stat-label">NOON RECORD</span>
               <span id="stat-best-score" class="end-best-val">0</span>
             </div>
           </div>
+
+          <!-- Celebratory New Record Banner -->
+          <div id="end-new-record-banner" class="end-new-record-banner hidden">
+            <span id="end-new-record-text">★ NEW NOON RECORD! ★</span>
+          </div>
+
           <div class="end-stats-sep"></div>
 
           <div class="end-stat-hero">
@@ -827,7 +839,7 @@
 
         <!-- Action Buttons: Leaderboard Circular Icon Button & Primary Ride Again CTA -->
         <div class="end-actions-cluster">
-          <button id="btn-end-leaderboard" class="end-circle-lb-btn hidden" aria-label="Open Leaderboard" title="Open Leaderboard">
+          <button id="btn-end-leaderboard" class="end-circle-lb-btn" aria-label="Open Street Leaderboards" title="Open Street Leaderboards">
             <svg class="lb-cup-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"></path>
               <path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"></path>
@@ -838,6 +850,112 @@
           </button>
           <button id="btn-retry" class="welcome-cta-btn end-retry-btn">
             <span class="welcome-cta-label">RIDE AGAIN</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Street Leaderboard Modal (Separate Noon Rush and Night Cruise Boards) -->
+    <section id="leaderboard-screen" class="overlay hidden" aria-modal="true" role="dialog" aria-label="Street Arcade Leaderboards">
+      <div class="leaderboard-card sticker-card">
+        <!-- Close Button (Top-Right Circular) -->
+        <button id="btn-close-leaderboard" class="lb-close-corner-btn" aria-label="Close Leaderboards" title="Close Leaderboards">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <!-- Header Trophy Badge & Titles -->
+        <div class="lb-header">
+          <div class="lb-trophy-badge">
+            <svg viewBox="0 0 64 64" fill="none" class="lb-trophy-svg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <circle cx="32" cy="32" r="28" fill="#fecb16" stroke="#160c05" stroke-width="3" />
+              <circle cx="32" cy="32" r="23" fill="#e59d0b" />
+              <path d="M20 22 H44 V33 C44 39.5 38.5 44 32 44 C25.5 44 20 39.5 20 33 Z" fill="#ffffff" stroke="#160c05" stroke-width="2.4" stroke-linejoin="round" />
+              <path d="M20 25 H15 C13 25 12 27 12 29 C12 33 15 35 20 35" stroke="#160c05" stroke-width="2.2" fill="none" stroke-linecap="round" />
+              <path d="M44 25 H49 C51 25 52 27 52 29 C52 33 49 35 44 35" stroke="#160c05" stroke-width="2.2" fill="none" stroke-linecap="round" />
+              <rect x="30" y="44" width="4" height="6" fill="#160c05" />
+              <path d="M22 50 H42" stroke="#160c05" stroke-width="3" stroke-linecap="round" />
+              <polygon points="32,25 33.2,29 37,29.5 34,32 35,35.5 32,33.5 29,35.5 30,32 27,29.5 30.8,29" fill="#fecb16" stroke="#160c05" stroke-width="1.2" />
+            </svg>
+          </div>
+          <h2 class="lb-title">HOOD LEADERBOARDS</h2>
+          <p class="lb-subtitle">Lagos Street Rush Arcade Standings</p>
+        </div>
+
+        <!-- Mode Toggle Tabs (Noon Rush vs Night Cruise) -->
+        <div class="lb-tabs-wrap" role="tablist" aria-label="Leaderboard Modes">
+          <button id="lb-tab-noon" class="lb-tab-btn active" role="tab" aria-selected="true" data-mode="noon">
+            <svg class="lb-tab-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="4.5"></circle>
+              <line x1="12" y1="1.5" x2="12" y2="3.5"></line>
+              <line x1="12" y1="20.5" x2="12" y2="22.5"></line>
+              <line x1="4.5" y1="4.5" x2="6" y2="6"></line>
+              <line x1="18" y1="18" x2="19.5" y2="19.5"></line>
+              <line x1="1.5" y1="12" x2="3.5" y2="12"></line>
+              <line x1="20.5" y1="12" x2="22.5" y2="12"></line>
+              <line x1="4.5" y1="19.5" x2="6" y2="18"></line>
+              <line x1="18" y1="6" x2="19.5" y2="4.5"></line>
+            </svg>
+            <span>NOON RUSH</span>
+          </button>
+          <button id="lb-tab-night" class="lb-tab-btn" role="tab" aria-selected="false" data-mode="night">
+            <svg class="lb-tab-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              <circle cx="18" cy="5" r="1.2" fill="currentColor"></circle>
+            </svg>
+            <span>NIGHT CRUISE</span>
+          </button>
+        </div>
+
+        <!-- Player's Mode Summary Well -->
+        <div class="lb-player-well">
+          <div class="lb-player-avatar-wrap">
+            <img id="lb-player-avatar-img" class="lb-player-avatar-img hidden" alt="You" />
+            <div id="lb-player-fallback-svg" class="lb-player-fallback-svg">
+              <svg viewBox="0 0 36 36" width="36" height="36" fill="none">
+                <circle cx="18" cy="18" r="17" fill="#fef08a" stroke="#160c05" stroke-width="2"/>
+                <path d="M6 36 C8 27, 12 24, 18 24 C24 24, 28 27, 30 36 Z" fill="#14a850" stroke="#160c05" stroke-width="1.8"/>
+                <circle cx="18" cy="14" r="7" fill="#8e5c3c" stroke="#160c05" stroke-width="1.8"/>
+                <path d="M10 13 C9.5 6, 26.5 6, 26 13 Z" fill="#e02824" stroke="#160c05" stroke-width="1.8"/>
+              </svg>
+            </div>
+          </div>
+          <div class="lb-player-info">
+            <span class="lb-player-title">YOUR PERSONAL RECORD</span>
+            <span id="lb-player-rank-desc" class="lb-player-subtitle">Ranked #1 Street Legend</span>
+          </div>
+          <div class="lb-player-score-pill">
+            <span id="lb-player-mode-tag" class="lb-player-score-mode">NOON BEST</span>
+            <span id="lb-player-score-val" class="lb-player-score-val">0 PTS</span>
+          </div>
+        </div>
+
+        <!-- Leaderboard Scrollable Standings List -->
+        <div class="lb-list-wrap">
+          <div class="lb-list-header">
+            <span>RACER</span>
+            <span>RECORD</span>
+          </div>
+          <div id="lb-standings-list" class="lb-standings-list" role="list">
+            <!-- Dynamically populated rows for selected mode -->
+          </div>
+        </div>
+
+        <!-- Leaderboard Actions Footer -->
+        <div class="lb-actions-footer">
+          <button id="btn-snap-friends-lb" class="lb-snap-btn hidden">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <span>SNAP FRIENDS BOARD</span>
+          </button>
+          <button id="btn-lb-close-bottom" class="welcome-cta-btn lb-continue-btn">
+            <span class="welcome-cta-label">CONTINUE</span>
           </button>
         </div>
       </div>

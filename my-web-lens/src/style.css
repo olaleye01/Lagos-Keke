@@ -1817,6 +1817,16 @@ html, body {
   border-radius: 12px;
   padding: 2px 8px;
   box-shadow: 0 1.5px 0 var(--outline-deep);
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+}
+.rider-score-pill:hover {
+  transform: translateY(-1.5px) scale(1.03);
+  box-shadow: 0 3px 0 var(--outline-deep);
+}
+.rider-score-pill:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 0.5px 0 var(--outline-deep);
 }
 
 .rider-score-lbl {
@@ -2410,6 +2420,33 @@ html, body {
 .end-star-wrap:nth-child(4) { animation-delay: 0.26s; }
 .end-star-wrap:nth-child(5) { animation-delay: 0.33s; }
 
+.end-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 14px;
+  border-radius: 9999px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+  border: 2px solid var(--outline-dark);
+  box-shadow: 0 2px 0 var(--outline-deep);
+  text-transform: uppercase;
+}
+.end-mode-badge.noon {
+  background: #fef08a;
+  color: #854d0e;
+  border-color: #ca8a04;
+}
+.end-mode-badge.night {
+  background: #1e1b4b;
+  color: #38bdf8;
+  border-color: #4f46e5;
+  box-shadow: 0 2px 0 #020408, 0 0 10px rgba(56, 189, 248, 0.35);
+}
+
 .end-rank-pill {
   display: inline-flex;
   align-items: center;
@@ -2584,6 +2621,469 @@ html, body {
 
 .end-retry-btn {
   flex: 1;
+}
+
+/* Celebratory New Record Banner */
+.end-new-record-banner {
+  margin: 6px 0;
+  padding: 5px 12px;
+  background: linear-gradient(90deg, #f59e0b 0%, #ea580c 50%, #f59e0b 100%);
+  background-size: 200% auto;
+  border: 2px solid var(--outline-dark);
+  border-radius: 12px;
+  box-shadow: 0 2.5px 0 var(--outline-deep), 0 0 14px rgba(245, 158, 11, 0.45);
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #ffffff;
+  text-align: center;
+  letter-spacing: 0.05em;
+  text-shadow: 0 1.5px 2px rgba(0, 0, 0, 0.35);
+  animation: recordShine 2s infinite linear, recordPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes recordShine {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+@keyframes recordPop {
+  0% { transform: scale(0.7); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ==========================================================================
+   STREET LEADERBOARD MODAL (NOON RUSH & NIGHT CRUISE)
+   ========================================================================== */
+
+.leaderboard-card {
+  width: 100%;
+  max-width: 420px;
+  max-height: 88vh;
+  background: #ffffff;
+  border: 3.2px solid var(--outline-dark);
+  border-radius: 26px;
+  box-shadow: 0 6px 0 var(--outline-deep), 0 20px 45px rgba(0, 0, 0, 0.38);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 16px 14px 14px;
+  animation: lbCardPop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes lbCardPop {
+  0% { transform: scale(0.92) translateY(12px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.lb-close-corner-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #f4f4f5;
+  border: 2px solid var(--outline-dark);
+  box-shadow: 0 2px 0 var(--outline-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--outline-dark);
+  cursor: pointer;
+  z-index: 10;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+.lb-close-corner-btn:hover {
+  background: #e4e4e7;
+  transform: scale(1.08);
+}
+.lb-close-corner-btn:active {
+  transform: translateY(1.5px);
+  box-shadow: 0 0.5px 0 var(--outline-deep);
+}
+
+.lb-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.lb-trophy-badge {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 4px;
+  filter: drop-shadow(0 3px 0 var(--outline-deep));
+}
+
+.lb-trophy-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.lb-title {
+  font-family: var(--font-display);
+  font-size: clamp(17px, 5vw, 20px);
+  font-weight: 900;
+  color: var(--outline-dark);
+  letter-spacing: 0.04em;
+  margin: 0;
+  line-height: 1.15;
+}
+
+.lb-subtitle {
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #71717a;
+  letter-spacing: 0.02em;
+  margin-top: 2px;
+}
+
+/* Tabs: Noon Rush vs Night Cruise */
+.lb-tabs-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  background: #f4f4f5;
+  padding: 4px;
+  border: 2px solid var(--outline-dark);
+  border-radius: 16px;
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.06);
+  margin-bottom: 10px;
+}
+
+.lb-tab-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 8px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background: transparent;
+  color: #71717a;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.lb-tab-btn[data-mode="noon"].active {
+  background: #fecb16;
+  border-color: var(--outline-dark);
+  color: var(--outline-dark);
+  box-shadow: 0 2.5px 0 var(--outline-deep);
+}
+
+.lb-tab-btn[data-mode="night"].active {
+  background: #312e81;
+  border-color: #1e1b4b;
+  color: #a5b4fc;
+  box-shadow: 0 2.5px 0 #020408, 0 0 10px rgba(99, 102, 241, 0.3);
+}
+
+/* Player Personal Summary Well */
+.lb-player-well {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fefce8;
+  border: 2px solid #ca8a04;
+  border-radius: 16px;
+  box-shadow: 0 2px 0 var(--outline-deep);
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+
+.lb-player-avatar-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1.8px solid var(--outline-dark);
+  background: #fef08a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lb-player-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lb-player-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  text-align: left;
+  min-width: 0;
+}
+
+.lb-player-title {
+  font-family: var(--font-body);
+  font-size: 8px;
+  font-weight: 900;
+  color: #854d0e;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.lb-player-subtitle {
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-weight: 900;
+  color: var(--outline-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lb-player-score-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  background: #ffffff;
+  border: 1.8px solid var(--outline-dark);
+  border-radius: 10px;
+  padding: 2px 7px;
+  box-shadow: 0 1.5px 0 var(--outline-deep);
+}
+
+.lb-player-score-mode {
+  font-family: var(--font-body);
+  font-size: 7.5px;
+  font-weight: 900;
+  color: #71717a;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.lb-player-score-val {
+  font-family: var(--font-display);
+  font-size: 13.5px;
+  font-weight: 900;
+  color: #d97706;
+  white-space: nowrap;
+}
+
+/* Standings List Table */
+.lb-list-wrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: #ffffff;
+  border: 2px solid var(--outline-dark);
+  border-radius: 16px;
+  box-shadow: 0 2.5px 0 var(--outline-deep);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.lb-list-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 12px;
+  background: #f4f4f5;
+  border-bottom: 1.8px solid var(--outline-dark);
+  font-family: var(--font-body);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #71717a;
+  text-transform: uppercase;
+}
+
+.lb-standings-list {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  max-height: 220px;
+  padding: 4px 6px;
+  gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.lb-standings-list::-webkit-scrollbar {
+  width: 5px;
+}
+.lb-standings-list::-webkit-scrollbar-thumb {
+  background: #d4d4d8;
+  border-radius: 10px;
+}
+
+.lb-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 12px;
+  background: #fafafa;
+  border: 1.5px solid transparent;
+  transition: transform 0.1s ease, background 0.1s ease;
+}
+
+.lb-row-rank {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 900;
+  flex-shrink: 0;
+  border: 1.5px solid var(--outline-dark);
+  box-shadow: 0 1px 0 var(--outline-deep);
+}
+
+.lb-row-rank.rank-1 {
+  background: #fef08a;
+  color: #854d0e;
+  border-color: #ca8a04;
+}
+.lb-row-rank.rank-2 {
+  background: #e2e8f0;
+  color: #334155;
+  border-color: #64748b;
+}
+.lb-row-rank.rank-3 {
+  background: #fed7aa;
+  color: #9a3412;
+  border-color: #ea580c;
+}
+.lb-row-rank.rank-other {
+  background: #f4f4f5;
+  color: #71717a;
+  border-color: #d4d4d8;
+  box-shadow: none;
+}
+
+.lb-row-avatar {
+  font-size: 15px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.lb-row-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.lb-row-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.lb-row-name {
+  font-family: var(--font-display);
+  font-size: 11.5px;
+  font-weight: 900;
+  color: var(--outline-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lb-you-tag {
+  background: #ea580c;
+  color: #ffffff;
+  font-family: var(--font-body);
+  font-size: 7.5px;
+  font-weight: 900;
+  padding: 1px 5px;
+  border-radius: 6px;
+  letter-spacing: 0.06em;
+}
+
+.lb-row-title {
+  font-family: var(--font-body);
+  font-size: 8px;
+  font-weight: 700;
+  color: #71717a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lb-row-score-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.lb-row-score {
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-weight: 900;
+  color: var(--outline-dark);
+}
+
+.lb-row-stars {
+  font-size: 8px;
+  color: #eab308;
+  letter-spacing: 0.05em;
+}
+
+/* Player row highlight */
+.lb-row.lb-row-player {
+  background: #fef9c3;
+  border-color: #eab308;
+  box-shadow: 0 1.5px 0 var(--outline-deep);
+}
+
+/* Actions footer */
+.lb-actions-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.lb-snap-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+  padding: 10px 10px;
+  background: #fffc00;
+  border: 2.5px solid var(--outline-dark);
+  border-radius: 16px;
+  box-shadow: 0 3px 0 var(--outline-deep);
+  color: var(--outline-dark);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+.lb-snap-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--outline-deep);
+}
+
+.lb-continue-btn {
+  flex: 1;
+  margin-top: 0;
+  min-height: 42px;
 }
 
 /* ==========================================================================
@@ -3175,6 +3675,77 @@ body.night-mode .end-circle-lb-btn {
   border: 2.8px solid #2e3d5e;
   box-shadow: 0 3.5px 0 #020408;
   color: #facc15;
+}
+
+/* Night Mode Leaderboards Overrides */
+body.night-mode .leaderboard-card {
+  background: linear-gradient(180deg, #131b2e 0%, #0a0f1d 100%);
+  border-color: #38bdf8;
+  box-shadow: 0 6px 0 #020617, 0 0 25px rgba(56, 189, 248, 0.2);
+  color: #f8fafc;
+}
+body.night-mode .lb-title {
+  color: #f8fafc;
+}
+body.night-mode .lb-subtitle {
+  color: #94a3b8;
+}
+body.night-mode .lb-close-corner-btn {
+  background: #1e293b;
+  border-color: #38bdf8;
+  color: #f8fafc;
+  box-shadow: 0 2px 0 #020617;
+}
+body.night-mode .lb-tabs-wrap {
+  background: #090e18;
+  border-color: #1e293b;
+}
+body.night-mode .lb-tab-btn {
+  color: #94a3b8;
+}
+body.night-mode .lb-tab-btn[data-mode="night"].active {
+  background: linear-gradient(180deg, #2e2a72 0%, #1e1b4b 100%);
+  border-color: #38bdf8;
+  color: #38bdf8;
+  box-shadow: 0 2px 0 #020617, 0 0 12px rgba(56, 189, 248, 0.4);
+}
+body.night-mode .lb-player-well {
+  background: #0f172a;
+  border-color: #38bdf8;
+  box-shadow: 0 2px 0 #020617, 0 0 10px rgba(56, 189, 248, 0.15);
+}
+body.night-mode .lb-player-subtitle {
+  color: #f8fafc;
+}
+body.night-mode .lb-player-score-pill {
+  background: #090e18;
+  border-color: #38bdf8;
+}
+body.night-mode .lb-player-score-val {
+  color: #facc15;
+}
+body.night-mode .lb-list-wrap {
+  background: #0c1220;
+  border-color: #1e293b;
+}
+body.night-mode .lb-list-header {
+  background: #080c16;
+  border-bottom-color: #1e293b;
+  color: #94a3b8;
+}
+body.night-mode .lb-row {
+  background: #0f172a;
+}
+body.night-mode .lb-row-name {
+  color: #f8fafc;
+}
+body.night-mode .lb-row-score {
+  color: #facc15;
+}
+body.night-mode .lb-row.lb-row-player {
+  background: #172554;
+  border-color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
 }
 
 body.night-mode .end-circle-lb-btn:hover {
