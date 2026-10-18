@@ -321,6 +321,7 @@ function setMood(mood, immediate = false) {
     updateWelcomeScoreCard();
 
     try {
+        localStorage.setItem('pedal_rush_mood', currentMood);
         localStorage.setItem('street_rush_mood', currentMood);
     } catch (_) {}
 }
@@ -353,7 +354,7 @@ document.querySelectorAll('.mood-toggle-btn').forEach(btn => {
 const urlMoodParam = new URLSearchParams(window.location.search).get('mood');
 const initialMood = (urlMoodParam === 'night' || urlMoodParam === 'noon' || urlMoodParam === 'afternoon')
     ? (urlMoodParam === 'night' ? 'night' : 'afternoon')
-    : (localStorage.getItem('street_rush_mood') || localStorage.getItem('lagos_keke_mood') || 'afternoon');
+    : (localStorage.getItem('pedal_rush_mood') || localStorage.getItem('street_rush_mood') || 'afternoon');
 setMood(initialMood, true);
 
 // Pre-rendered minimap background
@@ -978,7 +979,7 @@ btnRetry.addEventListener('click', () => {
     showWelcomeScreen();
 });
 
-// --- Street Arcade Leaderboard Controller ---
+// --- Pedal Rush Leaderboard Controller ---
 const STREET_ROSTERS = {
     noon: [
         { name: 'Agba Rider', title: 'Agba Rider', score: 19000, stars: 5 },

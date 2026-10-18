@@ -78,7 +78,7 @@ export const VEHICLE_CONFIG = {
         0.07, 0.18, 0.32, 0.43, 0.57, 0.68, 0.82, 0.93
     ],
 
-    // Fleet of 16 vehicles (doubled from 8): authentic Lagos street mix (Danfos, Kekes, Cars, Okadas)
+    // Fleet of 16 vehicles (doubled from 8): authentic street mix (Danfos, Kekes, Cars, Okadas)
     // 8 on outer lane (counter-clockwise) and 8 on inner lane (clockwise).
     FLEET: [
         // Outer Lane (CCW: 0=North, 1=West, 2=South, 3=East)

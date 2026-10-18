@@ -48,7 +48,7 @@ class SnapLensManager {
      */
     loadLocalStorageCache() {
         try {
-            const raw = localStorage.getItem('street_rush_save_data');
+            const raw = localStorage.getItem('pedal_rush_save_data') || localStorage.getItem('street_rush_save_data');
             if (raw) {
                 const parsed = JSON.parse(raw);
                 if (parsed && typeof parsed === 'object') {
@@ -132,6 +132,7 @@ class SnapLensManager {
             this.saveData.runsPlayedNoon = this.saveData.runsPlayed || 0;
         }
         try {
+            localStorage.setItem('pedal_rush_save_data', JSON.stringify(this.saveData));
             localStorage.setItem('street_rush_save_data', JSON.stringify(this.saveData));
         } catch (_) {}
     }
@@ -142,6 +143,7 @@ class SnapLensManager {
             ...newData
         };
         try {
+            localStorage.setItem('pedal_rush_save_data', JSON.stringify(this.saveData));
             localStorage.setItem('street_rush_save_data', JSON.stringify(this.saveData));
         } catch (_) {}
 
