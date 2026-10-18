@@ -158,7 +158,7 @@ my-web-lens/
 ```
 
 ### Game Balancing & Mechanics
-- **Timer & Checkpoints**: Starts at **85.0s**. There are **9 checkpoints** (Suya Corner, Zambezi Lane, Baobab Spot, Uhuru Junction, Ketu Passage, Maasai Market, Yaba Lane, Mzee Junction, Afisuru Shop). Reaching a checkpoint awards **+5 seconds**.
+- **Timer & Checkpoints**: Starts at **85.0s**. There are **9 checkpoints** (Suya Corner, Zambezi Lane, Baobab Spot, Uhuru Junction, Mzee Junction, Ketu Passage, Maasai Market, Yaba Lane, Afisuru Shop). Reaching a checkpoint awards **+5 seconds**. Checkpoints are positioned along street segments 12m-18m before intersections in a continuous, forward-flowing circuit where the next checkpoint is always ahead in the rider's direction of travel (avoiding backward turns or backtracking).
 - **Tarmac vs Mud**:
   - *Tarmac Roads*: Fast top speed (10.5 m/s), smooth rolling, but longer routes with vehicular traffic.
   - *Muddy Alleys*: Slower top speed (8.6 m/s) and mud drag, but cuts substantial distance off each checkpoint leg.
@@ -167,11 +167,11 @@ my-web-lens/
   - Sprints consume stamina (drain rate 28/s). Recharges when coasting (recovery 18/s).
   - Sprint activates speed-lines canvas overlay, dynamic FOV camera widening, and wind tunnel SFX.
 - **Speed Ramps & Stunts**:
-  - 4 kickers located in mud alleys trigger automatic aerial stunts:
-    1. West Alley: Wheelie Jump
-    2. North Alley: Front Somersault (front flip)
-    3. East Alley: Back Somersault (back flip)
-    4. South Alley: 360° Sideways Spin
+  - 4 kickers strategically positioned along straight alley stretches away from intersections (19m-25m flight runway before turns to keep riders on track), triggering automatic aerial stunts:
+    1. West Alley (Row 12): Wheelie Jump (lands before Suya Corner)
+    2. North Alley (Col 12): Front Somersault (front flip, lands before Ketu Passage)
+    3. East Alley (Row 8): Back Somersault (back flip, lands before Baobab Spot)
+    4. South Alley (Col 8): 360° Sideways Spin (lands before Yaba Lane)
 - **Hazards & Penalties**:
   - *Potholes*: -2 seconds penalty + speed dropped to 40%.
   - *Pedestrian Bump*: -2 seconds penalty + pedestrian panic toast shout.

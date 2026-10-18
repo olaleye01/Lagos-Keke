@@ -130,38 +130,41 @@ export const HAZARDS = {
 };
 
 /**
- * 9 distant checkpoints across opposite ends of the Hood (67m - 98m per leg).
- * Fits within the 2-minute (120s) Snapchat gameplay limit.
+ * 9 distant checkpoints arranged in a continuous, forward-flowing circuit across the Hood.
+ * Every checkpoint is situated along straight street segments 12m-18m before intersections,
+ * and the next checkpoint is ALWAYS forward in the rider's direction of travel (never backward).
+ * Integrates all 4 speed ramp stunt kickers and alternates between mud shortcuts and tarmac roads.
  */
 export const CHECKPOINTS = [
-    { name: 'Suya Corner', r: 6, c: 5, type: 'mud' },
-    { name: "Zambezi Lane", r: 1, c: 15, type: 'road' },
-    { name: 'Baobab Spot', r: 14, c: 15, type: 'mud' },
-    { name: 'Uhuru Junction', r: 19, c: 5, type: 'road' },
-    { name: 'Ketu Passage', r: 6, c: 15, type: 'mud' },
-    { name: "Maasai Market", r: 1, c: 5, type: 'road' },
-    { name: 'Yaba Lane', r: 14, c: 5, type: 'mud' },
-    { name: 'Mzee Junction', r: 10, c: 19, type: 'road' },
-    { name: 'Afisuru Shop', r: 19, c: 10, type: 'road' }
+    { name: 'Suya Corner', r: 8, c: 5, type: 'mud' },
+    { name: "Zambezi Lane", r: 1, c: 13, type: 'road' },
+    { name: 'Baobab Spot', r: 12, c: 15, type: 'mud' },
+    { name: 'Uhuru Junction', r: 19, c: 17, type: 'road' },
+    { name: 'Mzee Junction', r: 8, c: 19, type: 'road' },
+    { name: 'Ketu Passage', r: 6, c: 7, type: 'mud' },
+    { name: "Maasai Market", r: 12, c: 1, type: 'road' },
+    { name: 'Yaba Lane', r: 14, c: 13, type: 'mud' },
+    { name: 'Afisuru Shop', r: 17, c: 19, type: 'road' }
 ];
 
 export const START = { r: 19, c: 10, yaw: 0 };
 
 /**
- * 4 Interactive Speed Ramps placed on the four interior muddy alley streets.
- * Each ramp deterministically triggers a unique automatic bicycle stunt:
- *  - Ramp 1: Front-wheel lift (smooth wheelie-style jump)
- *  - Ramp 2: Forward somersault (complete front flip in the air)
- *  - Ramp 3: Backward somersault (complete backflip in the air)
- *  - Ramp 4: Stylish sideways spin (rotating rider and bicycle 360° in the air)
+ * 4 Interactive Speed Ramps strategically positioned along straight alley stretches AWAY from intersections.
+ * Each kicker acts as a visual centerline guide down the alley, launching riders 16m forward along the track
+ * and landing safely on the straightaway with 19m-25m of runway before the next turn to keep riders on track:
+ *  - Ramp 1: West Mud Alley (Row 12) -> Wheelie Jump, lands before Checkpoint 1 (Suya Corner)
+ *  - Ramp 2: North Mud Alley (Col 12) -> Front Somersault, lands before Checkpoint 6 (Ketu Passage)
+ *  - Ramp 3: East Mud Alley (Row 8)  -> Back Somersault, lands before Checkpoint 3 (Baobab Spot)
+ *  - Ramp 4: South Mud Alley (Col 8) -> 360° Sideways Spin, lands before Checkpoint 8 (Yaba Lane)
  */
 export const SPEED_RAMPS = [
     {
         id: 1,
         name: 'West Mud Alley Kicker',
-        street: 'West Alley (Col 5)',
+        street: 'West Alley (Col 5, Row 12)',
         x: -30.0,
-        z: 0.0,
+        z: 12.0,
         axis: 'z',
         stunt: 'wheelie',
         label: 'WHEELIE JUMP'
@@ -169,8 +172,8 @@ export const SPEED_RAMPS = [
     {
         id: 2,
         name: 'North Mud Alley Kicker',
-        street: 'North Alley (Row 6)',
-        x: -14.0,
+        street: 'North Alley (Row 6, Col 12)',
+        x: 12.0,
         z: -24.0,
         axis: 'x',
         stunt: 'frontflip',
@@ -179,9 +182,9 @@ export const SPEED_RAMPS = [
     {
         id: 3,
         name: 'East Mud Alley Kicker',
-        street: 'East Alley (Col 15)',
+        street: 'East Alley (Col 15, Row 8)',
         x: 30.0,
-        z: 0.0,
+        z: -12.0,
         axis: 'z',
         stunt: 'backflip',
         label: 'BACK SOMERSAULT'
@@ -189,8 +192,8 @@ export const SPEED_RAMPS = [
     {
         id: 4,
         name: 'South Mud Alley Kicker',
-        street: 'South Alley (Row 14)',
-        x: 14.0,
+        street: 'South Alley (Row 14, Col 8)',
+        x: -12.0,
         z: 24.0,
         axis: 'x',
         stunt: 'spin360',
