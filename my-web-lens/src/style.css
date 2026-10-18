@@ -3884,3 +3884,20 @@ body.night-mode .loading-pct {
     transition: none !important;
   }
 }
+
+/* Toast: grow vertically to fit wrapped text instead of truncating */
+.toast.toast-left,
+.toast.toast-right {
+  height: auto;
+  min-height: clamp(38px, 5.5vh, 46px);
+  padding-top: 7px;
+  padding-bottom: 7px;
+  border-radius: 22px;
+}
+.toast .toast-msg {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
