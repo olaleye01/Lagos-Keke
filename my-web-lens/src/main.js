@@ -1244,10 +1244,7 @@ window.addEventListener('keydown', (e) => {
 // --- Unified Sound Controls ---
 function toggleSound() {
     audio.unlock();
-    audio.muted = !audio.muted;
-    if (audio.master) {
-        audio.master.gain.value = audio.muted ? 0 : 0.7;
-    }
+    audio.setMuted(!audio.muted);
     updateSoundIcons();
 }
 
@@ -1296,6 +1293,7 @@ function pauseGame() {
 
 function resumeGame() {
     if (gameState !== STATE.PAUSED) return;
+    audio.unlock();
     gameState = previousStateBeforePause || STATE.PLAYING;
     previousStateBeforePause = null;
 
@@ -1316,8 +1314,12 @@ function togglePause() {
 
 // Event Listeners for Pause and Sound
 if (btnPause) btnPause.addEventListener('click', togglePause);
-if (btnResume) btnResume.addEventListener('click', resumeGame);
+if (btnResume) btnResume.addEventListener('click', () => {
+    audio.unlock();
+    resumeGame();
+});
 if (btnRestart) btnRestart.addEventListener('click', () => {
+    audio.unlock();
     resumeGame();
     startCountdown();
 });
@@ -1325,6 +1327,16 @@ if (btnRestart) btnRestart.addEventListener('click', () => {
 if (btnSoundHud) btnSoundHud.addEventListener('click', toggleSound);
 if (btnPauseSound) btnPauseSound.addEventListener('click', toggleSound);
 if (btnSoundToggle) btnSoundToggle.addEventListener('click', toggleSound);
+
+// Auto-pause and silence audio when page is hidden or minimized
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+        if (gameState === STATE.PLAYING || gameState === STATE.COUNTDOWN) {
+            pauseGame();
+        }
+        audio.setRolling(0, 'road');
+    }
+});
 
 // Mobile Web Audio unlocker: pre-warms audio engine on first interaction
 function unlockAudio() {

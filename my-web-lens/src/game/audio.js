@@ -4,9 +4,11 @@ export class AudioFX {
     constructor() {
         this.ctx = null;
         this.master = null;
+        this.compressor = null;
         this.rollGain = null;
         this.rollFilter = null;
         this.muted = false;
+        this._cachedNoise = null;
     }
 
     /** Must be called from a user gesture (Start button or screen tap). */
@@ -18,7 +20,21 @@ export class AudioFX {
             this.ctx = new Ctx();
             this.master = this.ctx.createGain();
             this.master.gain.value = this.muted ? 0 : 0.7;
-            this.master.connect(this.ctx.destination);
+
+            // Master Dynamics Compressor: prevents digital clipping/distortion when multiple SFX overlap
+            try {
+                this.compressor = this.ctx.createDynamicsCompressor();
+                this.compressor.threshold.value = -6; // -6 dB threshold
+                this.compressor.knee.value = 12;
+                this.compressor.ratio.value = 8;
+                this.compressor.attack.value = 0.003;
+                this.compressor.release.value = 0.15;
+                this.master.connect(this.compressor);
+                this.compressor.connect(this.ctx.destination);
+            } catch (_) {
+                this.master.connect(this.ctx.destination);
+            }
+
             this._startRolling();
         }
 
@@ -36,22 +52,32 @@ export class AudioFX {
         } catch (e) {}
     }
 
+    setMuted(muted) {
+        this.muted = !!muted;
+        if (this.master && this.ctx) {
+            this.master.gain.setTargetAtTime(this.muted ? 0 : 0.7, this.ctx.currentTime, 0.04);
+        }
+    }
+
     // Safe no-ops
     playMusic() {}
     stopMusic() {}
     setMusicVolume() {}
 
-    _noiseBuffer(seconds = 1) {
+    _getNoiseBuffer() {
+        if (this._cachedNoise) return this._cachedNoise;
+        const seconds = 2;
         const len = Math.floor(this.ctx.sampleRate * seconds);
         const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
         const data = buf.getChannelData(0);
         for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+        this._cachedNoise = buf;
         return buf;
     }
 
     _startRolling() {
         const src = this.ctx.createBufferSource();
-        src.buffer = this._noiseBuffer(2);
+        src.buffer = this._getNoiseBuffer();
         src.loop = true;
         this.rollFilter = this.ctx.createBiquadFilter();
         this.rollFilter.type = 'lowpass';
@@ -67,40 +93,43 @@ export class AudioFX {
         if (!this.ctx || !this.rollGain || !this.rollFilter) return;
         const t = this.ctx.currentTime;
         const mud = surface === 'mud';
-        this.rollGain.gain.setTargetAtTime(speed01 * (mud ? 0.32 : 0.1), t, 0.08);
+        const targetVol = this.muted ? 0 : speed01 * (mud ? 0.32 : 0.1);
+        this.rollGain.gain.setTargetAtTime(targetVol, t, 0.08);
         this.rollFilter.frequency.setTargetAtTime(mud ? 320 + speed01 * 360 : 900 + speed01 * 1500, t, 0.08);
     }
 
     _tone(freq, start, dur, type = 'sine', vol = 0.3, endFreq = null) {
         const ctx = this.ctx;
         if (!ctx || !this.master) return;
+        const t0 = Math.max(ctx.currentTime, start);
         const osc = ctx.createOscillator();
         const g = ctx.createGain();
         osc.type = type;
-        osc.frequency.setValueAtTime(freq, start);
-        if (endFreq) osc.frequency.exponentialRampToValueAtTime(endFreq, start + dur);
-        g.gain.setValueAtTime(0.0001, start);
-        g.gain.exponentialRampToValueAtTime(vol, start + 0.01);
-        g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+        osc.frequency.setValueAtTime(Math.max(1, freq), t0);
+        if (endFreq) osc.frequency.exponentialRampToValueAtTime(Math.max(1, endFreq), t0 + dur);
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(Math.max(0.0001, vol), t0 + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
         osc.connect(g).connect(this.master);
-        osc.start(start);
-        osc.stop(start + dur + 0.05);
+        osc.start(t0);
+        osc.stop(t0 + dur + 0.05);
     }
 
     _noise(start, dur, freq, vol = 0.4, type = 'lowpass') {
         const ctx = this.ctx;
         if (!ctx || !this.master) return;
+        const t0 = Math.max(ctx.currentTime, start);
         const src = ctx.createBufferSource();
-        src.buffer = this._noiseBuffer(dur + 0.1);
+        src.buffer = this._getNoiseBuffer();
         const f = ctx.createBiquadFilter();
         f.type = type;
-        f.frequency.value = freq;
+        f.frequency.value = Math.max(20, freq);
         const g = ctx.createGain();
-        g.gain.setValueAtTime(vol, start);
-        g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+        g.gain.setValueAtTime(Math.max(0.0001, vol), t0);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
         src.connect(f).connect(g).connect(this.master);
-        src.start(start);
-        src.stop(start + dur + 0.05);
+        src.start(t0);
+        src.stop(t0 + dur + 0.05);
     }
 
     pothole() {
