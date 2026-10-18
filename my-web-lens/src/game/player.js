@@ -178,7 +178,9 @@ export class Player {
             else this.stats.roadTime += dt;
         }
 
-        this.steer = math.lerp(this.steer, input.steer, 1 - Math.exp(-11 * dt));
+        // Faster centring than turning-in: steering feels responsive but never "sticky"
+        const steerRate = Math.abs(input.steer) < Math.abs(this.steer) ? 14 : 9;
+        this.steer = math.lerp(this.steer, input.steer, 1 - Math.exp(-steerRate * dt));
         this.stun = Math.max(0, this.stun - dt);
         this.wobble = Math.max(0, this.wobble - dt);
         this.celebrateTimer = Math.max(0, this.celebrateTimer - dt);
@@ -309,14 +311,18 @@ export class Player {
                 this.speed = Math.max(max, this.speed - BIKE.COAST_DECEL * 2 * dt);
             }
 
-            const turnScale = math.clamp(this.speed / 4.2, 0.45, 1);
+            // Keep plenty of turning authority at low speed so riders can always turn away from walls
+            const turnScale = math.clamp(this.speed / 4.2, 0.8, 1);
             let wobbleSteer = 0;
             if (this.wobble > 0) wobbleSteer = Math.sin(this.wobble * 28) * 0.5 * Math.min(1, this.wobble * 2);
             if (this.surface === 'mud' && !this.isRampBoosting) {
                 const s01 = math.clamp(this.speed / BIKE.ROAD_MAX_SPEED, 0, 1);
-                wobbleSteer += Math.sin(performance.now() * 0.005) * 0.04 + Math.sin(performance.now() * 0.024) * 0.035 * s01;
+                wobbleSteer += Math.sin(performance.now() * 0.005) * 0.02 + Math.sin(performance.now() * 0.024) * 0.018 * s01;
             }
             this.yaw -= (this.steer + wobbleSteer) * BIKE.TURN_RATE * turnScale * dt;
+
+            // Plank bridge assist: gently pull an aligned rider onto the bridge centreline
+            if (active) this._bridgeAssist(dt);
 
             const prevX = this.x;
             const prevZ = this.z;
@@ -328,17 +334,21 @@ export class Player {
             const hit = this.map.resolveCircle(pos, BIKE.RADIUS);
             this.x = pos.x;
             this.z = pos.z;
-            if (hit.hit && this.speed > 0.5) {
+            if (hit.hit) {
                 const impact = -(this.forwardX * hit.nx + this.forwardZ * hit.nz);
-                if (impact > 0.15) {
+                if (impact > 0.15 && this.speed > 0.5) {
                     const before = this.speed;
-                    this.speed *= 1 - 0.85 * impact;
+                    // Glancing hits keep most of their speed (slide along the wall)
+                    this.speed *= 1 - 0.6 * impact * impact;
                     if (before > 4 && impact > 0.55) {
                         this.audio.bump();
                         this.shake = Math.max(this.shake, 0.25 * impact);
                         this.wobble = Math.max(this.wobble, 0.35);
                     }
                 }
+                if (active && impact > 0.1) this._slideAlongWall(hit, impact, dt);
+            } else {
+                this.wallTimer = 0;
             }
             moved = Math.hypot(this.x - prevX, this.z - prevZ);
         }
@@ -407,6 +417,57 @@ export class Player {
         this._updateParticles(dt);
         this._sync(dt);
         return events;
+    }
+
+    /**
+     * Rotates the bike to run parallel to a wall it is pushing into, so riders slide along buildings
+     * instead of getting pinned. If pinned head-on for a moment, it auto-turns the bike away.
+     */
+    _slideAlongWall(hit, impact, dt) {
+        const fx = this.forwardX;
+        const fz = this.forwardZ;
+        // Tangent = forward with the into-wall component removed
+        let tx = fx + hit.nx * impact;
+        let tz = fz + hit.nz * impact;
+        let tl = Math.hypot(tx, tz);
+        if (tl < 0.2) {
+            // Head-on: pick the side the player is steering toward (or a consistent default)
+            const side = this.steer !== 0 ? Math.sign(-this.steer) : 1;
+            tx = -hit.nz * side;
+            tz = hit.nx * side;
+            tl = 1;
+        }
+        tx /= tl;
+        tz /= tl;
+
+        this.wallTimer = (this.wallTimer || 0) + dt;
+        // After ~0.5s pinned against a wall, turn firmly away (out from the wall) to un-stick
+        const pinned = this.wallTimer > 0.5 && this.speed < 2.5;
+        if (pinned) {
+            tx = tx * 0.5 + hit.nx * 0.85;
+            tz = tz * 0.5 + hit.nz * 0.85;
+        }
+        const targetYaw = Math.atan2(-tx, -tz);
+        let d = targetYaw - this.yaw;
+        d = Math.atan2(Math.sin(d), Math.cos(d));
+        const rate = pinned ? 6 : 4.5 * impact;
+        this.yaw += d * (1 - Math.exp(-rate * dt));
+        if (pinned && Math.abs(d) < 0.15) this.wallTimer = 0;
+    }
+
+    /** Soft lateral magnetism onto the nearest plank bridge when riding toward it roughly aligned. */
+    _bridgeAssist(dt) {
+        if (!this.map.getNearestPlankBridge) return;
+        const b = this.map.getNearestPlankBridge(this.x, this.z);
+        const alongX = b.x !== 0; // bridge crosses along the x axis (E/W bridges)
+        const along = alongX ? this.x - b.x : this.z - b.z; // distance along crossing axis
+        const lateral = alongX ? this.z - b.z : this.x - b.x;
+        if (Math.abs(along) > 4.5 || Math.abs(lateral) > 2.6) return;
+        const heading = alongX ? Math.abs(this.forwardX) : Math.abs(this.forwardZ);
+        if (heading < 0.75) return;
+        const strength = 2.2 * heading * (1 - Math.abs(along) / 4.5);
+        const shift = -lateral * (1 - Math.exp(-strength * dt));
+        if (alongX) this.z += shift; else this.x += shift;
     }
 
     _launchRamp(ramp) {

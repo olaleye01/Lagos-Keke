@@ -50,7 +50,7 @@ export class Input {
         listen(window, 'pointermove', e => {
             if (e.pointerId !== this._pointerId) return;
             if (e.cancelable) e.preventDefault();
-            const range = Math.max(60, window.innerWidth * 0.16);
+            const range = Math.max(50, window.innerWidth * 0.12);
             let dx = (e.clientX - this._startX) / range;
             // let the anchor follow when dragging past the range, so reversing feels instant
             if (dx > 1) {

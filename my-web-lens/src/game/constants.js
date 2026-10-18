@@ -113,7 +113,7 @@ export const BIKE = {
     SPRINT_ACCEL: 9.5,
     COAST_DECEL: 3,
     BRAKE_DECEL: 16,
-    TURN_RATE: 2.5, // rad/s at full steer
+    TURN_RATE: 2.9, // rad/s at full steer
     WHEEL_RADIUS: 0.34,
     MAX_STAMINA: 100,
     STAMINA_DRAIN: 28,

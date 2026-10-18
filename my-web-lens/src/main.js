@@ -735,6 +735,20 @@ function startGame() {
     }
 
     showToast('OYA GO! Beat the clock!', 'good', 2600);
+
+    // Onboarding: coach new riders through their first couple of rides
+    let rides = 0;
+    try { rides = parseInt(localStorage.getItem('pr_rides') || '0', 10) || 0; localStorage.setItem('pr_rides', String(rides + 1)); } catch (_) {}
+    if (rides < 2) {
+        const tips = [
+            [2900, 'Drag left / right anywhere to steer'],
+            [6200, 'Hold BOOST for speed, BRAKE for tight turns'],
+            [9500, 'Cross the drains on the wooden planks!']
+        ];
+        for (const [delay, text] of tips) {
+            setTimeout(() => { if (gameState === STATE.PLAYING) showToast(text, 'normal', 2800); }, delay);
+        }
+    }
 }
 
 function endGame(won) {

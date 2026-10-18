@@ -24,7 +24,7 @@ export const DRAIN = {
     RI: 6.6,            // inner edge of the opening (courtyard side)
     RO: 9.0,            // outer edge of the opening (road alley side, 2.4m wide trench)
     D: 1.6,             // physical depth below road level
-    BRIDGE_HALF: 0.42,  // plank bridge half-width (0.84m total width: challenging to safely pass!)
+    BRIDGE_HALF: 1.0,   // plank bridge half-width (2.0m total width – widened after playtest feedback)
     PLANK_SPAN: 3.0,    // plank boards span across the 2.4m gap and rest 0.3m on each bank
     RAMP: 0.45          // approach transition ramp length
 };
@@ -1317,24 +1317,25 @@ export class HoodMap {
             };
 
             // 1. Two underlying heavy timber stringer runner beams spanning across the trench
-            for (const sLat of [-0.25, 0.25]) {
+            const stringerLat = bridgeHalfW - 0.17;
+            for (const sLat of [-stringerLat, stringerLat]) {
                 boxBridge(sLat, 0.015, midOut, 0.14, 0.14, plankLen, PALETTE.plankWoodDark, 0, 0.01);
             }
 
             // 2. Central vertical timber support prop descending down into the deep trench
-            for (const sLat of [-0.25, 0.25]) {
+            for (const sLat of [-stringerLat, stringerLat]) {
                 boxBridge(sLat, -D / 2 + 0.02, midOut, 0.12, D, 0.12, PALETTE.plankWoodDark, 0, 0.01);
             }
-            boxBridge(0, -0.06, midOut, 0.72, 0.08, 0.12, PALETTE.plankWoodDark, 0, 0.01);
+            boxBridge(0, -0.06, midOut, bridgeHalfW * 2 - 0.12, 0.08, 0.12, PALETTE.plankWoodDark, 0, 0.01);
 
-            // 3. Three individual rough-hewn timber boards laid side by side across the 0.84m width
+            // 3. Rough-hewn timber boards laid side by side across the bridge width
             // with visible 0.025m gaps showing through to the deep drain below
-            const plankCount = 3;
-            const plankW = (bridgeHalfW * 2 - 0.08) / plankCount; // ~0.253m each
+            const plankCount = Math.max(3, Math.round(bridgeHalfW * 2 / 0.3));
+            const plankW = (bridgeHalfW * 2 - 0.08) / plankCount;
 
             for (let i = 0; i < plankCount; i++) {
                 const off = -bridgeHalfW + 0.04 + (i + 0.5) * plankW;
-                const woodCol = (i === 1) ? PALETTE.plankWoodLight : (i === 0 ? PALETTE.plankWood : PALETTE.plankWoodDark);
+                const woodCol = [PALETTE.plankWood, PALETTE.plankWoodLight, PALETTE.plankWoodDark][i % 3];
                 const lenJitter = plankLen + (rand() - 0.5) * 0.12;
                 const yOff = 0.055 + (rand() - 0.5) * 0.004;
 
