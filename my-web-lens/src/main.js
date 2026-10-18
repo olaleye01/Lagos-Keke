@@ -894,10 +894,10 @@ function showWelcomeScreen() {
     currentCPIndex = 0;
     lastTickSecond = -1;
 
-    // Reset player, NPCs, vehicles, and racing line
+    // Reset player, NPCs, vehicles, and racing line (vehicles pass immediately across welcome view)
     player.reset();
     npcs.reset();
-    vehicles.reset();
+    vehicles.resetToWelcome();
     racingLine.reset();
     updateBeaconPosition();
 
@@ -1936,7 +1936,8 @@ async function initLoadingSequence() {
     // 4. Smooth dwell so player sees 100% completion before scene reveal
     await new Promise(resolve => setTimeout(resolve, 360));
 
-    // 5. Unhide welcome screen and smoothly fade out loading screen
+    // 5. Reset vehicles for welcome screen so they pass immediately, then unhide welcome screen
+    vehicles.resetToWelcome();
     if (titleScreen) titleScreen.classList.remove('hidden');
     if (loadingScreen) {
         loadingScreen.classList.add('fade-out');

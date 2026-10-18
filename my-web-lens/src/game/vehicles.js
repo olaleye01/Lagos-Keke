@@ -240,12 +240,35 @@ export class VehicleManager {
             const laneVehicles = this.vehicles.filter(v => v.track === lane.track);
             if (laneVehicles.length === 0) continue;
 
-            // Randomly shuffle vehicle types in this lane so placement is dynamic
-            for (let i = laneVehicles.length - 1; i > 0; i--) {
-                const j = Math.floor(rand() * (i + 1));
-                const temp = laneVehicles[i];
-                laneVehicles[i] = laneVehicles[j];
-                laneVehicles[j] = temp;
+            if (isWelcome) {
+                // For welcome screen: guarantee exactly ONE Danfo passes (on the front inner lane in clear view),
+                // and replace the other lead vehicle on the rear outer lane with a car!
+                const leadType = lane.name === 'inner' ? 'danfo' : 'car';
+                const leadIdx = laneVehicles.findIndex(v => v.type === leadType);
+                const leadVehicle = leadIdx > -1 ? laneVehicles.splice(leadIdx, 1)[0] : laneVehicles.pop();
+
+                const secondType = lane.name === 'inner' ? 'okada' : 'keke';
+                const secondIdx = laneVehicles.findIndex(v => v.type === secondType);
+                const secondVehicle = secondIdx > -1 ? laneVehicles.splice(secondIdx, 1)[0] : laneVehicles.pop();
+
+                // Shuffle the remaining 6 vehicles randomly across other quadrants
+                for (let i = laneVehicles.length - 1; i > 0; i--) {
+                    const j = Math.floor(rand() * (i + 1));
+                    const temp = laneVehicles[i];
+                    laneVehicles[i] = laneVehicles[j];
+                    laneVehicles[j] = temp;
+                }
+
+                // Place lead vehicle at index 4 (quadrant 2, slot 1) and second vehicle at index 5 (quadrant 2, slot 2)
+                laneVehicles.splice(4, 0, leadVehicle, secondVehicle);
+            } else {
+                // Gameplay: randomly shuffle all vehicles in this lane
+                for (let i = laneVehicles.length - 1; i > 0; i--) {
+                    const j = Math.floor(rand() * (i + 1));
+                    const temp = laneVehicles[i];
+                    laneVehicles[i] = laneVehicles[j];
+                    laneVehicles[j] = temp;
+                }
             }
 
             // Distribute 8 vehicles evenly across the 4 main road quadrants (2 vehicles per road)
@@ -254,29 +277,54 @@ export class VehicleManager {
 
                 if (q === 2) {
                     // Quadrant 2 is South Road where the rider starts at (x=0, z≈54).
-                    // To completely avoid early collisions on the initial starting position of the rider:
-                    // Place both vehicles downstream of x=0 heading away into the corners.
-                    // This guarantees zero oncoming traffic heading towards the rider's start grid,
-                    // with at least 18m+ to 42m+ clearance while still keeping moving traffic in both lanes.
                     const isOuter = lane.track === this.outerTrack;
                     const quadLen = lane.track.quadLen;
                     const totalLen = lane.track.totalLen;
                     const uStart = 2 * quadLen;
 
-                    if (isOuter) {
-                        // Outer track (CCW, heading East): x = -51.4 + u. Rider at x=0 (u=51.4).
-                        // Downstream (heading East away from rider into East corner):
-                        const u1 = 51.4 + 18.0 + rand() * 6.0; // x ≈ +18 to +24 (heading East away)
-                        const u2 = 51.4 + 36.0 + rand() * 6.0; // x ≈ +36 to +42 (heading East away)
-                        slot1Offset = (uStart + u1) / totalLen;
-                        slot2Offset = (uStart + u2) / totalLen;
+                    if (isWelcome) {
+                        // WELCOME SCREEN CHOREOGRAPHY:
+                        // Place vehicles UPSTREAM heading TOWARDS x=0 so they pass directly across
+                        // the welcome screen and camera view as soon as the welcome screen is up!
+                        if (isOuter) {
+                            // Outer track (CCW, heading East +X, z ≈ 55.4, rear lane):
+                            // Rider at x=0 (u=51.4).
+                            // Vehicle 1 (Car): starts at x ≈ -10.5m, cruises past rider at ~1.3s, exits right at ~2.7s!
+                            // Vehicle 2 (Keke): upstream at x ≈ -34.0m, cruises past rider at ~4.5s!
+                            const u1 = 51.4 - 10.5 - rand() * 1.5;
+                            const u2 = 51.4 - 34.0 - rand() * 3.0;
+                            slot1Offset = (uStart + u1) / totalLen;
+                            slot2Offset = (uStart + u2) / totalLen;
+                        } else {
+                            // Inner track (CW, heading West -X, z ≈ 52.6, FRONT lane):
+                            // Rider at x=0 (u=48.6).
+                            // Vehicle 1 (Danfo - the only Danfo passing on welcome screen): starts at x ≈ +11.5m, cruises right in front of rider at ~1.5s!
+                            // Vehicle 2 (Okada): upstream at x ≈ +34.0m, cruises right in front of rider at ~4.5s!
+                            const u1 = 48.6 - 11.5 - rand() * 1.5;
+                            const u2 = 48.6 - 34.0 - rand() * 3.0;
+                            slot1Offset = (uStart + u1) / totalLen;
+                            slot2Offset = (uStart + u2) / totalLen;
+                        }
                     } else {
-                        // Inner track (CW, heading West): x = 48.6 - u. Rider at x=0 (u=48.6).
-                        // Downstream (heading West away from rider into West corner):
-                        const u1 = 48.6 + 18.0 + rand() * 6.0; // x ≈ -18 to -24 (heading West away)
-                        const u2 = 48.6 + 36.0 + rand() * 6.0; // x ≈ -36 to -42 (heading West away)
-                        slot1Offset = (uStart + u1) / totalLen;
-                        slot2Offset = (uStart + u2) / totalLen;
+                        // GAMEPLAY START CHOREOGRAPHY:
+                        // Place both vehicles downstream of x=0 heading away into the corners.
+                        // This guarantees zero oncoming traffic heading towards the rider's start grid,
+                        // with at least 18m+ to 42m+ clearance while still keeping moving traffic in both lanes.
+                        if (isOuter) {
+                            // Outer track (CCW, heading East): x = -51.4 + u. Rider at x=0 (u=51.4).
+                            // Downstream (heading East away from rider into East corner):
+                            const u1 = 51.4 + 18.0 + rand() * 6.0; // x ≈ +18 to +24 (heading East away)
+                            const u2 = 51.4 + 36.0 + rand() * 6.0; // x ≈ +36 to +42 (heading East away)
+                            slot1Offset = (uStart + u1) / totalLen;
+                            slot2Offset = (uStart + u2) / totalLen;
+                        } else {
+                            // Inner track (CW, heading West): x = 48.6 - u. Rider at x=0 (u=48.6).
+                            // Downstream (heading West away from rider into West corner):
+                            const u1 = 48.6 + 18.0 + rand() * 6.0; // x ≈ -18 to -24 (heading West away)
+                            const u2 = 48.6 + 36.0 + rand() * 6.0; // x ≈ -36 to -42 (heading West away)
+                            slot1Offset = (uStart + u1) / totalLen;
+                            slot2Offset = (uStart + u2) / totalLen;
+                        }
                     }
                 } else {
                     // Quadrant q covers [q * 0.25, (q + 1) * 0.25]
@@ -294,18 +342,20 @@ export class VehicleManager {
             }
         }
 
-        // Safety Net: Guarantee no vehicle on South Road (z ≈ 52-56) is within 14m of rider start x=0
-        for (const v of this.vehicles) {
-            if (Math.abs(v.z - 54.0) < 6.0 && Math.abs(v.x) < 14.0) {
-                const shiftDist = (16.0 - Math.abs(v.x)) + 6.0;
-                v.s = (v.s + shiftDist) % v.track.totalLen;
-                const pose = v.track.evaluate(v.s);
-                v.x = pose.x;
-                v.z = pose.z;
-                v.yawDeg = pose.yawDeg;
-                v.yawRad = pose.yawRad;
-                v.model.setPosition(v.x, 0, v.z);
-                v.model.setEulerAngles(0, v.yawDeg, 0);
+        // Safety Net: Guarantee no vehicle on South Road (z ≈ 52-56) is within 14m of rider start x=0 during active gameplay
+        if (!isWelcome) {
+            for (const v of this.vehicles) {
+                if (Math.abs(v.z - 54.0) < 6.0 && Math.abs(v.x) < 14.0) {
+                    const shiftDist = (16.0 - Math.abs(v.x)) + 6.0;
+                    v.s = (v.s + shiftDist) % v.track.totalLen;
+                    const pose = v.track.evaluate(v.s);
+                    v.x = pose.x;
+                    v.z = pose.z;
+                    v.yawDeg = pose.yawDeg;
+                    v.yawRad = pose.yawRad;
+                    v.model.setPosition(v.x, 0, v.z);
+                    v.model.setEulerAngles(0, v.yawDeg, 0);
+                }
             }
         }
     }
