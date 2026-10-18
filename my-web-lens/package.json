@@ -12,6 +12,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@fontsource/fredoka": "^5.3.0",
     "@snap/web-lens-api": "^0.1.2",
     "playcanvas": "^2.23.2"
   },

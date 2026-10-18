@@ -392,9 +392,14 @@ class SnapLensManager {
             return new Promise((resolve, reject) => {
                 const asset = new Asset('snapchat-bitmoji-avatar', 'container', { url });
                 asset.ready(() => {
-                    this.avatar3DAsset = asset;
-                    const entity = asset.resource.instantiateRenderEntity();
-                    resolve({ asset, entity });
+                    try {
+                        this.avatar3DAsset = asset;
+                        const entity = asset.resource.instantiateRenderEntity();
+                        resolve({ asset, entity });
+                    } catch (err) {
+                        console.warn('[SnapLens] Failed to instantiate 3D Bitmoji:', err);
+                        resolve(null);
+                    }
                 });
                 asset.once('error', (err) => {
                     app.assets.remove(asset);

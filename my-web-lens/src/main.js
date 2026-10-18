@@ -9,6 +9,9 @@ import {
     math
 } from 'playcanvas';
 
+// Bundled font (Snap Web Lens CSP blocks external font CDNs like Google Fonts)
+import '@fontsource/fredoka/latin-700.css';
+
 import { HoodMap } from './game/map.js';
 import { Player } from './game/player.js';
 import { NPCManager } from './game/npcs.js';
@@ -1499,9 +1502,7 @@ app.on('update', dt => {
         timeLeft = Math.max(0, timeLeft - GAME.POTHOLE_PENALTY);
         showToast(`Wahala! Pothole! -${GAME.POTHOLE_PENALTY}s`, 'bad', 2400);
         triggerTimerPenalty();
-        if (typeof navigator !== 'undefined' && navigator.vibrate) {
-            try { navigator.vibrate([60, 40, 80]); } catch (_) {}
-        }
+        safeVibrate([60, 40, 80]);
         if (timeLeft <= 0) {
             timeLeft = 0;
             endGame(false);
@@ -1592,12 +1593,10 @@ app.on('update', dt => {
             shakeY += (Math.cos(t * 2.4) * 0.4 + (Math.random() - 0.5) * 0.6) * mudRumbleMag * 0.8;
 
             // Subtle mobile device haptic vibration (throttled)
-            if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                const now = performance.now();
-                if (now - (window._lastMudHaptic || 0) > 110) {
-                    window._lastMudHaptic = now;
-                    try { navigator.vibrate(12); } catch (_) {}
-                }
+            const now = performance.now();
+            if (now - (window._lastMudHaptic || 0) > 110) {
+                window._lastMudHaptic = now;
+                safeVibrate(12);
             }
         }
 
@@ -1829,6 +1828,17 @@ function renderMinimap(activeCP) {
     minimapCtx.restore();
 }
 
+// --- Haptics ---
+// Per https://developers.snap.com/web-lenses/runtime-environment#haptics:
+// calling navigator.vibrate before the first user gesture logs an error on Android.
+function safeVibrate(pattern) {
+    try {
+        if (typeof navigator === 'undefined' || !navigator.vibrate) return;
+        if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
+        navigator.vibrate(pattern);
+    } catch (_) {}
+}
+
 // --- Snapchat Lens Features Bootstrap ---
 async function setupLensFeatures() {
     // 1. Leaderboard Features Visibility
@@ -1879,12 +1889,10 @@ async function setupLensFeatures() {
             if (endBitmojiWrap) endBitmojiWrap.classList.remove('hidden');
         }
 
-        // 4. Bitmoji 3D Avatar (mount to bike rider on native device)
-        snapLens.load3DAvatar(app).then(res => {
-            if (res && res.entity) {
-                player.attachBitmoji(res.entity);
-            }
-        });
+        // 4. 3D Bitmoji is intentionally NOT mounted on the rider.
+        // Snap's 3D Bitmoji GLB ships in bind pose (T-pose) on Snap's own rig with no animation clips,
+        // so it cannot sit on / pedal the bike, and it adds a ~2.5 MB download + memory on low-end devices.
+        // The player's Bitmoji appears as the 2D portrait on the welcome, leaderboard and end screens instead.
     }
 }
 
