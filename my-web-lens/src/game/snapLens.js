@@ -220,6 +220,18 @@ class SnapLensManager {
         };
     }
 
+    /**
+     * Get the player's all-time highest score across both Noon and Night modes.
+     * @returns {number}
+     */
+    getHighestScore() {
+        return Math.max(
+            this.getBestScore('noon'),
+            this.getBestScore('night'),
+            this.saveData.bestScore || 0
+        );
+    }
+
     // =========================================================================
     // LEADERBOARDS API (Mode-Aware Arcade Points)
     // =========================================================================
@@ -286,6 +298,17 @@ class SnapLensManager {
     }
 
     /**
+     * Submits ONLY the player's highest score across both modes to Snapchat's leaderboard.
+     * Follows official documentation: https://developers.snap.com/web-lenses/leaderboards
+     * @returns {Promise<number|null>} Server-acknowledged bestScore, or null on error.
+     */
+    async submitHighestScore() {
+        const highest = this.getHighestScore();
+        if (highest <= 0) return null;
+        return this.submitScore(highest);
+    }
+
+    /**
      * Opens Snapchat native leaderboard modal.
      * Follows official documentation: https://developers.snap.com/web-lenses/leaderboards
      * Submits score first if provided so the panel has data to show, then presents the board.
@@ -299,9 +322,13 @@ class SnapLensManager {
             return false;
         }
         try {
-            if (score !== undefined && score !== null && !isNaN(score)) {
+            const scoreToSubmit = (score !== undefined && score !== null && !isNaN(score))
+                ? score
+                : this.getHighestScore();
+
+            if (scoreToSubmit > 0) {
                 await snapchat.leaderboards.submitScore({
-                    score: Math.round(score),
+                    score: Math.round(scoreToSubmit),
                     ordering: 'descending'
                 });
             }

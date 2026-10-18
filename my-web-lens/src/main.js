@@ -863,11 +863,14 @@ function endGame(won) {
         }
     }
 
-    // Submit to native Snapchat Leaderboard per https://developers.snap.com/web-lenses/leaderboards
+    // Submit ONLY the player's highest score across both modes to native Snapchat Leaderboard
+    // per official documentation https://developers.snap.com/web-lenses/leaderboards
     if (snapLens.leaderboardsSupported) {
-        snapLens.submitScore(currentScore).then(serverBest => {
+        snapLens.submitHighestScore().then(serverBest => {
             if (serverBest !== null && statBestScoreEl) {
-                statBestScoreEl.textContent = serverBest.toLocaleString();
+                if (newBest >= serverBest) {
+                    statBestScoreEl.textContent = newBest.toLocaleString();
+                }
             }
         });
     }
@@ -1205,9 +1208,8 @@ if (lbTabNight) {
 if (btnSnapFriendsLb) {
     btnSnapFriendsLb.addEventListener('click', () => {
         if (audio && audio.unlock) audio.unlock();
-        const activeMode = currentMood === 'night' ? 'night' : 'noon';
-        const best = snapLens.getBestScore(activeMode);
-        snapLens.showLeaderboard(best > 0 ? best : undefined).then(opened => {
+        const highest = snapLens.getHighestScore();
+        snapLens.showLeaderboard(highest > 0 ? highest : undefined).then(opened => {
             if (opened && snapLens.isStub) {
                 showToast('Snapchat Leaderboard presented (stub mode)');
             }
