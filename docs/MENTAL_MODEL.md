@@ -235,7 +235,8 @@ Vehicle paths are computed with closed-form mathematical precision:
 - **Cockpit Coordinates & Look-Ahead**: Eye position is mounted at $(X_{player} + 0.08 \cdot fwdX, 1.34 + Y_{player}, Z_{player} + 0.08 \cdot fwdZ)$ with a $14\text{m}$ forward look target angled $15^\circ$ into steering curves.
 - **Damped Human-Vestibular Lean**: In 1P mode, the camera's up-vector rolls at $38\%$ of the bike's physical lean roll, rotated in world space along the bike's local lateral axis $(-\text{fwdZ}, 0, \text{fwdX})$. This preserves horizon orientation and eliminates motion sickness.
 - **Stunt Auto-Zoom**: If `player.jumpState` is active (wheelie, frontflip, backflip, spin360), `targetCameraBlend` automatically drops to `0.0` (3P chase view). Once landed, it returns to `1.0` (1P cockpit).
-- **Near-Plane Model Culling**: In 1P, `player.setCameraMode('first')` disables `this.model.avatar.headMount` so the rider's helmet/Bitmoji never clips into the camera view while handlebars and arms remain visible.
+- **Smooth Head & Body Culling (`setBodyVisibility`)**: When transitioning into 1P, `player.setBodyVisibility(1.0 - cameraModeTransition)` smoothly scales down and disables `headMount`, `jersey`, `hips`, and `legs` while the arms remain permanently active and visible on the handlebar grips. During aerial stunts, the camera swoops back to 3P and body visibility smoothly restores to 1.0.
+- **Redesigned Pre-Game Modal (`#view-select-modal`)**: Modal presents a two-card horizontal comparison (3P Chase vs 1P Cockpit) with custom perspective thumbnails, feature bullet checklists, and comic ray accents matching the game's retro-arcade graphic style.
 
 ---
 
