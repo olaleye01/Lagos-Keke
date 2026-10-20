@@ -1,5 +1,6 @@
 import {
     BLEND_ADDITIVE,
+    BLEND_NORMAL,
     Color,
     CULLFACE_NONE,
     ConeGeometry,
@@ -424,7 +425,8 @@ export function createCheckpointBeacon(app) {
         return m;
     };
 
-    const beamMat = glow(new Color(1, 0.78, 0.15), 0.28);
+    // Opacity set to 15% (0.15) so player can clearly see through the beam to the road and traffic ahead
+    const beamMat = glow(new Color(1, 0.78, 0.15), 0.15);
     const beam = new Entity('Beam');
     beam.addComponent('render', {
         meshInstances: [new MeshInstance(Mesh.fromGeometry(device, new CylinderGeometry({ radius: 2.6, height: 40, heightSegments: 1, capSegments: 18 })), beamMat)],
@@ -434,7 +436,8 @@ export function createCheckpointBeacon(app) {
     beam.setLocalPosition(0, 20, 0);
     root.addChild(beam);
 
-    const ringMat = glow(new Color(1, 0.9, 0.3), 0.85);
+    // Opacity set to 15% (0.15) for a subtle see-through ground ring
+    const ringMat = glow(new Color(1, 0.9, 0.3), 0.15);
     const ring = new Entity('Ring');
     ring.addComponent('render', {
         meshInstances: [new MeshInstance(Mesh.fromGeometry(device, new TorusGeometry({ tubeRadius: 0.12, ringRadius: 2.9, segments: 32, sides: 6 })), ringMat)],
@@ -444,14 +447,18 @@ export function createCheckpointBeacon(app) {
     ring.setLocalPosition(0, 0.15, 0);
     root.addChild(ring);
 
+    // Arrow opacity set to 15% (0.15) with normal blending and depthWrite disabled for see-through transparency
     const arrowMat = new StandardMaterial();
     arrowMat.diffuse = new Color(1, 0.8, 0.1);
     arrowMat.emissive = new Color(0.6, 0.4, 0.0);
+    arrowMat.opacity = 0.15;
+    arrowMat.blendType = BLEND_NORMAL;
+    arrowMat.depthWrite = false;
     arrowMat.update();
     const arrow = new Entity('Arrow');
     arrow.addComponent('render', {
         meshInstances: [new MeshInstance(Mesh.fromGeometry(device, new ConeGeometry({ baseRadius: 0.9, peakRadius: 0, height: 1.6, heightSegments: 1, capSegments: 4 })), arrowMat)],
-        castShadows: true
+        castShadows: false
     });
     arrow.setLocalEulerAngles(180, 45, 0);
     arrow.setLocalPosition(0, 5, 0);
