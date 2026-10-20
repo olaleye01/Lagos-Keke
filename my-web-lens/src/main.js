@@ -575,6 +575,8 @@ const camPos = new Vec3();
 const camTarget = new Vec3();
 let currentCamPos = new Vec3();
 let currentCamLook = new Vec3();
+const _camUp = new Vec3(0, 1, 0);
+const _WORLD_UP = new Vec3(0, 1, 0);
 let cameraObstructionY = 0;
 
 // TOP_CAM: High overhead panoramic bird's-eye view showing a wide portion of the Hood map from above
@@ -593,17 +595,51 @@ const NORMAL_CAM = {
     lookY: 0.5
 };
 
+// FIRST_PERSON_CAM: Visceral handlebar cockpit view looking over the steering stem and road
+const FIRST_PERSON_CAM = {
+    eyeHeight: 1.34,
+    forwardOffset: 0.08,
+    lookDist: 14.0,
+    lookYOffset: -0.16,
+    baseFov: 72,
+    boostFov: 12
+};
+
+// Camera View Mode: 'third' (Chase Cam) or 'first' (Cockpit Cam)
+const CAM_STORAGE_KEY = 'pedal_rush_camera_view';
+let preferredCameraMode = 'third';
+try {
+    const savedCam = localStorage.getItem(CAM_STORAGE_KEY);
+    if (savedCam === 'first' || savedCam === 'third') preferredCameraMode = savedCam;
+} catch (e) {}
+
+let cameraModeTransition = preferredCameraMode === 'first' ? 1.0 : 0.0;
+
+function snapCameraToActiveView() {
+    const isFP = preferredCameraMode === 'first';
+    const forwardX = player.forwardX;
+    const forwardZ = player.forwardZ;
+    if (isFP) {
+        const eyeY = FIRST_PERSON_CAM.eyeHeight + (player.y || 0);
+        currentCamPos.set(player.x + forwardX * FIRST_PERSON_CAM.forwardOffset, eyeY, player.z + forwardZ * FIRST_PERSON_CAM.forwardOffset);
+        currentCamLook.set(player.x + forwardX * FIRST_PERSON_CAM.lookDist, eyeY + FIRST_PERSON_CAM.lookYOffset, player.z + forwardZ * FIRST_PERSON_CAM.lookDist);
+    } else {
+        const followDist = NORMAL_CAM.dist;
+        const camHeight = NORMAL_CAM.height;
+        currentCamPos.set(player.x - forwardX * followDist, camHeight, player.z - forwardZ * followDist);
+        currentCamLook.set(player.x + forwardX * NORMAL_CAM.lookAhead, NORMAL_CAM.lookY, player.z + forwardZ * NORMAL_CAM.lookAhead);
+    }
+    _camUp.set(0, 1, 0);
+    cameraEntity.setPosition(currentCamPos);
+    cameraEntity.lookAt(currentCamLook, _camUp);
+    cameraModeTransition = isFP ? 1.0 : 0.0;
+    player.setCameraMode(isFP ? 'first' : 'third');
+}
+
 function respawnPlayerAtLastCheckpoint(reason = 'crash') {
     const pose = getLastCheckpointPose();
     player.respawnAt(pose);
-
-    // Snap camera smoothly right behind respawned player with elevated top-down view
-    const followDist = NORMAL_CAM.dist;
-    const camHeight = NORMAL_CAM.height;
-    currentCamPos.set(player.x - player.forwardX * followDist, camHeight, player.z - player.forwardZ * followDist);
-    currentCamLook.set(player.x + player.forwardX * NORMAL_CAM.lookAhead, NORMAL_CAM.lookY, player.z + player.forwardZ * NORMAL_CAM.lookAhead);
-    cameraEntity.setPosition(currentCamPos);
-    cameraEntity.lookAt(currentCamLook);
+    snapCameraToActiveView();
 
     // Trigger visual screen flicker overlay and arcade respawn chime
     if (audio && audio.respawn) audio.respawn();
@@ -951,6 +987,11 @@ function showWelcomeScreen() {
     if (hud) hud.classList.add('hidden');
     if (countdownScreen) countdownScreen.classList.add('hidden');
     if (titleScreen) titleScreen.classList.remove('hidden');
+    hideViewSelectModal();
+
+    // Ensure player avatar is rendered in full 3P mode on welcome screen
+    player.setCameraMode('third');
+    _camUp.set(0, 1, 0);
 
     // Reset camera to elevated panoramic title view
     currentCamPos.set(
@@ -964,7 +1005,7 @@ function showWelcomeScreen() {
         player.z + player.forwardZ * TOP_CAM.lookAhead
     );
     cameraEntity.setPosition(currentCamPos);
-    cameraEntity.lookAt(currentCamLook);
+    cameraEntity.lookAt(currentCamLook, _camUp);
 
     // Clear hash if it was pointing to #end-screen
     if (typeof window !== 'undefined' && window.location.hash === '#end-screen') {
@@ -986,10 +1027,10 @@ if (typeof window !== 'undefined') {
     });
 }
 
-// Button Events
+// Button Events: Tap to Ride prompts Camera View Selection
 btnStart.addEventListener('click', () => {
     audio.unlock();
-    startCountdown();
+    showViewSelectModal();
 });
 
 btnRetry.addEventListener('click', () => {
@@ -1328,6 +1369,78 @@ if (btnSoundHud) btnSoundHud.addEventListener('click', toggleSound);
 if (btnPauseSound) btnPauseSound.addEventListener('click', toggleSound);
 if (btnSoundToggle) btnSoundToggle.addEventListener('click', toggleSound);
 
+// --- Camera Perspective Toggle & Pre-Game Selection Modal ---
+const btnCameraToggle = document.getElementById('btn-camera-toggle');
+const camBadge = document.getElementById('cam-badge');
+const viewSelectModal = document.getElementById('view-select-modal');
+const btnCloseViewSelect = document.getElementById('btn-close-view-select');
+const cardViewThird = document.getElementById('card-view-third');
+const cardViewFirst = document.getElementById('card-view-first');
+const btnConfirmView = document.getElementById('btn-confirm-view');
+
+function updateCameraUI() {
+    const isFirst = preferredCameraMode === 'first';
+    if (camBadge) {
+        camBadge.textContent = isFirst ? '1P' : '3P';
+    }
+    if (btnCameraToggle) {
+        btnCameraToggle.classList.toggle('first-person', isFirst);
+        btnCameraToggle.setAttribute('aria-label', isFirst ? 'Switch to third person view' : 'Switch to first person view');
+        btnCameraToggle.setAttribute('title', isFirst ? 'Switch to Third Person View (C)' : 'Switch to First Person View (C)');
+    }
+    if (cardViewThird && cardViewFirst) {
+        cardViewThird.classList.toggle('selected', !isFirst);
+        cardViewFirst.classList.toggle('selected', isFirst);
+    }
+}
+
+function setCameraView(mode, save = true) {
+    preferredCameraMode = mode === 'first' ? 'first' : 'third';
+    if (save) {
+        try {
+            localStorage.setItem(CAM_STORAGE_KEY, preferredCameraMode);
+        } catch (e) {}
+    }
+    updateCameraUI();
+}
+
+function toggleCameraView() {
+    const nextMode = preferredCameraMode === 'first' ? 'third' : 'first';
+    setCameraView(nextMode, true);
+    if (audio && audio.beep) audio.beep();
+    safeVibrate(15);
+}
+
+function showViewSelectModal() {
+    updateCameraUI();
+    if (viewSelectModal) viewSelectModal.classList.remove('hidden');
+}
+
+function hideViewSelectModal() {
+    if (viewSelectModal) viewSelectModal.classList.add('hidden');
+}
+
+if (btnCameraToggle) btnCameraToggle.addEventListener('click', toggleCameraView);
+if (btnCloseViewSelect) btnCloseViewSelect.addEventListener('click', hideViewSelectModal);
+if (cardViewThird) cardViewThird.addEventListener('click', () => {
+    setCameraView('third', true);
+    if (audio && audio.beep) audio.beep();
+    safeVibrate(15);
+});
+if (cardViewFirst) cardViewFirst.addEventListener('click', () => {
+    setCameraView('first', true);
+    if (audio && audio.beep) audio.beep();
+    safeVibrate(15);
+});
+if (btnConfirmView) btnConfirmView.addEventListener('click', () => {
+    audio.unlock();
+    hideViewSelectModal();
+    startCountdown();
+});
+
+// Initialize Camera UI state on bootstrap
+updateCameraUI();
+
 // Auto-pause and silence audio when page is hidden or minimized
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
@@ -1348,7 +1461,7 @@ function unlockAudio() {
     document.addEventListener(evt, unlockAudio, { passive: true, once: true });
 });
 
-// Keyboard shortcuts: P or ESC to pause/resume, M to toggle sound
+// Keyboard shortcuts: P or ESC to pause/resume, M to toggle sound, C or V to switch camera view
 window.addEventListener('keydown', e => {
     audio.unlock();
     if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
@@ -1359,6 +1472,11 @@ window.addEventListener('keydown', e => {
     } else if (e.key === 'm' || e.key === 'M') {
         e.preventDefault();
         toggleSound();
+    } else if (e.key === 'c' || e.key === 'C' || e.key === 'v' || e.key === 'V') {
+        if (gameState === STATE.PLAYING || gameState === STATE.PAUSED) {
+            e.preventDefault();
+            toggleCameraView();
+        }
     }
 });
 
@@ -1437,30 +1555,49 @@ app.on('update', dt => {
             startGame();
         }
 
-        // Camera Pan: smoothly swoops from high overhead top angle down to the normal behind-the-rider angle
+        // Camera Pan: smoothly swoops from high overhead top angle down to the selected race angle
         // t goes from 0.0 (at countdown 3s) to 1.0 (at countdown 0s / start)
         const t = math.clamp(1.0 - (countdownTimer / 3.0), 0.0, 1.0);
         // Smooth cubic ease-in-out curve for natural, cinematic swoop
         const easeT = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
-        const curDist = math.lerp(TOP_CAM.dist, NORMAL_CAM.dist, easeT);
-        const curHeight = math.lerp(TOP_CAM.height, NORMAL_CAM.height, easeT);
+        const isFP = preferredCameraMode === 'first';
+        const destCamX = isFP ? (player.x + player.forwardX * FIRST_PERSON_CAM.forwardOffset) : (player.x - player.forwardX * NORMAL_CAM.dist);
+        const destCamY = isFP ? (FIRST_PERSON_CAM.eyeHeight + (player.y || 0)) : NORMAL_CAM.height;
+        const destCamZ = isFP ? (player.z + player.forwardZ * FIRST_PERSON_CAM.forwardOffset) : (player.z - player.forwardZ * NORMAL_CAM.dist);
 
-        const targetCamX = player.x - player.forwardX * curDist;
-        const targetCamY = curHeight;
-        const targetCamZ = player.z - player.forwardZ * curDist;
+        const destLookX = isFP ? (player.x + player.forwardX * FIRST_PERSON_CAM.lookDist) : (player.x + player.forwardX * NORMAL_CAM.lookAhead);
+        const destLookY = isFP ? (FIRST_PERSON_CAM.eyeHeight + (player.y || 0) + FIRST_PERSON_CAM.lookYOffset) : NORMAL_CAM.lookY;
+        const destLookZ = isFP ? (player.z + player.forwardZ * FIRST_PERSON_CAM.lookDist) : (player.z + player.forwardZ * NORMAL_CAM.lookAhead);
 
-        const curLookDist = math.lerp(TOP_CAM.lookAhead, NORMAL_CAM.lookAhead, easeT);
-        const curLookY = math.lerp(TOP_CAM.lookY, NORMAL_CAM.lookY, easeT);
-        const targetLookX = player.x + player.forwardX * curLookDist;
-        const targetLookY = curLookY;
-        const targetLookZ = player.z + player.forwardZ * curLookDist;
+        const topCamX = player.x - player.forwardX * TOP_CAM.dist;
+        const topCamY = TOP_CAM.height;
+        const topCamZ = player.z - player.forwardZ * TOP_CAM.dist;
 
-        currentCamPos.set(targetCamX, targetCamY, targetCamZ);
-        currentCamLook.set(targetLookX, targetLookY, targetLookZ);
+        const topLookX = player.x + player.forwardX * TOP_CAM.lookAhead;
+        const topLookY = TOP_CAM.lookY;
+        const topLookZ = player.z + player.forwardZ * TOP_CAM.lookAhead;
 
+        currentCamPos.set(
+            math.lerp(topCamX, destCamX, easeT),
+            math.lerp(topCamY, destCamY, easeT),
+            math.lerp(topCamZ, destCamZ, easeT)
+        );
+        currentCamLook.set(
+            math.lerp(topLookX, destLookX, easeT),
+            math.lerp(topLookY, destLookY, easeT),
+            math.lerp(topLookZ, destLookZ, easeT)
+        );
+
+        _camUp.set(0, 1, 0);
         cameraEntity.setPosition(currentCamPos);
-        cameraEntity.lookAt(currentCamLook);
+        cameraEntity.lookAt(currentCamLook, _camUp);
+
+        if (isFP) {
+            player.setBodyVisibility(math.clamp(1.0 - easeT, 0, 1));
+        } else {
+            player.setBodyVisibility(1.0);
+        }
     } else if (gameState === STATE.TITLE) {
         // Elevated camera showing moving vehicles and crossing pedestrians
         titleSwayTime += dt;
@@ -1476,8 +1613,10 @@ app.on('update', dt => {
 
         currentCamPos.set(curCamX, curCamY, curCamZ);
         currentCamLook.set(curLookX, curLookY, curLookZ);
+        _camUp.set(0, 1, 0);
         cameraEntity.setPosition(currentCamPos);
-        cameraEntity.lookAt(currentCamLook);
+        cameraEntity.lookAt(currentCamLook, _camUp);
+        player.setCameraMode('third');
         player._sync(dt);
     } else if (gameState === STATE.PLAYING) {
         sessionElapsed += dt;
@@ -1536,14 +1675,7 @@ app.on('update', dt => {
     }
     if (isRiding && playerEvents.gutter) {
         showToast('Wahala! Gutter O!', 'bad', 2600);
-        // Snap camera smoothly right behind respawned player with elevated top-down view
-        const followDist = NORMAL_CAM.dist;
-        const camHeight = NORMAL_CAM.height;
-        currentCamPos.set(player.x - player.forwardX * followDist, camHeight, player.z - player.forwardZ * followDist);
-        currentCamLook.set(player.x + player.forwardX * NORMAL_CAM.lookAhead, NORMAL_CAM.lookY, player.z + player.forwardZ * NORMAL_CAM.lookAhead);
-        cameraEntity.setPosition(currentCamPos);
-        cameraEntity.lookAt(currentCamLook);
-
+        snapCameraToActiveView();
         if (audio && audio.respawn) audio.respawn();
         triggerRespawnScreenFlicker();
     }
@@ -1583,42 +1715,86 @@ app.on('update', dt => {
     const activeCP = map.checkpoints[currentCPIndex];
     racingLine.update(dt, player, activeCP, isRiding);
 
-    // 3. Elevated Top-Down Dynamic Arcade Camera during Active Gameplay
+    // 3. Dynamic Arcade Camera during Active Gameplay (Supports 1P Cockpit & 3P Chase)
     if (gameState === STATE.PLAYING) {
         const forwardX = player.forwardX;
         const forwardZ = player.forwardZ;
         const speedRatio = player.speed / (player.maxSpeed || 1);
 
-        // Elevated top-down view showing a good portion of the map from above
-        const followDist = NORMAL_CAM.dist + speedRatio * 0.8;
-        const camHeight = NORMAL_CAM.height + speedRatio * 0.6;
-        const desiredX = player.x - forwardX * followDist;
-        const desiredZ = player.z - forwardZ * followDist;
-        let desiredY = camHeight + (player.y || 0) * 0.55;
+        // Option C (Auto-Zoom): When airborne doing an aerial stunt (wheelie, frontflip, backflip, spin360),
+        // smoothly swoop back to 3rd person chase view so player sees full acrobatic bike somersault.
+        // Once touchdown occurs, smoothly glide back into 1st person cockpit.
+        const isAirborneStunt = !!player.jumpState;
+        const targetCameraBlend = (preferredCameraMode === 'first' && !isAirborneStunt) ? 1.0 : 0.0;
+        cameraModeTransition = math.lerp(cameraModeTransition, targetCameraBlend, 1 - Math.exp(-9.5 * dt));
 
-        // Camera collision check: smoothly elevate camera above roofs rather than snapping
-        const targetObstructionY = map.blocksCamera(desiredX, desiredY, desiredZ) ? 2.2 : 0;
+        // Smoothly hide head and body (torso/jersey, hips, legs) during transition into 1st person,
+        // while arms remain 100% visible and active on handlebars.
+        // During stunt auto-zoom, cameraModeTransition glides back to 0 so the rider body is fully visible for stunts!
+        const bodyVisibility = math.clamp(1.0 - cameraModeTransition, 0, 1);
+        player.setBodyVisibility(bodyVisibility);
+
+        // Third-person chase cam calculations
+        const tpFollowDist = NORMAL_CAM.dist + speedRatio * 0.8;
+        const tpCamHeight = NORMAL_CAM.height + speedRatio * 0.6;
+        const tpDesiredX = player.x - forwardX * tpFollowDist;
+        const tpDesiredZ = player.z - forwardZ * tpFollowDist;
+        let tpDesiredY = tpCamHeight + (player.y || 0) * 0.55;
+
+        // Camera collision check: smoothly elevate chase camera above roofs rather than clipping
+        const targetObstructionY = map.blocksCamera(tpDesiredX, tpDesiredY, tpDesiredZ) ? 2.2 : 0;
         cameraObstructionY = math.lerp(cameraObstructionY, targetObstructionY, 1 - Math.exp(-6 * dt));
-        desiredY += cameraObstructionY;
+        tpDesiredY += cameraObstructionY;
+
+        const tpLookDistAhead = NORMAL_CAM.lookAhead + speedRatio * 0.6;
+        const tpLookX = player.x + forwardX * tpLookDistAhead;
+        const tpLookY = NORMAL_CAM.lookY + (player.y || 0) * 0.45;
+        const tpLookZ = player.z + forwardZ * tpLookDistAhead;
+
+        // First-person cockpit cam calculations (looking over handlebars & stem)
+        const fpEyeY = FIRST_PERSON_CAM.eyeHeight + (player.y || 0);
+        const fpDesiredX = player.x + forwardX * FIRST_PERSON_CAM.forwardOffset;
+        const fpDesiredY = fpEyeY;
+        const fpDesiredZ = player.z + forwardZ * FIRST_PERSON_CAM.forwardOffset;
+
+        // 1P look target: looks down the road and turns into curve apex
+        const fpLookDist = FIRST_PERSON_CAM.lookDist + speedRatio * 4.0;
+        const turnSteerAngle = -player.steer * 0.26;
+        const cosS = Math.cos(turnSteerAngle);
+        const sinS = Math.sin(turnSteerAngle);
+        const steerLookX = forwardX * cosS - forwardZ * sinS;
+        const steerLookZ = forwardX * sinS + forwardZ * cosS;
+
+        const fpLookX = player.x + steerLookX * fpLookDist;
+        const fpLookY = fpEyeY + FIRST_PERSON_CAM.lookYOffset;
+        const fpLookZ = player.z + steerLookZ * fpLookDist;
+
+        // Interpolate desired camera position & look target based on cameraModeTransition
+        const desiredX = math.lerp(tpDesiredX, fpDesiredX, cameraModeTransition);
+        const desiredY = math.lerp(tpDesiredY, fpDesiredY, cameraModeTransition);
+        const desiredZ = math.lerp(tpDesiredZ, fpDesiredZ, cameraModeTransition);
+
+        const targetLookX = math.lerp(tpLookX, fpLookX, cameraModeTransition);
+        const targetLookY = math.lerp(tpLookY, fpLookY, cameraModeTransition);
+        const targetLookZ = math.lerp(tpLookZ, fpLookZ, cameraModeTransition);
 
         // Camera shake from potholes or bumps
         let shakeX = 0;
         let shakeY = 0;
         if (player.shake > 0.01) {
-            const shakeMag = player.shake * 0.35;
+            const shakeMag = player.shake * (0.35 + cameraModeTransition * 0.15);
             shakeX = (Math.random() - 0.5) * shakeMag;
             shakeY = (Math.random() - 0.5) * shakeMag;
         }
 
         // Tactile vibration / rumble when riding on rough muddy alleys
         if (player.surface === 'mud' && !player.jumpState && player.speed > 0.8) {
-            const speedRatio = math.clamp(player.speed / BIKE.ROAD_MAX_SPEED, 0, 1.2);
-            const mudRumbleMag = speedRatio * 0.055;
+            const sRatio = math.clamp(player.speed / BIKE.ROAD_MAX_SPEED, 0, 1.2);
+            const mudRumbleMag = sRatio * (0.055 + cameraModeTransition * 0.035);
             const t = performance.now() * 0.06;
             shakeX += (Math.sin(t * 1.8) * 0.5 + (Math.random() - 0.5) * 0.6) * mudRumbleMag;
             shakeY += (Math.cos(t * 2.4) * 0.4 + (Math.random() - 0.5) * 0.6) * mudRumbleMag * 0.8;
 
-            // Subtle mobile device haptic vibration (throttled)
             const now = performance.now();
             if (now - (window._lastMudHaptic || 0) > 110) {
                 window._lastMudHaptic = now;
@@ -1626,32 +1802,41 @@ app.on('update', dt => {
             }
         }
 
-        // Smooth camera follow lerp
-        const camLerpSpeed = 8.5;
+        // Follow Lerp: tighter in 1st person so cockpit stays aligned with handlebars
+        const camLerpSpeed = math.lerp(8.5, 24.0, cameraModeTransition);
+        const camLookLerpSpeed = math.lerp(12.0, 24.0, cameraModeTransition);
+
         currentCamPos.x = math.lerp(currentCamPos.x, desiredX + shakeX, 1 - Math.exp(-camLerpSpeed * dt));
         currentCamPos.y = math.lerp(currentCamPos.y, desiredY + shakeY, 1 - Math.exp(-camLerpSpeed * dt));
         currentCamPos.z = math.lerp(currentCamPos.z, desiredZ, 1 - Math.exp(-camLerpSpeed * dt));
 
-        // Look ahead along the road
-        const lookDistAhead = NORMAL_CAM.lookAhead + speedRatio * 0.6;
-        const targetLookX = player.x + forwardX * lookDistAhead;
-        const targetLookY = NORMAL_CAM.lookY + (player.y || 0) * 0.45;
-        const targetLookZ = player.z + forwardZ * lookDistAhead;
+        currentCamLook.x = math.lerp(currentCamLook.x, targetLookX, 1 - Math.exp(-camLookLerpSpeed * dt));
+        currentCamLook.y = math.lerp(currentCamLook.y, targetLookY, 1 - Math.exp(-camLookLerpSpeed * dt));
+        currentCamLook.z = math.lerp(currentCamLook.z, targetLookZ, 1 - Math.exp(-camLookLerpSpeed * dt));
 
-        currentCamLook.x = math.lerp(currentCamLook.x, targetLookX, 1 - Math.exp(-12 * dt));
-        currentCamLook.y = math.lerp(currentCamLook.y, targetLookY, 1 - Math.exp(-12 * dt));
-        currentCamLook.z = math.lerp(currentCamLook.z, targetLookZ, 1 - Math.exp(-12 * dt));
+        // Camera Tilt / Roll: Damped vestibular lean in 1P (human head stays more upright than frame)
+        const speed01 = math.clamp(player.speed / BIKE.ROAD_MAX_SPEED, 0, 1);
+        const bikeRollDeg = -player.steer * speed01 * 22;
+        const effectiveRollDeg = bikeRollDeg * 0.38 * cameraModeTransition;
+        const rollRad = (effectiveRollDeg * Math.PI) / 180;
+
+        const cosRoll = Math.cos(rollRad);
+        const sinRoll = Math.sin(rollRad);
+        const rightX = -forwardZ;
+        const rightZ = forwardX;
+        _camUp.set(rightX * sinRoll, cosRoll, rightZ * sinRoll);
 
         cameraEntity.setPosition(currentCamPos);
-        cameraEntity.lookAt(currentCamLook);
+        cameraEntity.lookAt(currentCamLook, _camUp);
 
         // Dynamic Camera FOV for speed rush sensation (stops boost punch when boost < 5%)
         const minBoostPct = BIKE.MIN_BOOST_STAMINA_PCT || 5;
         const hasBoost = (player.stamina / BIKE.MAX_STAMINA) * 100 >= minBoostPct;
         const isBoostActive = (player.isSprinting && hasBoost) || player.isRampBoosting;
 
-        // Dynamic Camera FOV for sprint/boost rush sensation (no distortion during normal road riding)
-        const targetFov = 54 + (isBoostActive ? (speedRatio * 9) : 0);
+        const baseFov = math.lerp(54, FIRST_PERSON_CAM.baseFov, cameraModeTransition);
+        const boostFovAdd = math.lerp(9, FIRST_PERSON_CAM.boostFov, cameraModeTransition);
+        const targetFov = baseFov + (isBoostActive ? (speedRatio * boostFovAdd) : 0);
         cameraEntity.camera.fov = math.lerp(cameraEntity.camera.fov, targetFov, 1 - Math.exp(-6 * dt));
     }
 

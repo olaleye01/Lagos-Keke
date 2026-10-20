@@ -175,7 +175,8 @@ export function createRiderAvatar(app) {
     const hb = new GeoBuilder();
     hb.boxAt(0, 0.02, 0, 0.32, 0.16, 0.22, SHORTS_BLUE, 0, 0); // dark blue shorts
     hb.boxAt(0, -0.06, 0.02, 0.26, 0.08, 0.22, SHORTS_DARK, 0, 0); // seated cushion fit
-    pelvis.addChild(hb.toEntity(app, 'Hips'));
+    const hips = hb.toEntity(app, 'Hips');
+    pelvis.addChild(hips);
 
     // Torso / Chest (can lean forward, pump, aero tuck)
     const torso = new Entity('Torso');
@@ -190,7 +191,8 @@ export function createRiderAvatar(app) {
     // Collar & bare skin neck
     tb.boxAt(0, 0.36, -0.01, 0.16, 0.06, 0.16, JERSEY_GREEN, 0, 0); // jersey collar
     tb.boxAt(0, 0.39, -0.01, 0.12, 0.08, 0.12, RIDER_SKIN, 0, 0); // bare skin neck
-    torso.addChild(tb.toEntity(app, 'Jersey'));
+    const jersey = tb.toEntity(app, 'Jersey');
+    torso.addChild(jersey);
 
     // HEAD MOUNT (Dedicated slot for Snapchat Bitmoji 3D Head / Avatar)
     const headMount = new Entity('BitmojiHeadMount');
@@ -248,8 +250,9 @@ export function createRiderAvatar(app) {
         torso.addChild(shoulder);
 
         // 1. Upper Arm (origin at shoulder, unit length along local -Z to elbow)
+        // Attached to avatarRoot so arms remain 100% visible when body/torso is hidden in first-person view!
         const upperArm = new Entity(`${sideName}UpperArm`);
-        torso.addChild(upperArm);
+        avatarRoot.addChild(upperArm);
 
         const ub = new GeoBuilder();
         // Green jersey sleeve at shoulder
@@ -262,8 +265,9 @@ export function createRiderAvatar(app) {
         upperArm.addChild(ub.toEntity(app, `${sideName}UpperArmMesh`));
 
         // 2. Forearm (origin at elbow, unit length along local -Z to hand on handlebar grip)
+        // Attached to avatarRoot so arms remain 100% visible when body/torso is hidden in first-person view!
         const forearm = new Entity(`${sideName}Forearm`);
-        torso.addChild(forearm);
+        avatarRoot.addChild(forearm);
 
         const fb = new GeoBuilder();
         // Forearm bare skin
@@ -312,6 +316,8 @@ export function createRiderAvatar(app) {
         avatarRoot,
         pelvis,
         torso,
+        jersey,
+        hips,
         headMount,
         headPlaceholder,
         arms,

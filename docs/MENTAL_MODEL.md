@@ -113,11 +113,19 @@ my-web-lens/
                     |  - Noon / Night Mode Switch |
                     |  - Leaderboards & Bitmoji   |
                     +--------------+--------------+
-                                   | (Player Taps "RIDE NOW")
+                                   | (Player Taps "TAP TO RIDE")
+                                   v
+                    +-----------------------------+
+                    | VIEW SELECTION MODAL        |
+                    | - 3P Chase Cam              |
+                    | - 1P Handlebar Cockpit Cam  |
+                    | - Saved to LocalStorage     |
+                    +--------------+--------------+
+                                   | (Tap "RIDE NOW")
                                    v
                     +-----------------------------+
                     |   COUNTDOWN STATE (3..2..1) |
-                    |   Camera drops behind rider |
+                    |   Camera swoops to view     |
                     +--------------+--------------+
                                    |
                                    v
@@ -125,6 +133,7 @@ my-web-lens/
     +-------------->|        PLAYING STATE        |<-------------+
     |               |  - Clock ticks from 85s down|              |
     |               |  - Steer, Sprint, Brake     |              |
+    |               |  - 1P/3P Live HUD Toggle (C)|              |
     |               +--------------+--------------+              |
     |                              |                             |
     |             +----------------+----------------+            |
@@ -159,13 +168,19 @@ my-web-lens/
 
 ### Game Balancing & Mechanics
 - **Timer & Checkpoints**: Starts at **85.0s**. There are **9 checkpoints** (Suya Corner, Zambezi Lane, Baobab Spot, Uhuru Junction, Mzee Junction, Ketu Passage, Maasai Market, Yaba Lane, Afisuru Shop). Reaching a checkpoint awards **+5 seconds**. Checkpoints are positioned along street segments 12m-18m before intersections in a continuous, forward-flowing circuit where the next checkpoint is always ahead in the rider's direction of travel (avoiding backward turns or backtracking).
+- **Dual Camera Perspectives (1P Cockpit vs 3P Chase)**:
+  - *Pre-Game Selection*: Tapping "TAP TO RIDE" opens a pre-game modal allowing players to choose between **1P Cockpit Cam** and **3P Chase Cam**, with choice persisted in `localStorage`.
+  - *In-Game HUD Toggle*: Centered between Pause and Sound in `#hud-controls`, featuring an animated `1P`/`3P` badge. Also accessible via keyboard shortcut **`C`** or **`V`**.
+  - *First-Person Cockpit*: Positioned at handlebar eye-height ($Y=1.34\text{m}$, $Z=0.08\text{m}$) looking forward over the steering stem and grips. The rider's head/helmet and Bitmoji are cleanly culled in 1P to avoid near-plane camera clipping while maintaining full visibility of the handlebars, stem, grips, rider arms, and front wheel.
+  - *Option C Stunt Auto-Zoom*: During aerial stunts on the 4 speed ramps (wheelie, frontflip, backflip, 360 spin), the camera automatically swoops into 3P chase view so players see their full somersault, then smoothly glides back into 1P cockpit on touchdown.
+  - *Damped Vestibular Lean*: In 1P, camera roll is damped to $38\%$ of bicycle lean, mimicking natural human neck stabilization and eliminating motion sickness during sharp cornering.
 - **Tarmac vs Mud**:
   - *Tarmac Roads*: Fast top speed (10.5 m/s), smooth rolling, but longer routes with vehicular traffic.
   - *Muddy Alleys*: Slower top speed (8.6 m/s) and mud drag, but cuts substantial distance off each checkpoint leg.
 - **Sprint / Dash Boost**:
   - Player can sprint up to **13.6 m/s**.
   - Sprints consume stamina (drain rate 28/s). Recharges when coasting (recovery 18/s).
-  - Sprint activates speed-lines canvas overlay, dynamic FOV camera widening, and wind tunnel SFX.
+  - Sprint activates speed-lines canvas overlay, dynamic FOV camera widening ($54^\circ \to 63^\circ$ in 3P, $72^\circ \to 84^\circ$ in 1P), and wind tunnel SFX.
 - **Speed Ramps & Stunts**:
   - 4 kickers strategically positioned along straight alley stretches away from intersections (19m-25m flight runway before turns to keep riders on track), triggering automatic aerial stunts:
     1. West Alley (Row 12): Wheelie Jump (lands before Suya Corner)
@@ -214,6 +229,13 @@ Vehicle paths are computed with closed-form mathematical precision:
 - Checks capabilities via `snapchat.isSupported('leaderboards')`, `snapchat.isSupported('bitmoji')`, and `snapchat.isSupported('storage')`.
 - Safe asynchronous storage pipeline: writes are queued sequentially via chained promises (`pendingSave`) to avoid `ERR_QUOTA_EXCEEDED` on Snapchat's rate-limited backend.
 - LocalStorage mirror: seeds state synchronously on startup, ensuring the game renders instantly even if network initialization lags.
+
+### F. Dual Camera Perspective Architecture & Stunt Auto-Zoom (`main.js` + `player.js`)
+- **Exponential Interpolation (`cameraModeTransition`)**: Smoothly blends between 3P Chase position/look-target and 1P Handlebar Cockpit position/look-target using `1 - Math.exp(-9.5 * dt)`.
+- **Cockpit Coordinates & Look-Ahead**: Eye position is mounted at $(X_{player} + 0.08 \cdot fwdX, 1.34 + Y_{player}, Z_{player} + 0.08 \cdot fwdZ)$ with a $14\text{m}$ forward look target angled $15^\circ$ into steering curves.
+- **Damped Human-Vestibular Lean**: In 1P mode, the camera's up-vector rolls at $38\%$ of the bike's physical lean roll, rotated in world space along the bike's local lateral axis $(-\text{fwdZ}, 0, \text{fwdX})$. This preserves horizon orientation and eliminates motion sickness.
+- **Stunt Auto-Zoom**: If `player.jumpState` is active (wheelie, frontflip, backflip, spin360), `targetCameraBlend` automatically drops to `0.0` (3P chase view). Once landed, it returns to `1.0` (1P cockpit).
+- **Near-Plane Model Culling**: In 1P, `player.setCameraMode('first')` disables `this.model.avatar.headMount` so the rider's helmet/Bitmoji never clips into the camera view while handlebars and arms remain visible.
 
 ---
 

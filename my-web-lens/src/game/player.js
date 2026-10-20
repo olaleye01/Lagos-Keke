@@ -90,6 +90,60 @@ export class Player {
         }
     }
 
+    /**
+     * Smoothly scale and toggle visibility of rider head and body (torso/jersey, hips, legs).
+     * In first person view, the head and body smoothly scale down to 0 and disable,
+     * while the arms remain 100% visible and active on the handlebars.
+     * @param {number} visibility - 1.0 (fully visible in 3P) down to 0.0 (hidden in 1P)
+     */
+    setBodyVisibility(visibility) {
+        const v = math.clamp(visibility, 0, 1);
+        this.bodyVisibility = v;
+        const av = this.model && this.model.avatar;
+        if (!av) return;
+
+        const isVisible = v > 0.005;
+
+        // Smoothly scale head, torso jersey, and hips shorts
+        if (av.headMount) {
+            av.headMount.enabled = isVisible;
+            av.headMount.setLocalScale(v, v, v);
+        }
+
+        if (av.jersey) {
+            av.jersey.enabled = isVisible;
+            av.jersey.setLocalScale(v, v, v);
+        }
+
+        if (av.hips) {
+            av.hips.enabled = isVisible;
+            av.hips.setLocalScale(v, v, v);
+        }
+
+        if (av.legs) {
+            av.legs.forEach(leg => {
+                leg.entity.enabled = isVisible;
+            });
+        }
+
+        // Arms are ALWAYS kept 100% visible and active on the handlebars!
+        if (av.arms) {
+            av.arms.forEach(arm => {
+                if (arm.upperArm) arm.upperArm.enabled = true;
+                if (arm.forearm) arm.forearm.enabled = true;
+            });
+        }
+    }
+
+    /**
+     * Switch visual rendering for First Person vs Third Person camera.
+     * @param {'first'|'third'} mode
+     */
+    setCameraMode(mode) {
+        this.cameraMode = mode;
+        this.setBodyVisibility(mode === 'first' ? 0.0 : 1.0);
+    }
+
     reset() {
         const s = this.map.start;
         this.x = s.x;
@@ -808,12 +862,14 @@ export class Player {
 
         // Legs tracking pedals
         _up.copy(root.forward);
+        const legScale = this.bodyVisibility !== undefined ? this.bodyVisibility : 1.0;
         legs.forEach((leg, i) => {
             const target = pedals[i].getPosition();
             const hip = leg.entity.getPosition();
             const d = _tmp.sub2(target, hip).length();
             leg.entity.lookAt(target, _up);
-            leg.entity.setLocalScale(1, 1, d);
+            leg.entity.setLocalScale(legScale, legScale, d * Math.max(0.01, legScale));
+            leg.entity.enabled = legScale > 0.005;
         });
 
         // Arcade respawn flicker: alternate visibility rapidly (12 Hz) when flickerTimer > 0

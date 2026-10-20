@@ -55,6 +55,14 @@
           </svg>
         </button>
 
+        <button id="btn-camera-toggle" class="hud-circle-btn hud-cam-btn" aria-label="Switch camera view" title="Switch View (C)">
+          <svg class="cam-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+            <circle cx="12" cy="13" r="4"></circle>
+          </svg>
+          <span id="cam-badge" class="cam-badge-tag">3P</span>
+        </button>
+
         <button id="btn-sound-hud" class="hud-circle-btn" aria-label="Toggle sound" title="Toggle Sound (M)">
           <svg class="sound-icon-on" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"></polygon>
@@ -598,6 +606,90 @@
         </button>
 
         <p class="welcome-footer-note">MAIN ROAD &amp; ALLEY SHORTCUTS · AVOID POTHOLES</p>
+      </div>
+    </section>
+
+    <!-- Pre-Game Camera View Selection Modal -->
+    <section id="view-select-modal" class="overlay hidden" aria-modal="true" role="dialog" aria-label="Choose Camera View">
+      <div class="view-select-card sticker-card">
+        <!-- Close / Back button in top-right of modal -->
+        <button id="btn-close-view-select" class="view-select-close-btn" aria-label="Back to welcome screen" title="Back">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <!-- 3D Camera Emblem Badge -->
+        <div class="view-select-badge">
+          <svg viewBox="0 0 64 64" fill="none" class="view-emblem-svg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="32" cy="32" r="28" fill="#fecb16" stroke="#160c05" stroke-width="3.5" />
+            <circle cx="32" cy="32" r="23" fill="#e59d0b" />
+            <rect x="18" y="24" width="22" height="16" rx="4" fill="#ffffff" stroke="#160c05" stroke-width="2.8" />
+            <circle cx="29" cy="32" r="4.5" fill="#160c05" />
+            <polygon points="40 28 50 22 50 42 40 36" fill="#ffffff" stroke="#160c05" stroke-width="2.8" stroke-linejoin="round" />
+          </svg>
+        </div>
+
+        <h2 class="view-select-title">SELECT CAMERA VIEW</h2>
+        <p class="view-select-sub">Choose how you want to ride the hood</p>
+
+        <!-- 2 Selection Cards -->
+        <div class="view-options-grid">
+          <!-- 3P Card -->
+          <div id="card-view-third" class="view-option-card selected" role="button" tabindex="0" data-view="third" aria-label="Third person chase camera">
+            <div class="view-option-header">
+              <span class="view-option-pill pill-third">3P CHASE</span>
+              <span class="view-check-badge">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </span>
+            </div>
+            <div class="view-option-art">
+              <svg viewBox="0 0 100 60" fill="none" class="view-art-svg" aria-hidden="true">
+                <path d="M 38 6 L 62 6 L 78 56 L 22 56 Z" fill="#3b2011" opacity="0.6" />
+                <line x1="50" y1="8" x2="50" y2="20" stroke="#fecb16" stroke-width="2" stroke-dasharray="4 4" />
+                <line x1="50" y1="28" x2="50" y2="44" stroke="#fecb16" stroke-width="2.5" stroke-dasharray="6 5" />
+                <circle cx="50" cy="50" r="7" fill="#fecb16" stroke="#160c05" stroke-width="2" />
+                <path d="M 44 48 L 50 40 L 56 48 Z" fill="#e59d0b" />
+                <circle cx="50" cy="24" r="5" fill="#22c55e" stroke="#160c05" stroke-width="2" />
+                <line x1="44" y1="24" x2="56" y2="24" stroke="#160c05" stroke-width="2.5" />
+              </svg>
+            </div>
+            <div class="view-option-label">THIRD PERSON</div>
+            <div class="view-option-desc">Elevated chase cam · Wide overview of turns, shortcuts &amp; hazards</div>
+          </div>
+
+          <!-- 1P Card -->
+          <div id="card-view-first" class="view-option-card" role="button" tabindex="0" data-view="first" aria-label="First person cockpit camera">
+            <div class="view-option-header">
+              <span class="view-option-pill pill-first">1P COCKPIT</span>
+              <span class="view-check-badge">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </span>
+            </div>
+            <div class="view-option-art">
+              <svg viewBox="0 0 100 60" fill="none" class="view-art-svg" aria-hidden="true">
+                <path d="M 45 4 L 55 4 L 92 56 L 8 56 Z" fill="#3b2011" opacity="0.6" />
+                <line x1="50" y1="8" x2="50" y2="30" stroke="#fecb16" stroke-width="2" stroke-dasharray="4 4" />
+                <path d="M 14 42 C 34 50, 66 50, 86 42" stroke="#160c05" stroke-width="7" stroke-linecap="round" />
+                <path d="M 14 42 C 34 50, 66 50, 86 42" stroke="#fecb16" stroke-width="4.5" stroke-linecap="round" />
+                <rect x="8" y="37" width="12" height="10" rx="3" fill="#334155" stroke="#160c05" stroke-width="1.8" />
+                <rect x="80" y="37" width="12" height="10" rx="3" fill="#334155" stroke="#160c05" stroke-width="1.8" />
+                <circle cx="50" cy="46" r="4.5" fill="#e2e8f0" stroke="#160c05" stroke-width="2" />
+              </svg>
+            </div>
+            <div class="view-option-label">FIRST PERSON</div>
+            <div class="view-option-desc">Handlebar cockpit view · High-speed immersive street rush</div>
+          </div>
+        </div>
+
+        <button id="btn-confirm-view" class="welcome-cta-btn view-start-cta">
+          <span class="welcome-cta-label">RIDE NOW</span>
+        </button>
       </div>
     </section>
 
