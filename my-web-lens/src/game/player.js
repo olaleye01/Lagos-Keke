@@ -359,14 +359,38 @@ export class Player {
                     this.speed = Math.max(max, this.speed - BIKE.COAST_DECEL * dt);
                 }
             } else if (this.speed < max) {
-                const accel = this.isSprinting ? BIKE.SPRINT_ACCEL : (this.surface === 'road' ? BIKE.ACCEL : BIKE.MUD_ACCEL);
+                // Progressive Speed-Dependent Torque Curve (Natural bicycle pedaling feel):
+                // - Low speed (0..35% max): Simulates initial standing inertia & heavy pedal strokes (starts at ~45% torque)
+                // - Mid speed (35..75% max): Rider is in optimal pedaling cadence with 100% peak torque
+                // - High speed (75..100% max): Aerodynamic drag and pedaling cadence ceiling gently taper acceleration
+                const basePeakAccel = this.isSprinting ? BIKE.SPRINT_ACCEL : (this.surface === 'road' ? BIKE.ACCEL : BIKE.MUD_ACCEL);
+                const speedRatio = math.clamp(this.speed / max, 0, 1);
+
+                let torqueFactor;
+                if (speedRatio < 0.40) {
+                    const t = speedRatio / 0.40;
+                    torqueFactor = 0.35 + 0.65 * (t * (2 - t)); // Ease-in from 35% starting torque up to 100%
+                } else if (speedRatio < 0.75) {
+                    torqueFactor = 1.0;
+                } else {
+                    const t = (speedRatio - 0.75) / 0.25;
+                    torqueFactor = 1.0 - 0.60 * (t * t); // Smooth taper from 100% down to 40%
+                }
+
+                const accel = basePeakAccel * torqueFactor;
                 this.speed = Math.min(max, this.speed + accel * dt);
             } else {
                 this.speed = Math.max(max, this.speed - BIKE.COAST_DECEL * 2 * dt);
             }
 
-            // Keep plenty of turning authority at low speed so riders can always turn away from walls
-            const turnScale = math.clamp(this.speed / 4.2, 0.8, 1);
+            // Progressive speed-dependent steering scale (Harmonized with bicycle kinematics):
+            // - Standstill / low speed (0..2.5 m/s): Scales up from 0.15 to 1.0, preventing spinning on the spot
+            // - Mid cruising speed (2.5..6.0 m/s): Full 100% turning agility for navigating 90-degree street corners
+            // - High speed (6.0..13.6 m/s): Softens turn rate slightly for stable, high-speed carving without twitchy oversteer
+            const lowSpeedFactor = math.clamp(0.15 + 0.85 * (this.speed / 2.5), 0.15, 1.0);
+            const highSpeedDamp = 1.0 / (1.0 + Math.max(0, this.speed - 6.0) * 0.055);
+            const turnScale = lowSpeedFactor * highSpeedDamp;
+
             let wobbleSteer = 0;
             if (this.wobble > 0) wobbleSteer = Math.sin(this.wobble * 28) * 0.5 * Math.min(1, this.wobble * 2);
             if (this.surface === 'mud' && !this.isRampBoosting) {
@@ -590,6 +614,41 @@ export class Player {
         // Trigger arcade flicker effect and invulnerability while moving past
         this.triggerFlicker(1.5);
         this._burst(this.x, this.z, 10, 2);
+    }
+
+    /**
+     * In-place vehicle crash recovery:
+     * Displaces the rider safely away from vehicle hitbox, scrubs speed down to a crawl,
+     * and grants 2.5s invulnerability + visual arcade flicker so the rider can reorient
+     * without being teleported back to the checkpoint.
+     */
+    handleVehicleCrash(nx, nz) {
+        if (this.stats) {
+            this.stats.vehicleHits = (this.stats.vehicleHits || 0) + 1;
+        }
+
+        // Physical impulse away from vehicle center
+        this.x += nx * 2.2;
+        this.z += nz * 2.2;
+
+        // Ensure impulse never pushes rider inside a wall or solid building
+        if (this.map && this.map.resolveCircle) {
+            const pos = { x: this.x, z: this.z };
+            this.map.resolveCircle(pos, BIKE.RADIUS);
+            this.x = pos.x;
+            this.z = pos.z;
+        }
+
+        // Heavy speed scrub: drops speed down to a crawl so rider regains spatial awareness
+        this.speed = Math.max(0, Math.min(1.0, this.speed * 0.1));
+        this.stun = 0.35; // brief impact stun, then smooth pedal ramp-up resumes
+        this.wobble = 1.2;
+        this.shake = 0.65;
+        this.spray = 1.2;
+
+        // 5.0s arcade invulnerability and visual flicker (matches vehicle collision cooldown)
+        this.triggerFlicker(5.0);
+        this._burst(this.x, this.z, 22, 2);
     }
 
     respawnAt(pose) {

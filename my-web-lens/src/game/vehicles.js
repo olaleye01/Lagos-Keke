@@ -606,8 +606,8 @@ export class VehicleManager {
                 v.yieldTimer = 0;
             }
 
-            // Smooth acceleration / deceleration
-            const rate = targetSpeed > v.speed ? 4.0 : 8.0;
+            // Smooth acceleration / deceleration (accelerates gently when recovering from collision cooldown)
+            const rate = targetSpeed > v.speed ? (v.cooldown > 0 ? 1.5 : 4.0) : 8.0;
             v.speed = math.lerp(v.speed, targetSpeed, 1 - Math.exp(-rate * dt));
 
             // Advance distance along track
@@ -629,29 +629,28 @@ export class VehicleManager {
                 const hitThreshold = v.hitRadius + BIKE.RADIUS;
 
                 if (dist < hitThreshold) {
-                    v.cooldown = 2.4;
-                    v.yieldTimer = 0.8;
+                    v.cooldown = 5.0;
+                    v.yieldTimer = 1.8;
                     v.speed = 0;
 
-                    // Physical knockback impulse
+                    // Physical knockback impulse unit vector away from vehicle center
                     const nx = dist > 1e-4 ? dx / dist : -Math.sin(v.yawRad);
                     const nz = dist > 1e-4 ? dz / dist : -Math.cos(v.yawRad);
 
-                    player.x += nx * 2.5;
-                    player.z += nz * 2.5;
-                    player.speed = Math.max(0, player.speed * 0.12 - 3.5);
-                    player.stun = 0.9;
-                    player.wobble = 1.4;
-                    player.shake = 0.65;
-                    if (player.stats) {
-                        player.stats.vehicleHits = (player.stats.vehicleHits || 0) + 1;
+                    if (player.handleVehicleCrash) {
+                        player.handleVehicleCrash(nx, nz);
+                    } else {
+                        player.x += nx * 2.2;
+                        player.z += nz * 2.2;
+                        player.speed = Math.max(0, player.speed * 0.1);
+                        player.stun = 0.35;
+                        player.wobble = 1.2;
+                        player.shake = 0.65;
+                        player.triggerFlicker(5.0);
                     }
 
                     // Audio effects: metal crash + horn blast
                     this.audio.vehicleCrash();
-
-                    // Spray spark particles
-                    player.spray = 1.2;
 
                     const shout = pick(this.rand, v.shouts);
                     collisionToast = shout;

@@ -1696,7 +1696,8 @@ app.on('update', dt => {
         timeLeft = Math.max(0, timeLeft - GAME.VEHICLE_HIT_PENALTY);
         showToast(`${vehicleToast} -${GAME.VEHICLE_HIT_PENALTY}s`, 'bad', 2600);
         triggerTimerPenalty();
-        respawnPlayerAtLastCheckpoint('vehicle');
+        triggerRespawnScreenFlicker();
+        safeVibrate([80, 50, 100]);
         if (timeLeft <= 0) {
             timeLeft = 0;
             endGame(false);
